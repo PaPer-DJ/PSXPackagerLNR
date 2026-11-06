@@ -69,7 +69,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*" MinHeight="115"/>
-            <RowDefinition Height="8"/>
+            <RowDefinition Height="12"/>
             <RowDefinition Height="290" MinHeight="135"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -151,12 +151,23 @@
             </ListView>
         </Grid>
 
-        <GridSplitter Grid.Row="4" Height="8" Margin="0,5,0,0"
-                      Background="#FFCFD6E0" VerticalAlignment="Stretch"
+        <GridSplitter Grid.Row="4" Height="12" Margin="0,0,0,0"
+                      Background="#FFD2DAE5" VerticalAlignment="Stretch"
                       HorizontalAlignment="Stretch"
                       ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"
                       ShowsPreview="True" Cursor="SizeNS"
-                      ToolTip="Arrastra hacia arriba o abajo para cambiar el tamaño del registro"/>
+                      ToolTip="Arrastra hacia arriba o abajo para cambiar el tamaño del registro">
+            <GridSplitter.Template>
+                <ControlTemplate TargetType="{x:Type GridSplitter}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="#FFB4C0D0" BorderThickness="0,1" CornerRadius="2">
+                        <TextBlock Text="↕" FontSize="12" FontWeight="Bold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="#FF4A5A6D"/>
+                    </Border>
+                </ControlTemplate>
+            </GridSplitter.Template>
+        </GridSplitter>
 
         <Grid Grid.Row="5" Margin="0,12,0,0">
             <Grid.RowDefinitions>
