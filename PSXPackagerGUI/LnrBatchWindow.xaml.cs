@@ -366,18 +366,19 @@ namespace PSXPackagerGUI
                     using var process = new Process { StartInfo = start };
                     _activeProcess = process;
                     if (!process.Start()) throw new InvalidOperationException("No se pudo iniciar la CLI.");
-                    var outputTask = process.StandardOutput.ReadToEndAsync(cancel);
-                    var errorTask = process.StandardError.ReadToEndAsync(cancel);
+                    // Read stdout and stderr while conversion is running.
+                    // The CLI emits "Progress: NN%" for each processing phase.
+                    var outputTask = ReadCliStreamAsync(process.StandardOutput, job, false);
+                    var errorTask = ReadCliStreamAsync(process.StandardError, job, true);
                     try
                     {
                         await process.WaitForExitAsync(cancel);
-                        var stdout = await outputTask;
-                        var stderr = await errorTask;
+                        var outputs = await Task.WhenAll(outputTask, errorTask);
                         if (process.ExitCode != 0)
                         {
+                            var detail = !string.IsNullOrWhiteSpace(outputs[1]) ? outputs[1] : outputs[0];
                             throw new InvalidOperationException(
-                                $"psxpackager.exe devolvió {process.ExitCode}. " +
-                                (string.IsNullOrWhiteSpace(stderr) ? stdout : stderr).Trim());
+                                $"psxpackager.exe devolvió {process.ExitCode}. " + detail.Trim());
                         }
                     }
                     catch (OperationCanceledException)
@@ -455,6 +456,52 @@ namespace PSXPackagerGUI
                 Append($"Total convertido: {Size(_sumOriginal)} CHD → {Size(_sumConverted)} PBP. " +
                        $"Diferencia: {Size(_sumOriginal - _sumConverted)} " +
                        $"({(100.0 * (_sumOriginal - _sumConverted) / _sumOriginal).ToString("N2", Es)} %).");
+        }
+
+        private async Task<string> ReadCliStreamAsync(StreamReader reader, LnrConversionJob job, bool isError)
+        {
+            var captured = new StringBuilder();
+            int lastLoggedQuarter = -1;
+            while (true)
+            {
+                // WPF synchronization context keeps bound properties and log on UI thread.
+                var raw = await reader.ReadLineAsync();
+                if (raw == null) break;
+                var line = raw.Trim();
+                if (line.Length == 0) continue;
+                captured.AppendLine(line);
+
+                if (isError)
+                {
+                    Append("CLI ERROR: " + line);
+                    continue;
+                }
+
+                var progress = CliProgress.Match(line);
+                if (progress.Success &&
+                    int.TryParse(progress.Groups["value"].Value, out var percent))
+                {
+                    percent = Math.Clamp(percent, 0, 100);
+                    job.ProgressPercent = percent;
+                    var quarter = percent / 25;
+                    if (percent == 100 || (quarter > lastLoggedQuarter && quarter > 0))
+                    {
+                        Append($"Progreso {job.Name}: {percent}% (fase actual).");
+                        lastLoggedQuarter = quarter;
+                    }
+                    continue;
+                }
+
+                if (CliPhase.IsMatch(line))
+                {
+                    // This is *phase* progress, not overall-file progress.
+                    // Reset between phases and do not show an invented overall percentage.
+                    lastLoggedQuarter = -1;
+                    job.ProgressPercent = 0;
+                }
+                Append("CLI: " + line);
+            }
+            return captured.ToString();
         }
 
         private void Cancel_OnClick(object sender, RoutedEventArgs e)
