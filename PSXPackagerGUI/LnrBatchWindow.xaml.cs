@@ -45,6 +45,7 @@ namespace PSXPackagerGUI
         public LnrBatchWindow()
         {
             InitializeComponent();
+            Title = "PSXPackagerLNR · " + LnrVersionInfo.Display + " | CHD a PBP";
             JobList.ItemsSource = _jobs;
 
             // When installed as a portable toolkit, locate the ROM folder
@@ -58,6 +59,7 @@ namespace PSXPackagerGUI
             {
                 SourceBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             }
+            Append("PSXPackagerLNR " + LnrVersionInfo.Display);
             Append("Selecciona una carpeta con archivos CHD y pulsa Analizar.");
         }
 
