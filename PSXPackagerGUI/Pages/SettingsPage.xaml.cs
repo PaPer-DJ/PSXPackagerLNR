@@ -38,6 +38,7 @@ namespace PSXPackagerGUI.Pages
                 settings = new SettingsModel
                 {
                     CompressionLevel = 5,
+                    FileNameFormat = "%FILENAME%",
                     Batch = new BatchSettingsModel()
                     {
                         IsBinChecked = true,
@@ -60,7 +61,7 @@ namespace PSXPackagerGUI.Pages
 
             if (string.IsNullOrEmpty(settings.FileNameFormat))
             {
-                settings.FileNameFormat = "%GAMEID%\\EBOOT";
+                settings.FileNameFormat = "%FILENAME%";
             }
 
             if (string.IsNullOrEmpty(settings.CustomResourcesFormat))
