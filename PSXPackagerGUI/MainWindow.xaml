@@ -158,6 +158,10 @@
                 </MenuItem.Header>
             </MenuItem>
 
+            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"/>
+            <MenuItem Header="CHD → PBP · LNR" Click="LnrBatch_OnClick"
+                      ToolTip="Conversor CHD directo por lotes con opciones multidisco"
+                      FontWeight="SemiBold" Margin="6,0,0,0"/>
         </Menu>
         <Frame Grid.Row="1" x:Name="CurrentPage" NavigationUIVisibility="Hidden"></Frame>
     </Grid>
