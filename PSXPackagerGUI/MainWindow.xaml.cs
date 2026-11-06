@@ -122,6 +122,12 @@ namespace PSXPackagerGUI
             _singlePage.SavePSP();
         }
 
+        private void LnrBatch_OnClick(object sender, RoutedEventArgs e)
+        {
+            var window = new LnrBatchWindow { Owner = this };
+            window.ShowDialog();
+        }
+
         private void ShowGamesDB_OnClick(object sender, RoutedEventArgs e)
         {
             var window = new GameListWindow(false);
