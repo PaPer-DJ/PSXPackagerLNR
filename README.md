@@ -5,6 +5,28 @@ Esta es una **adaptacion y automatizacion comunitaria** del proyecto original
 **No es un programa creado originalmente por LaNaveRETRO**. Se conservan
 la licencia MIT y los creditos del software original.
 
+## Versionado y descargas identificables
+
+La version propia de LaNaveRETRO comienza en **v0.1.0-beta.1**.
+La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
+se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
+
+**Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.1-b59-GUI-win-x64.zip`.
+Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
+y `Toolkit-win-x64.zip`.
+
+El titulo de la interfaz y el registro muestran exactamente la version y
+compilacion que se esta ejecutando. No hay que renombrar manualmente ZIPs.
+
+- [Descargas de pruebas (Actions)](https://github.com/PaPer-DJ/PSXPackagerLNR/actions).
+- Las builds de Actions son **temporales** y pueden caducar a los 30 dias.
+  Conserva los ZIP que quieras probar o comparar.
+- [Releases](https://github.com/PaPer-DJ/PSXPackagerLNR/releases) se usara
+  para versiones publicadas y archivadas permanentemente tras validacion.
+- De momento la rama `master` se mantiene independiente del trabajo en
+  `lnr/windows-chd-build`. No hay release estable de LNR.
+
 ## Estado de desarrollo
 
 Estamos validando la conversion directa **CHD a PBP sin CHDMAN**, incluida
