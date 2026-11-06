@@ -9,7 +9,6 @@
         xmlns:converters="clr-namespace:PSXPackagerGUI.Converters"
         xmlns:common="clr-namespace:PSXPackagerGUI.Common"
         mc:Ignorable="d"
-        Loaded="MainWindow_OnLoaded"
         d:DataContext="{d:DesignInstance models:MainModel, IsDesignTimeCreatable=True}"
         Closing="OnClosing"
         MinHeight="600" MinWidth="800"
