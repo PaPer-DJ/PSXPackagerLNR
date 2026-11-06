@@ -1,3 +1,36 @@
+# PSXPackagerLNR - LaNaveRETRO Edition (fork)
+
+Esta es una **adaptacion y automatizacion comunitaria** del proyecto original
+[PSXPackager de RupertAvery](https://github.com/RupertAvery/PSXPackager).
+**No es un programa creado originalmente por LaNaveRETRO**. Se conservan
+la licencia MIT y los creditos del software original.
+
+## Estado de desarrollo
+
+Estamos validando la conversion directa **CHD a PBP sin CHDMAN**, incluida
+la gestion de pistas de audio CD y archivos multidisco. La version de pruebas
+para Windows x64 incluye la interfaz grafica original, la CLI compilada desde
+el codigo fuente mas reciente y un **Toolkit portable** con un conversor por
+lotes basado en BAT/PowerShell.
+
+- [Instrucciones del Toolkit](LNR/Batch/README.md)
+- [Compilaciones Windows y artefactos ZIP](https://github.com/PaPer-DJ/PSXPackagerLNR/actions)
+- [Solicitud de cambios en desarrollo](https://github.com/PaPer-DJ/PSXPackagerLNR/pull/1)
+
+El BAT ofrece discos **separados** (nombres exactos) o **unidos** (M3U) y
+niveles de compresion **1, 5 y 9**, con el nivel 5 como opcion normal.
+Los juegos, BIOS y archivos protegidos por derechos de terceros **no se
+distribuyen** con el proyecto.
+
+> Nota: una conversion PBP correcta no garantiza que todos los emuladores
+> admitan audio CD, SBI o cambios de disco de la misma manera. Comprueba
+> cada plataforma. Los ejecutables siguen conservando los nombres originales
+> durante esta fase de validacion.
+
+---
+
+## Documentacion del proyecto original (conservada)
+
 # PSXPackager
 
 PSXPackager is a tool for converting PlayStation 1 Disc images to the EBOOT.PBP format and back.
