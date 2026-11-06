@@ -31,8 +31,22 @@ alternativo basado en BAT/PowerShell.
 
 La distribucion GUI incluye tambien `psxpackager.exe`, necesario para
 la conversion directa. No requiere PowerShell ni CHDMAN; el Toolkit BAT
-sigue disponible como alternativa. La ventana incluye progreso, cancelacion,
-comprobacion basica de salida y registro de resultados.
+sigue disponible como alternativa. La ventana muestra **porcentaje de progreso real de la fase de conversión**
+en cada juego, leido en directo del motor CLI (no es una estimacion). Las
+fases internas pueden empezar de nuevo en 0%, porque cada una publica su
+propio progreso; la barra inferior indica los juegos completados del lote.
+Tambien incluye cancelacion, comprobacion basica de salida y registro de
+resultados **ampliable hacia arriba o abajo arrastrando el separador**.
+
+Los estados de cada fila llevan indicadores diferentes:
+- **Completado**: marca verde.
+- **ERROR**: aspa roja.
+- **Saltado / Ya existe**: advertencia amarilla (nunca sobrescribe).
+- **Convirtiendo**: porcentaje y barra de avance de la fase actual.
+
+En el registro, cada mensaje informativo se muestra en una linea
+independiente. El aviso de confirmacion separa carpeta de destino,
+modo, compresion y avisos de seguridad.
 
 **Validado por GitHub Actions:** compila la GUI/CLI y supera pruebas
 del planificador del BAT. **Pendiente:** probar conversiones reales
