@@ -20,8 +20,6 @@ namespace PSXPackagerGUI
         private readonly MainModel _model;
         private readonly GameDB _gameDb = new GameDB(Path.Combine(ApplicationInfo.AppPath, "Resources", "gameInfo.db"));
 
-        private bool _isFirstRun;
-
         public MainWindow()
         {
 
@@ -31,7 +29,6 @@ namespace PSXPackagerGUI
 
             Logger.LogInfo("Creating Settings Page");
             _settings = new SettingsPage(this);
-            _isFirstRun = _settings.IsFirstRun;
 
 
             Logger.LogInfo("Creating Single Page");
@@ -95,26 +92,6 @@ namespace PSXPackagerGUI
         private void CreateFile_OnClick(object sender, RoutedEventArgs e)
         {
             _singlePage.NewPBP();
-        }
-
-        private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
-        {
-            if (_isFirstRun)
-            {
-                var message = "Do you want to use PSP Settings for batch processing? " +
-                              "A folder named using the Game ID will be generated and the EBOOT.PBP file will be placed there. \r\n\r\n" +
-                              "e.g.: SLUSXXXXX\\EBOOT.PBP\r\n\r\n" +
-                              "You can change this at anytime the File Format tab of the Settings page";
-                var result = MessageBox.Show(this, message, "PSXPackager", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result == MessageBoxResult.Yes)
-                {
-                    _settings.Model.FileNameFormat = "%GAMEID%\\EBOOT";
-                }
-                else
-                {
-                    _settings.Model.FileNameFormat = "%FILENAME%";
-                }
-            }
         }
 
         private void SavePSP_OnClick(object sender, RoutedEventArgs e)
