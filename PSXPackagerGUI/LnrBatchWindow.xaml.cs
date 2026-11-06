@@ -262,9 +262,13 @@ namespace PSXPackagerGUI
                 }
                 if (_jobs.Count == 0) return;
                 var answer = MessageBox.Show(this,
-                    $"Convertir {_jobs.Count} juegos a {Path.Combine(folder, "PBP")}?\n" +
-                    $"Modo: {(IsMerged ? "Unidos" : "Separados")}; compresión: {SelectedLevel}.\n" +
-                    "Los CHD originales no se modificarán. Los PBP existentes se omitirán.",
+                    $"Se van a convertir {_jobs.Count} juegos a PBP.\n\n" +
+                    $"Modo multidisco: {(IsMerged ? "Unidos" : "Separados")}\n" +
+                    $"Compresión: {SelectedLevel}\n" +
+                    $"Destino: {Path.Combine(folder, "PBP")}\n\n" +
+                    "Los CHD originales NO se modificarán.\n" +
+                    "Los PBP existentes se omitirán.\n\n" +
+                    "¿Iniciar la conversión?",
                     "Confirmar conversión LNR", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (answer != MessageBoxResult.Yes) return;
 
@@ -273,7 +277,12 @@ namespace PSXPackagerGUI
                 SetControls(false);
                 _sumOriginal = _sumConverted = 0;
                 _succeeded = _skipped = _failed = 0;
-                foreach (var job in _jobs) job.Status = "Pendiente";
+                WorkProgress.Value = 0;
+                foreach (var job in _jobs)
+                {
+                    job.ProgressPercent = 0;
+                    job.Status = "Pendiente";
+                }
                 await ConvertAllAsync(cli, folder, SelectedLevel, _cancel.Token);
             }
             catch (OperationCanceledException)
@@ -324,9 +333,9 @@ namespace PSXPackagerGUI
                 {
                     if (File.Exists(finalPath))
                     {
-                        job.Status = "Ya existe";
+                        job.Status = "Saltado / Ya existe";
                         _skipped++;
-                        Append("OMITIDO: " + job.Name + ".pbp ya existe.");
+                        Append("SALTADO: " + job.Name + ".pbp ya existe en la carpeta PBP; no se sobrescribe.");
                         continue;
                     }
 
@@ -338,6 +347,7 @@ namespace PSXPackagerGUI
                         // Absolute paths avoid assuming that CHDs live beside the temporary M3U.
                         File.WriteAllLines(input, job.Discs, new UTF8Encoding(false));
                     }
+                    job.ProgressPercent = 0;
                     job.Status = "Convirtiendo";
                     Append($"[{processed + 1}/{total}] {job.Name} ({job.Discs.Count} disco/s)");
                     var start = new ProcessStartInfo(cli)
@@ -401,6 +411,7 @@ namespace PSXPackagerGUI
                     _sumOriginal += sourceBytes;
                     _sumConverted += newBytes;
                     _succeeded++;
+                    job.ProgressPercent = 100;
                     job.Status = "Completado";
                     Append($"OK: {Size(sourceBytes)} CHD → {Size(newBytes)} PBP; variación {Size(sourceBytes - newBytes)}.");
 
