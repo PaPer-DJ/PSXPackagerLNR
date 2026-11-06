@@ -491,6 +491,7 @@ namespace PSXPackagerGUI
         {
             public event PropertyChangedEventHandler PropertyChanged;
             private string _status = "Pendiente";
+            private int _progressPercent;
 
             public LnrConversionJob(string name, List<string> discs, string origin)
             {
@@ -503,14 +504,40 @@ namespace PSXPackagerGUI
             public List<string> Discs { get; }
             public int DiscCount => Discs.Count;
             public string Origin { get; }
+
             public string Status
             {
                 get => _status;
                 set
                 {
+                    if (_status == value) return;
                     _status = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Status)));
+                    Notify(nameof(Status));
+                    Notify(nameof(DisplayStatus));
                 }
+            }
+
+            public int ProgressPercent
+            {
+                get => _progressPercent;
+                set
+                {
+                    if (_progressPercent == value) return;
+                    _progressPercent = value;
+                    Notify(nameof(ProgressPercent));
+                    Notify(nameof(ProgressLabel));
+                    Notify(nameof(DisplayStatus));
+                }
+            }
+
+            public string ProgressLabel => ProgressPercent + "%";
+            // The CLI publishes the progress of each processing phase.
+            public string DisplayStatus => Status == "Convirtiendo"
+                ? $"Convirtiendo · {ProgressPercent}%" : Status;
+
+            private void Notify(string property)
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
             }
         }
     }
