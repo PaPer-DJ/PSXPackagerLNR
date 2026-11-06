@@ -58,11 +58,18 @@ jobs:
             Copy-Item "./LNR-BUILD.md" "$destination/LNR-BUILD.md" -Force
           }
 
+      - name: Bundle CLI with GUI for LNR batch mode
+        shell: pwsh
+        run: |
+          Copy-Item "./out/CLI/psxpackager.exe" "./out/GUI/psxpackager.exe" -Force
+          if (-not (Test-Path "./out/GUI/psxpackager.exe")) { throw "GUI package lacks LNR batch CLI" }
+
       - name: Verify Windows binaries
         shell: pwsh
         run: |
           if (-not (Test-Path "./out/CLI/psxpackager.exe")) { throw "CLI EXE missing" }
           if (-not (Test-Path "./out/GUI/PSXPackagerGUI.exe")) { throw "GUI EXE missing" }
+          if (-not (Test-Path "./out/GUI/psxpackager.exe")) { throw "GUI batch converter missing" }
           foreach ($edition in @("CLI", "GUI")) {
             if (-not (Test-Path "./out/$edition/Resources/gameInfo.db")) {
               throw "gameInfo.db missing from $edition"
