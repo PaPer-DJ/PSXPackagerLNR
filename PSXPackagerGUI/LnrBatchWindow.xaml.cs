@@ -23,6 +23,12 @@ namespace PSXPackagerGUI
     public partial class LnrBatchWindow : Window
     {
         private static readonly CultureInfo Es = CultureInfo.GetCultureInfo("es-ES");
+        private static readonly Regex CliProgress = new Regex(
+            @"^Progress:\s*(?<value>\d{1,3})\s*%",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static readonly Regex CliPhase = new Regex(
+            @"^(Converting Disc|Writing Disc|Extracting Disc|Decompressing file)\b",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
         private readonly ObservableCollection<LnrConversionJob> _jobs = new();
         private readonly List<string> _messages = new();
         private CancellationTokenSource _cancel;
@@ -57,13 +63,16 @@ namespace PSXPackagerGUI
 
         private void Append(string message)
         {
-            var entry = $"[{DateTime.Now:HH:mm:ss}] {message}";
-            _messages.Add(entry);
-            OutputBox.AppendText(entry + Environment.NewLine);
-            if (OutputBox.Text.Length > 160000)
+            // Split multiline notices so every informational phrase gets its own line.
+            foreach (var part in (message ?? "").Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
             {
-                OutputBox.Text = OutputBox.Text.Substring(OutputBox.Text.Length - 120000);
+                if (string.IsNullOrWhiteSpace(part)) continue;
+                var entry = $"[{DateTime.Now:HH:mm:ss}] {part.TrimEnd()}";
+                _messages.Add(entry);
+                OutputBox.AppendText(entry + Environment.NewLine);
             }
+            if (OutputBox.Text.Length > 160000)
+                OutputBox.Text = OutputBox.Text.Substring(OutputBox.Text.Length - 120000);
             OutputBox.ScrollToEnd();
         }
 
