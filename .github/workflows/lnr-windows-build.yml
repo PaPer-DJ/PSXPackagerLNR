@@ -78,6 +78,57 @@ jobs:
           & "./out/CLI/psxpackager.exe" --help
           if ($LASTEXITCODE -ne 0) { throw "CLI --help failed ($LASTEXITCODE)" }
 
+      - name: Regression test - CLI without console handle
+        shell: pwsh
+        run: |
+          # This simulates the LNR GUI: no console window, both streams redirected.
+          # A deliberately invalid CHD triggers Processing.ProcessFile's Error event.
+          # Previously ConsoleNotifier threw "Invalid handle" instead of reporting it.
+          $testDir = Join-Path $env:RUNNER_TEMP "lnr-redirected-console-test"
+          New-Item -ItemType Directory -Path $testDir -Force | Out-Null
+          $badChd = Join-Path $testDir "synthetic-invalid.chd"
+          [System.IO.File]::WriteAllBytes($badChd, ([byte[]](1..16)))
+          $exe = (Resolve-Path "./out/GUI/psxpackager.exe").Path
+          $info = [System.Diagnostics.ProcessStartInfo]::new()
+          $info.FileName = $exe
+          $info.ArgumentList.Add("-i")
+          $info.ArgumentList.Add($badChd)
+          $info.ArgumentList.Add("-o")
+          $info.ArgumentList.Add($testDir)
+          $info.ArgumentList.Add("-l")
+          $info.ArgumentList.Add("5")
+          $info.ArgumentList.Add("-s")
+          $info.UseShellExecute = $false
+          $info.CreateNoWindow = $true
+          $info.RedirectStandardOutput = $true
+          $info.RedirectStandardError = $true
+          $proc = [System.Diagnostics.Process]::new()
+          $proc.StartInfo = $info
+          try {
+            if (-not $proc.Start()) { throw "Cannot launch redirected CLI" }
+            $stdoutTask = $proc.StandardOutput.ReadToEndAsync()
+            $stderrTask = $proc.StandardError.ReadToEndAsync()
+            if (-not $proc.WaitForExit(30000)) {
+              $proc.Kill()
+              throw "Redirected CLI timed out"
+            }
+            $stdout = $stdoutTask.GetAwaiter().GetResult()
+            $stderr = $stderrTask.GetAwaiter().GetResult()
+            Write-Host "CLI exit code: $($proc.ExitCode)"
+            Write-Host "CLI output: $stdout"
+            if ($stderr) { Write-Host "CLI stderr: $stderr" }
+            if ($proc.ExitCode -eq 0) { throw "Invalid synthetic CHD must fail" }
+            if ($proc.ExitCode -eq -532462766 -or
+                $stderr -match 'Unhandled exception' -or
+                $stderr -match 'ConsolePal.set_CursorVisible' -or
+                $stdout -match 'ConsolePal.set_CursorVisible') {
+              throw "CLI crashes when there is no console handle"
+            }
+          }
+          finally {
+            $proc.Dispose()
+          }
+
       - name: Test batch planning without game data
         shell: pwsh
         run: |
