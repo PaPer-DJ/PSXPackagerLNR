@@ -26,6 +26,7 @@ namespace PSXPackagerGUI
             Logger.LogInfo("Starting up");
 
             InitializeComponent();
+            Title = "PSXPackagerLNR · " + LnrVersionInfo.Display;
 
             Logger.LogInfo("Creating Settings Page");
             _settings = new SettingsPage(this);
