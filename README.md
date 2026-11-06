@@ -9,9 +9,34 @@ la licencia MIT y los creditos del software original.
 
 Estamos validando la conversion directa **CHD a PBP sin CHDMAN**, incluida
 la gestion de pistas de audio CD y archivos multidisco. La version de pruebas
-para Windows x64 incluye la interfaz grafica original, la CLI compilada desde
-el codigo fuente mas reciente y un **Toolkit portable** con un conversor por
-lotes basado en BAT/PowerShell.
+para Windows x64 incluye la interfaz grafica original **con una ventana
+adicional LNR: CHD a PBP por lotes**, la CLI compilada desde el codigo fuente
+mas reciente y un **Toolkit portable** con un conversor por lotes
+alternativo basado en BAT/PowerShell.
+
+### Usar la nueva interfaz grafica LNR (version de prueba)
+
+1. En [GitHub Actions](https://github.com/PaPer-DJ/PSXPackagerLNR/actions)
+   descarga el artefacto Windows mas reciente de la rama
+   `lnr/windows-chd-build`.
+2. Extrae `PSXPackagerLNR-GUI-win-x64.zip` completo en una carpeta
+   de Windows (no ejecutes el programa directamente dentro del ZIP).
+3. Inicia `PSXPackagerGUI.exe` y pulsa el nuevo menu
+   **CHD a PBP - LNR**.
+4. Selecciona la carpeta que contiene los CHD. Elige **separados** o
+   **unidos** y nivel **1, 5 o 9** (5 es el predeterminado).
+5. Pulsa **Analizar**, revisa el plan y despues **Convertir**.
+   Los PBP apareceran en la subcarpeta `PBP`. Los originales no
+   se modifican y los destinos existentes se omiten.
+
+La distribucion GUI incluye tambien `psxpackager.exe`, necesario para
+la conversion directa. No requiere PowerShell ni CHDMAN; el Toolkit BAT
+sigue disponible como alternativa. La ventana incluye progreso, cancelacion,
+comprobacion basica de salida y registro de resultados.
+
+**Validado por GitHub Actions:** compila la GUI/CLI y supera pruebas
+del planificador del BAT. **Pendiente:** probar conversiones reales
+en Windows desde la nueva ventana, pistas CD-Audio y cambio de disco.
 
 - [Instrucciones del Toolkit](LNR/Batch/README.md)
 - [Compilaciones Windows y artefactos ZIP](https://github.com/PaPer-DJ/PSXPackagerLNR/actions)
