@@ -1,0 +1,87 @@
+name: LNR Windows CHD-to-PBP builds
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - "lnr/**"
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  windows-x64:
+    name: Build CLI and GUI (Windows x64)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish CLI (portable self-contained)
+        shell: pwsh
+        run: |
+          dotnet publish ./PSXPackager/PSXPackager-windows.csproj `
+            -c Release -r win-x64 -o ./out/CLI `
+            --self-contained true -p:PublishSingleFile=true `
+            -p:PublishReadyToRun=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Publish Windows GUI (portable self-contained)
+        shell: pwsh
+        run: |
+          dotnet publish ./PSXPackagerGUI/PSXPackagerGUI.csproj `
+            -c Release -r win-x64 -o ./out/GUI `
+            --self-contained true -p:PublishSingleFile=true `
+            -p:PublishReadyToRun=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Copy required database, license and documentation
+        shell: pwsh
+        run: |
+          foreach ($edition in @("CLI", "GUI")) {
+            $destination = Join-Path "out" $edition
+            $resources = Join-Path $destination "Resources"
+            New-Item -ItemType Directory -Path $resources -Force | Out-Null
+            Copy-Item "./Popstation.Database/Resources/gameInfo.db" "$resources/gameInfo.db" -Force
+            Copy-Item "./LICENSE" "$destination/LICENSE" -Force
+            Copy-Item "./README.md" "$destination/UPSTREAM-README.md" -Force
+            Copy-Item "./LNR-BUILD.md" "$destination/LNR-BUILD.md" -Force
+          }
+
+      - name: Verify Windows binaries
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "./out/CLI/psxpackager.exe")) { throw "CLI EXE missing" }
+          if (-not (Test-Path "./out/GUI/PSXPackagerGUI.exe")) { throw "GUI EXE missing" }
+          foreach ($edition in @("CLI", "GUI")) {
+            if (-not (Test-Path "./out/$edition/Resources/gameInfo.db")) {
+              throw "gameInfo.db missing from $edition"
+            }
+          }
+          & "./out/CLI/psxpackager.exe" --help
+          if ($LASTEXITCODE -ne 0) { throw "CLI --help failed ($LASTEXITCODE)" }
+
+      - name: Create ZIP packages
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "./dist" -Force | Out-Null
+          Compress-Archive -Path "./out/CLI/*" -DestinationPath "./dist/PSXPackagerLNR-CLI-win-x64.zip" -Force
+          Compress-Archive -Path "./out/GUI/*" -DestinationPath "./dist/PSXPackagerLNR-GUI-win-x64.zip" -Force
+
+      - name: Upload CLI and GUI packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: PSXPackagerLNR-Windows-x64
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 30
