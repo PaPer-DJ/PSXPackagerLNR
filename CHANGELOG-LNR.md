@@ -6,6 +6,12 @@ La autoria original y la licencia MIT se conservan.
 
 ## v0.1.0-beta.2 — 7 noviembre 2026 (interfaz pulida)
 
+- Nuevo **explorador de carpetas con vista previa CHD**: muestra las
+  subcarpetas y los nombres/tamaños de los juegos antes de seleccionar
+  la carpeta, sin obligar a escoger un CHD individual.
+- **Análisis automático** al seleccionar la carpeta, recuperar la última
+  carpeta utilizada, pegar una ruta y pulsar Intro, o cambiar el modo
+  multidisco. El botón **Analizar** sigue disponible para refrescar la lista.
 - La ventana CHD → PBP recuerda **última carpeta, modo multidisco,
   nivel de compresión, tamaño de ventana, altura del registro y autoscroll**.
   Preferencias locales en `%LOCALAPPDATA%\\PSXPackagerLNR\\gui-preferencias.json`,
