@@ -266,6 +266,15 @@ namespace PSXPackagerGUI
                 throw new DirectoryNotFoundException("No existe la carpeta: " + folder);
 
             _jobs.Clear();
+            if (!_running)
+            {
+                // A refreshed plan is a new batch, not a continuation of
+                // the previous run's statistics or ETA calibration.
+                _succeeded = _skipped = _failed = 0;
+                _calibratedBytes = 0;
+                _calibratedSeconds = 0;
+                _batchCanceled = false;
+            }
             var outputFolder = Path.Combine(folder, "PBP");
             var existing = 0;
             foreach (var job in Plan(folder, IsMerged))
