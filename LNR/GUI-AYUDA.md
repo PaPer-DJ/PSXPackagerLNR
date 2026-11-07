@@ -74,6 +74,11 @@ El porcentaje de la fila es el de la **fase** de conversión, no el de todo
 el juego. La barra inferior indica cuántos juegos del lote se han
 procesado y ofrece un tiempo restante **aproximado**, calibrado tras
 una conversión válida. **Copiar registro** facilita informar errores;
+**Limpiar registro** vacía el panel **Actividad y resultados** y el
+historial en memoria desde la última limpieza, de modo que **Copiar registro**
+solo copia los mensajes nuevos. **No borra informes TXT ya guardados**,
+los CHD ni los PBP, y no detiene ninguna conversión. Si hay un lote en
+marcha, sus siguientes mensajes continuarán apareciendo en el panel.
 **Abrir carpeta PBP** abre los resultados. Puedes ampliar el registro
 arrastrando el separador y desmarcar **Seguir actividad** para consultarlo.
 
