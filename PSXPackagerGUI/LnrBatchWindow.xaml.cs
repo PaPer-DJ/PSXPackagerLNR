@@ -59,6 +59,7 @@ namespace PSXPackagerGUI
             InitializeComponent();
             Title = "PSXPackagerLNR · " + LnrVersionInfo.Display + " | CHD a PBP";
             JobList.ItemsSource = _jobs;
+            _jobs.CollectionChanged += (_, _) => ResizeJobColumns();
             _batchClock.Tick += (sender, e) => UpdateBatchProgress();
             _preferences = LnrGuiPreferences.Load();
 
@@ -246,6 +247,68 @@ namespace PSXPackagerGUI
             }
         }
 
+        private void JobList_OnSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (e.WidthChanged) ResizeJobColumns();
+        }
+
+        /// <summary>
+        /// GridView has no star-sized columns. We measure the header and the
+        /// actual displayed values, center the data columns, and assign the
+        /// remaining width to Status so its progress bar gets full space.
+        /// The first (game-name) column deliberately remains left-aligned.
+        /// </summary>
+        private void ResizeJobColumns()
+        {
+            if (JobList == null || JobList.ActualWidth < 450 ||
+                JobList.View is not GridView columns || columns.Columns.Count < 8)
+                return;
+
+            double WidthOf(string value, bool header = false)
+            {
+                var measure = new TextBlock
+                {
+                    Text = value,
+                    FontFamily = JobList.FontFamily,
+                    FontSize = JobList.FontSize,
+                    FontWeight = header ? FontWeights.SemiBold : FontWeights.Normal
+                };
+                measure.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                return measure.DesiredSize.Width;
+            }
+
+            double AutoWidth(string header, Func<LnrConversionJob, string> value,
+                             double minimum, double maximum)
+            {
+                var widest = WidthOf(header, true);
+                foreach (var job in _jobs)
+                    widest = Math.Max(widest, WidthOf(value(job) ?? "—"));
+                // Extra horizontal padding allows for the GridView cell and header chrome.
+                return Math.Clamp(Math.Ceiling(widest + 24), minimum, maximum);
+            }
+
+            var available = JobList.ActualWidth - SystemParameters.VerticalScrollBarWidth - 8;
+            var nameWidth = 232.0;
+            var widths = new[]
+            {
+                AutoWidth("Discos", j => j.DiscCount.ToString(Es), 56, 70),
+                AutoWidth("Origen", j => j.Origin, 74, 110),
+                AutoWidth("CHD", j => j.SourceSizeText, 90, 120),
+                AutoWidth("PBP", j => j.OutputSizeText, 90, 120),
+                AutoWidth("Variación", j => j.VariationText, 106, 145),
+                AutoWidth("Tiempo", j => j.ElapsedText, 66, 96)
+            };
+
+            columns.Columns[0].Width = nameWidth;
+            for (var i = 0; i < widths.Length; i++)
+                columns.Columns[i + 1].Width = widths[i];
+
+            // On narrower windows keep a horizontal scrollbar rather than
+            // squeezing values or reducing the real progress bar to a few px.
+            columns.Columns[7].Width = Math.Max(240,
+                Math.Floor(available - nameWidth - widths.Sum()));
+        }
+
         private void CopyLog_OnClick(object sender, RoutedEventArgs e)
         {
             if (_messages.Count == 0) return;
@@ -338,6 +401,7 @@ namespace PSXPackagerGUI
             if (existing > 0)
                 Append($"AVISO: {existing} archivos ya están en PBP y serán saltados sin sobrescribir.");
             UpdateBatchProgress();
+            ResizeJobColumns();
         }
 
         private IEnumerable<LnrConversionJob> Plan(string folder, bool merge)
