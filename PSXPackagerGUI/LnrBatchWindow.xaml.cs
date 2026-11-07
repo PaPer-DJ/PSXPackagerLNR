@@ -59,7 +59,6 @@ namespace PSXPackagerGUI
             InitializeComponent();
             Title = "PSXPackagerLNR · " + LnrVersionInfo.Display + " | CHD a PBP";
             JobList.ItemsSource = _jobs;
-            _jobs.CollectionChanged += (_, _) => ResizeJobColumns();
             _batchClock.Tick += (sender, e) => UpdateBatchProgress();
             _preferences = LnrGuiPreferences.Load();
 
