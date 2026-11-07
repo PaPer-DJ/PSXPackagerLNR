@@ -4,6 +4,26 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.17 — 7 noviembre 2026 (lanzador ligero sin duplicación)
+
+- **PSXPackagerLNR.exe ya no es una copia completa de PSXPackagerGUI.exe.**
+  Se sustituye por un ejecutable **nativo Win32 muy pequeño**, compilado
+  con MSVC e icono del programa original, sin .NET incrustado.
+- El lanzador abre `PSXPackagerGUI.exe --lnr-batch` utilizando Windows;
+  la GUI ejecuta directamente la ventana LNR de conversión por lotes.
+  Al abrir `PSXPackagerGUI.exe` sin argumentos sigue apareciendo la
+  interfaz clásica de PSXPackager.
+- **Única copia de GUI autocontenida** en el paquete: ya no se duplica
+  un EXE grande y se reduce el tamaño total de la distribución ZIP.
+  La CLI `psxpackager.exe` sigue incluida para convertir CHD a PBP.
+- GitHub Actions compila el lanzador nativo, verifica que ocupa
+  **menos de 1 MB**, lo incorpora al ZIP y comprueba que la aplicación
+  completa, la CLI y los recursos necesarios siguen presentes.
+- Se conservan créditos, licencia MIT y función original de conversión;
+  manual en castellano y guía de compilación actualizados.
+- El lanzador pequeño **necesita estar en la misma carpeta** que la
+  GUI completa: no es un conversor independiente ni debe aislarse.
+
 ## v0.1.0-beta.16 — 7 noviembre 2026 (arranque directo y ahorro de espacio)
 
 - Nuevo **`PSXPackagerLNR.exe`** en el paquete GUI Windows x64:
