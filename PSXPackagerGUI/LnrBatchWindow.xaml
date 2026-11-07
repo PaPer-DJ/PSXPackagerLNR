@@ -338,6 +338,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="Actividad y resultados" FontWeight="SemiBold"
                            VerticalAlignment="Center"/>
@@ -346,8 +347,11 @@
                           ToolTip="Desmarca para revisar mensajes anteriores sin que el registro salte al final"/>
                 <Button Grid.Column="2" x:Name="CopyLogButton" Content="Copiar registro"
                         Click="CopyLog_OnClick" Padding="12,5" Margin="0,0,8,0"
-                        ToolTip="Copia todos los mensajes de esta sesión al portapapeles"/>
-                <Button Grid.Column="3" x:Name="OpenPbpButton" Content="Abrir carpeta PBP"
+                        ToolTip="Copia los mensajes visibles y acumulados desde la última limpieza"/>
+                <Button Grid.Column="3" x:Name="ClearLogButton" Content="Limpiar registro"
+                        Click="ClearLog_OnClick" Padding="12,5" Margin="0,0,8,0"
+                        ToolTip="Vacía el registro visible y el historial de esta sesión. No borra informes guardados, juegos ni resultados."/>
+                <Button Grid.Column="4" x:Name="OpenPbpButton" Content="Abrir carpeta PBP"
                         Click="OpenPbp_OnClick" Padding="12,5"
                         ToolTip="Abre la carpeta de juegos PBP convertidos en el Explorador de Windows"/>
             </Grid>
