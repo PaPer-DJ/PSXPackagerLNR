@@ -9,7 +9,6 @@
         xmlns:converters="clr-namespace:PSXPackagerGUI.Converters"
         xmlns:common="clr-namespace:PSXPackagerGUI.Common"
         mc:Ignorable="d"
-        Loaded="MainWindow_OnLoaded"
         d:DataContext="{d:DesignInstance models:MainModel, IsDesignTimeCreatable=True}"
         Closing="OnClosing"
         MinHeight="600" MinWidth="800"
@@ -34,7 +33,7 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
         <Menu Margin="5,2,5,2">
-            <MenuItem x:Name="SingleMode" Click="SingleMode_OnClick" ToolTip="Single Mode">
+            <MenuItem x:Name="SingleMode" Click="SingleMode_OnClick" ToolTip="Editor individual de archivos PBP">
                 <MenuItem.Header>
                     <controls:AutoDisableImage Height="32" Width="32">
                         <Image.Source>
@@ -43,7 +42,7 @@
                     </controls:AutoDisableImage>
                 </MenuItem.Header>
             </MenuItem>
-            <MenuItem x:Name="BatchMode" Click="BatchMode_OnClick" ToolTip="Batch Mode">
+            <MenuItem x:Name="BatchMode" Click="BatchMode_OnClick" ToolTip="Procesamiento por lotes original">
                 <MenuItem.Header>
                     <Grid>
                         <controls:AutoDisableImage Height="16" Width="16" Margin="-15,-15,0,0">
@@ -67,7 +66,7 @@
                 </MenuItem.Header>
             </MenuItem>
             <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"></Separator>
-            <MenuItem x:Name="OpenFile" Click="OpenFile_OnClick" ToolTip="Open PBP">
+            <MenuItem x:Name="OpenFile" Click="OpenFile_OnClick" ToolTip="Abrir archivo PBP">
                 <MenuItem.Visibility >
                     <MultiBinding Converter="{StaticResource ModeVisibilityConverter}">
                         <Binding Path="Mode"></Binding>
@@ -82,7 +81,7 @@
                     </controls:AutoDisableImage>
                 </MenuItem.Header>
             </MenuItem>
-            <MenuItem x:Name="CreateFile" Click="CreateFile_OnClick" ToolTip="New PBP">
+            <MenuItem x:Name="CreateFile" Click="CreateFile_OnClick" ToolTip="Crear un PBP nuevo">
                 <MenuItem.Visibility >
                     <MultiBinding Converter="{StaticResource ModeVisibilityConverter}">
                         <Binding Path="Mode"></Binding>
@@ -97,7 +96,7 @@
                     </controls:AutoDisableImage>
                 </MenuItem.Header>
             </MenuItem>
-            <MenuItem x:Name="Save" Click="Save_OnClick" ToolTip="Save" IsEnabled="{Binding IsDirty}">
+            <MenuItem x:Name="Save" Click="Save_OnClick" ToolTip="Guardar cambios" IsEnabled="{Binding IsDirty}">
                 <MenuItem.Visibility >
                     <MultiBinding Converter="{StaticResource ModeVisibilityConverter}">
                         <Binding Path="Mode"></Binding>
@@ -112,7 +111,7 @@
                     </controls:AutoDisableImage>
                 </MenuItem.Header>
             </MenuItem>
-            <MenuItem x:Name="SavePSP" Click="SavePSP_OnClick" ToolTip="Save for PSP" IsEnabled="{Binding IsDirty}">
+            <MenuItem x:Name="SavePSP" Click="SavePSP_OnClick" ToolTip="Guardar para PSP" IsEnabled="{Binding IsDirty}">
                 <MenuItem.Visibility >
                     <MultiBinding Converter="{StaticResource ModeVisibilityConverter}">
                         <Binding Path="Mode"></Binding>
@@ -137,7 +136,7 @@
                 </Separator.Visibility>
             </Separator>
 
-            <MenuItem x:Name="Settings" Click="Settings_OnClick" ToolTip="Settings">
+            <MenuItem x:Name="Settings" Click="Settings_OnClick" ToolTip="Configuración">
                 <MenuItem.Header>
                     <controls:AutoDisableImage Height="32" Width="32">
                         <Image.Source>
@@ -148,7 +147,7 @@
             </MenuItem>
 
 
-            <MenuItem x:Name="GamesDB" Click="ShowGamesDB_OnClick" ToolTip="GamesDB">
+            <MenuItem x:Name="GamesDB" Click="ShowGamesDB_OnClick" ToolTip="Base de datos de juegos">
                 <MenuItem.Header>
                     <controls:AutoDisableImage Height="32" Width="32">
                         <Image.Source>
@@ -158,6 +157,16 @@
                 </MenuItem.Header>
             </MenuItem>
 
+            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"/>
+            <MenuItem Header="CHD → PBP por lotes · LNR" Click="LnrBatch_OnClick"
+                      ToolTip="Conversor CHD directo por lotes con opciones multidisco"
+                      FontWeight="SemiBold" Margin="6,0,0,0"/>
+            <MenuItem Header="Suite de discos · PBP/CHD/CD/DVD" Click="LnrSuite_OnClick"
+                      ToolTip="Conversión por lotes PBP→CHD, CHD→BIN/CUE (CD) y CHD→ISO (DVD)"
+                      FontWeight="SemiBold" Margin="8,0,0,0"/>
+            <MenuItem Header="Acerca de LNR…" Click="LnrAbout_OnClick"
+                      ToolTip="Créditos originales, licencia MIT y versión LNR"
+                      Margin="8,0,0,0"/>
         </Menu>
         <Frame Grid.Row="1" x:Name="CurrentPage" NavigationUIVisibility="Hidden"></Frame>
     </Grid>

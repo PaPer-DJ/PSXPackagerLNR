@@ -1,0 +1,228 @@
+name: LNR Windows CHD-to-PBP builds
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - "lnr/**"
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+# Only the newest commit on each development branch needs a Windows ZIP.
+concurrency:
+  group: lnr-windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-x64:
+    name: Build CLI and GUI (Windows x64)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Resolve LNR product version
+        shell: pwsh
+        run: |
+          $version = (Get-Content -LiteralPath "./LNR/VERSION" -Raw).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+-(alpha|beta|rc)\.\d+$') {
+            throw "Invalid LNR version in LNR/VERSION: $version"
+          }
+          "LNR_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Building PSXPackagerLNR v$version (build $env:GITHUB_RUN_NUMBER)"
+
+      - name: Install .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish CLI (portable self-contained)
+        shell: pwsh
+        run: |
+          dotnet publish ./PSXPackager/PSXPackager-windows.csproj `
+            -c Release -r win-x64 -o ./out/CLI `
+            --self-contained true -p:PublishSingleFile=true `
+            -p:PublishReadyToRun=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Publish Windows GUI (portable self-contained)
+        shell: pwsh
+        run: |
+          dotnet publish ./PSXPackagerGUI/PSXPackagerGUI.csproj `
+            -c Release -r win-x64 -o ./out/GUI `
+            --self-contained true -p:PublishSingleFile=true `
+            -p:PublishReadyToRun=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Copy required database, license and documentation
+        shell: pwsh
+        run: |
+          foreach ($edition in @("CLI", "GUI")) {
+            $destination = Join-Path "out" $edition
+            $resources = Join-Path $destination "Resources"
+            New-Item -ItemType Directory -Path $resources -Force | Out-Null
+            Copy-Item "./Popstation.Database/Resources/gameInfo.db" "$resources/gameInfo.db" -Force
+            Copy-Item "./LICENSE" "$destination/LICENSE" -Force
+            Copy-Item "./README.md" "$destination/UPSTREAM-README.md" -Force
+            Copy-Item "./LNR-BUILD.md" "$destination/LNR-BUILD.md" -Force
+            Copy-Item "./CHANGELOG-LNR.md" "$destination/CHANGELOG-LNR.md" -Force
+            $label = "v{0} (b{1})" -f $env:LNR_VERSION, $env:GITHUB_RUN_NUMBER
+            Set-Content -LiteralPath "$destination/LNR-VERSION.txt" -Value $label -Encoding utf8
+          }
+
+      - name: Bundle CLI with GUI for LNR batch mode
+        shell: pwsh
+        run: |
+          Copy-Item "./out/CLI/psxpackager.exe" "./out/GUI/psxpackager.exe" -Force
+          if (-not (Test-Path "./out/GUI/psxpackager.exe")) { throw "GUI package lacks LNR batch CLI" }
+
+      - name: Verify Windows binaries
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "./out/CLI/psxpackager.exe")) { throw "CLI EXE missing" }
+          if (-not (Test-Path "./out/GUI/PSXPackagerGUI.exe")) { throw "GUI EXE missing" }
+          if (-not (Test-Path "./out/GUI/psxpackager.exe")) { throw "GUI batch converter missing" }
+          foreach ($edition in @("CLI", "GUI")) {
+            $actual = (Get-Content -LiteralPath "./out/$edition/LNR-VERSION.txt" -Raw).Trim()
+            $expected = "v{0} (b{1})" -f $env:LNR_VERSION, $env:GITHUB_RUN_NUMBER
+            if ($actual -ne $expected) { throw "$edition version mismatch: $actual (expected $expected)" }
+            if (-not (Test-Path "./out/$edition/CHANGELOG-LNR.md")) { throw "Missing LNR changelog: $edition" }
+          }
+          foreach ($edition in @("CLI", "GUI")) {
+            if (-not (Test-Path "./out/$edition/Resources/gameInfo.db")) {
+              throw "gameInfo.db missing from $edition"
+            }
+          }
+          & "./out/CLI/psxpackager.exe" --help
+          if ($LASTEXITCODE -ne 0) { throw "CLI --help failed ($LASTEXITCODE)" }
+
+      - name: Test data-only PBP to ISO safety (synthetic CD sectors)
+        shell: pwsh
+        run: |
+          dotnet run --project ./LNR/Tests/LnrIsoSmokeTest.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw "LNR ISO safety tests failed" }
+
+      - name: Regression test - CLI without console handle
+        shell: pwsh
+        run: |
+          # This simulates the LNR GUI: no console window, both streams redirected.
+          # A deliberately invalid CHD triggers Processing.ProcessFile's Error event.
+          # Previously ConsoleNotifier threw "Invalid handle" instead of reporting it.
+          $testDir = Join-Path $env:RUNNER_TEMP "lnr-redirected-console-test"
+          New-Item -ItemType Directory -Path $testDir -Force | Out-Null
+          $badChd = Join-Path $testDir "synthetic-invalid.chd"
+          [System.IO.File]::WriteAllBytes($badChd, ([byte[]](1..16)))
+          $exe = (Resolve-Path "./out/GUI/psxpackager.exe").Path
+          $info = [System.Diagnostics.ProcessStartInfo]::new()
+          $info.FileName = $exe
+          $info.ArgumentList.Add("-i")
+          $info.ArgumentList.Add($badChd)
+          $info.ArgumentList.Add("-o")
+          $info.ArgumentList.Add($testDir)
+          $info.ArgumentList.Add("-l")
+          $info.ArgumentList.Add("5")
+          $info.ArgumentList.Add("-s")
+          $info.UseShellExecute = $false
+          $info.CreateNoWindow = $true
+          $info.RedirectStandardOutput = $true
+          $info.RedirectStandardError = $true
+          $proc = [System.Diagnostics.Process]::new()
+          $proc.StartInfo = $info
+          try {
+            if (-not $proc.Start()) { throw "Cannot launch redirected CLI" }
+            $stdoutTask = $proc.StandardOutput.ReadToEndAsync()
+            $stderrTask = $proc.StandardError.ReadToEndAsync()
+            if (-not $proc.WaitForExit(30000)) {
+              $proc.Kill()
+              throw "Redirected CLI timed out"
+            }
+            $stdout = $stdoutTask.GetAwaiter().GetResult()
+            $stderr = $stderrTask.GetAwaiter().GetResult()
+            Write-Host "CLI exit code: $($proc.ExitCode)"
+            Write-Host "CLI output: $stdout"
+            if ($stderr) { Write-Host "CLI stderr: $stderr" }
+            if ($proc.ExitCode -eq 0) { throw "Invalid synthetic CHD must fail" }
+            if ($proc.ExitCode -eq -532462766 -or
+                $stderr -match 'Unhandled exception' -or
+                $stderr -match 'ConsolePal.set_CursorVisible' -or
+                $stdout -match 'ConsolePal.set_CursorVisible') {
+              throw "CLI crashes when there is no console handle"
+            }
+          }
+          finally {
+            $proc.Dispose()
+          }
+
+      - name: Test batch planning without game data
+        shell: pwsh
+        run: |
+          $source = Join-Path $env:RUNNER_TEMP "lnr-planning"
+          New-Item -ItemType Directory -Path $source -Force | Out-Null
+          foreach ($name in @("Demo Game (ES) - CD1.chd", "Demo Game (ES) - CD2.chd", "Tekken 3 (USA).chd")) {
+            [System.IO.File]::WriteAllBytes((Join-Path $source $name), [byte[]]@(1,2,3,4))
+          }
+          @("Demo Game (ES) - CD1.chd", "Demo Game (ES) - CD2.chd") |
+            Set-Content -LiteralPath (Join-Path $source "Demo Game (ES).m3u") -Encoding utf8
+          $joined = Join-Path $env:RUNNER_TEMP "lnr-joined-plan.json"
+          $separate = Join-Path $env:RUNNER_TEMP "lnr-separated-plan.json"
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File "./LNR/Batch/LNR_CHD_A_PBP.ps1" -SourceDir $source -ToolsDir "./out/CLI" -MultiMode Unidos -Level 5 -PlanOnly -PlanJson $joined
+          if ($LASTEXITCODE -ne 0) { throw "Unidos planning failed" }
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File "./LNR/Batch/LNR_CHD_A_PBP.ps1" -SourceDir $source -ToolsDir "./out/CLI" -MultiMode Separados -Level 1 -PlanOnly -PlanJson $separate
+          if ($LASTEXITCODE -ne 0) { throw "Separados planning failed" }
+          $u = Get-Content -LiteralPath $joined -Raw | ConvertFrom-Json
+          $s = Get-Content -LiteralPath $separate -Raw | ConvertFrom-Json
+          if (@($u.jobs).Count -ne 2) { throw "Expected 2 grouped outputs, got $(@($u.jobs).Count)" }
+          if (@($s.jobs).Count -ne 3) { throw "Expected 3 separate outputs, got $(@($s.jobs).Count)" }
+          $multi = @($u.jobs | Where-Object { $_.Name -eq "Demo Game (ES)" })
+          if ($multi.Count -ne 1 -or @($multi[0].Discs).Count -ne 2) { throw "M3U order/grouping error" }
+
+      - name: Assemble portable LNR toolkit
+        shell: pwsh
+        run: |
+          $tool = "./out/Toolkit/.tools/LNR_CHD_A_PBP"
+          New-Item -ItemType Directory -Path $tool -Force | Out-Null
+          Copy-Item -Path "./out/CLI/*" -Destination $tool -Recurse -Force
+          Copy-Item "./LNR/Batch/LNR_CHD_A_PBP.ps1" "$tool/LNR_CHD_A_PBP.ps1" -Force
+          Copy-Item "./LNR/Batch/LNR_CHD_A_PBP.bat" "$tool/LNR_CHD_A_PBP.bat" -Force
+          Copy-Item "./LNR/Batch/LNR_CHD_A_PBP.bat" "./out/Toolkit/LNR_CHD_A_PBP.bat" -Force
+          Copy-Item "./LNR/Batch/README.md" "./out/Toolkit/LEEME-LNR.md" -Force
+          Copy-Item "./out/CLI/LNR-VERSION.txt" "./out/Toolkit/LNR-VERSION.txt" -Force
+          Copy-Item "./CHANGELOG-LNR.md" "./out/Toolkit/CHANGELOG-LNR.md" -Force
+          if (-not (Test-Path "$tool/psxpackager.exe")) { throw "CLI not in portable toolkit" }
+          if (-not (Test-Path "$tool/Resources/gameInfo.db")) { throw "Database not in portable toolkit" }
+          if (-not (Test-Path "./out/Toolkit/LNR_CHD_A_PBP.bat")) { throw "Root launcher missing" }
+
+      - name: Create ZIP packages
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "./dist" -Force | Out-Null
+          $prefix = "PSXPackagerLNR-v{0}-b{1}" -f $env:LNR_VERSION, $env:GITHUB_RUN_NUMBER
+          Compress-Archive -Path "./out/CLI/*" -DestinationPath "./dist/$prefix-CLI-win-x64.zip" -Force
+          Compress-Archive -Path "./out/GUI/*" -DestinationPath "./dist/$prefix-GUI-win-x64.zip" -Force
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $toolkitZip = "./dist/$prefix-Toolkit-win-x64.zip"
+          [System.IO.Compression.ZipFile]::CreateFromDirectory(
+            (Resolve-Path "./out/Toolkit").Path,
+            (Join-Path (Resolve-Path "./dist").Path "$prefix-Toolkit-win-x64.zip")
+          )
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($toolkitZip)
+          try {
+            $names = @($archive.Entries | ForEach-Object { $_.FullName })
+            if (-not ($names -contains "LNR_CHD_A_PBP.bat")) { throw "Toolkit ZIP lacks root BAT" }
+            if (-not ($names -contains ".tools/LNR_CHD_A_PBP/psxpackager.exe")) { throw "Toolkit ZIP lacks CLI" }
+            if (-not ($names -contains ".tools/LNR_CHD_A_PBP/LNR_CHD_A_PBP.ps1")) { throw "Toolkit ZIP lacks PowerShell engine" }
+          } finally { $archive.Dispose() }
+
+      - name: Upload CLI, GUI and portable toolkit
+        uses: actions/upload-artifact@v4
+        with:
+          name: PSXPackagerLNR-v${{ env.LNR_VERSION }}-b${{ github.run_number }}-Windows-x64
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,150 @@
+<Window x:Class="PSXPackagerGUI.LnrHelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ayuda · CHD a PBP · PSXPackagerLNR"
+        Width="730" Height="710" MinWidth="590" MinHeight="490"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Text="PSXPackagerLNR · Guía del conversor"
+                       FontSize="21" FontWeight="SemiBold"/>
+            <TextBlock Text="Objetivo, opciones, almacenamiento y seguridad"
+                       Margin="0,4,0,0" Foreground="#FF596B80"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="0,0,12,0">
+                <TextBlock Text="¿Por qué existe este fork?"
+                           FontWeight="Bold" FontSize="15" Margin="0,3,0,7"/>
+                <TextBlock TextWrapping="Wrap">
+                    PSXPackagerLNR facilita convertir colecciones de juegos de PlayStation 1
+                    directamente de CHD a PBP por lotes, con una interfaz gráfica sencilla.
+                    No hay que escribir comandos, ejecutar CHDMAN ni generar archivos BIN/CUE
+                    intermedios. Utiliza la tecnología del proyecto PSXPackager original.
+                </TextBlock>
+
+                <TextBlock Text="Carpeta CHD y Analizar"
+                           FontWeight="Bold" FontSize="15" Margin="0,16,0,7"/>
+                <TextBlock TextWrapping="Wrap">
+                    «Ver carpetas...» permite comprobar los nombres y tamaños de los CHD antes
+                    de elegir la carpeta. La lista se rellena automáticamente; «Analizar»
+                    permite actualizarla. Se procesan los CHD de esa carpeta, sin entrar
+                    en sus subcarpetas. Los resultados se guardan en una subcarpeta PBP.
+                </TextBlock>
+
+                <TextBlock Text="Discos separados o unidos"
+                           FontWeight="Bold" FontSize="15" Margin="0,16,0,7"/>
+                <TextBlock TextWrapping="Wrap">
+                    Separados: un archivo PBP por cada CHD, conservando el nombre.
+                    Unidos: un PBP para juegos multidisco, priorizando las listas M3U
+                    y el orden de sus discos. También se reconocen algunas series CD1/CD2.
+                    No todos los emuladores admiten el cambio de disco en un PBP unido.
+                </TextBlock>
+
+                <TextBlock Text="Nivel de compresión"
+                           FontWeight="Bold" FontSize="15" Margin="0,16,0,7"/>
+                <TextBlock TextWrapping="Wrap">
+                    1: compresión ligera. 3: equilibrio propuesto por LNR para consolas modestas
+                    y valor inicial de esta edición. 5: nivel estándar predeterminado del
+                    PSXPackager original. 9: compresión máxima, más lenta al crear el PBP.
+                    No está demostrado que el nivel 3 reproduzca siempre más fluido que el 5:
+                    el rendimiento depende del emulador y del dispositivo.
+                </TextBlock>
+
+                <Border Background="#FFFFF5E8" Padding="12" Margin="0,18,0,0"
+                        BorderBrush="#FFF1CEA0" BorderThickness="1" CornerRadius="5">
+                    <StackPanel>
+                        <TextBlock Text="Eliminar .CHD convertidos (opcional)"
+                                   FontWeight="Bold" FontSize="15"
+                                   Foreground="#FF975100" Margin="0,0,0,7"/>
+                        <TextBlock TextWrapping="Wrap">
+                            DESACTIVADO por defecto. Si lo activas, se solicitará otra
+                            confirmación. Solo se intentarán borrar los CHD de conversiones
+                            nuevas que terminen con éxito, una vez escrito el PBP final y
+                            comprobados su tamaño y cabecera. No se borran CHD de juegos
+                            saltados porque ya existe un PBP, ni tras error o cancelación.
+                            Es un borrado definitivo, sin pasar por la Papelera.
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="0,8,0,0">
+                            IMPORTANTE: una comprobación técnica básica no garantiza que
+                            el juego funcione en tu consola. Conserva una copia de tus CHD
+                            si necesitas poder recuperar los originales. Los archivos
+                            M3U y SBI se conservan; un M3U puede dejar de ser utilizable
+                            si se eliminan sus CHD.
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="Espacio temporal necesario"
+                           FontWeight="Bold" FontSize="15" Margin="0,18,0,7"/>
+                <TextBlock TextWrapping="Wrap">
+                    La conversión no genera imágenes BIN/CUE/ISO intermedias, pero SÍ
+                    necesita escribir un PBP provisional completo antes de pasar al
+                    destino definitivo. Ese PBP se escribe en la misma unidad que la
+                    carpeta PBP y se mueve al finalizar correctamente. Debe haber
+                    espacio suficiente para al menos el siguiente PBP; eliminar CHD
+                    después de cada éxito ayuda a reducir el espacio acumulado.
+                </TextBlock>
+
+                <TextBlock Text="Progreso, información y registro"
+                           FontWeight="Bold" FontSize="15" Margin="0,16,0,7"/>
+                <TextBlock TextWrapping="Wrap">
+                    El porcentaje de cada fila corresponde a la fase actual. La barra
+                    inferior muestra juegos procesados y ofrece una estimación orientativa
+                    del tiempo restante cuando hay datos suficientes. Puedes ampliar el
+                    registro arrastrando su separador, copiarlo, vaciar el panel con
+                    «Limpiar registro» o desactivar «Seguir actividad».
+                    Limpiar vacía también los mensajes acumulados desde la última limpieza,
+                    pero no borra informes ya guardados ni archivos convertidos.
+                    Si hay un lote activo, los nuevos mensajes continúan apareciendo.
+                    Los PBP ya existentes se saltan sin sobrescribirlos.
+                </TextBlock>
+
+                <TextBlock Text="Tiempo total y apagado automático"
+                           FontWeight="Bold" FontSize="15" Margin="0,16,0,7"/>
+                <TextBlock TextWrapping="Wrap">
+                    Al terminar el lote, la barra inferior muestra el tiempo total
+                    transcurrido en la sesión. Las columnas numéricas se centran y
+                    ajustan a su contenido; el estado dispone de una barra ampliada.
+                    La casilla «Apagar equipo al finalizar el lote» está siempre
+                    desactivada por defecto y requiere confirmación adicional.
+                    Solo puede activarse si al menos un juego se convierte y no hay
+                    errores, cancelación ni advertencias de borrado. Después
+                    comienza una cuenta atrás de 60 segundos que puedes cancelar.
+                    Si cierras la ventana antes de que termine, el apagado se cancela.
+                    Se solicitará un apagado normal de Windows, sin forzar
+                    el cierre de aplicaciones: Windows puede retrasarlo si hay
+                    documentos sin guardar.
+                </TextBlock>
+
+                <TextBlock Text="Autoría y responsabilidad"
+                           FontWeight="Bold" FontSize="15" Margin="0,16,0,7"/>
+                <TextBlock TextWrapping="Wrap">
+                    PSXPackager es software de terceros bajo licencia MIT (copyright
+                    original de David Khristepher Santos; repositorio de RupertAvery).
+                    LaNaveRETRO aporta la adaptación y flujo gráfico LNR, sin reclamar
+                    la autoría del motor original. No se incluyen juegos, BIOS ni
+                    garantías de compatibilidad o ausencia de fallos.
+                </TextBlock>
+            </StackPanel>
+        </ScrollViewer>
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="1" Content="Manual en GitHub"
+                    Padding="12,7" Margin="0,0,8,0"
+                    Click="Manual_OnClick"/>
+            <Button Grid.Column="2" Content="Cerrar"
+                    Padding="20,7" IsCancel="True" IsDefault="True"
+                    Click="Close_OnClick"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,3 +1,246 @@
+# PSXPackagerLNR - LaNaveRETRO Edition (fork)
+
+Esta es una **adaptacion y automatizacion comunitaria** del proyecto original
+[PSXPackager de RupertAvery](https://github.com/RupertAvery/PSXPackager).
+**No es un programa creado originalmente por LaNaveRETRO**. Se conservan
+la licencia MIT y los creditos del software original.
+
+## Versionado y descargas identificables
+
+La version de desarrollo actual es **v0.1.0-beta.12** (enlaces clicables de CHDMAN y orden de botones del registro).
+La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
+se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
+
+**Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.12-bNN-GUI-win-x64.zip`.
+Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
+y `Toolkit-win-x64.zip`.
+
+El titulo de la interfaz y el registro muestran exactamente la version y
+compilacion que se esta ejecutando. No hay que renombrar manualmente ZIPs.
+
+- [Descargas de pruebas (Actions)](https://github.com/PaPer-DJ/PSXPackagerLNR/actions).
+- Las builds de Actions son **temporales** y pueden caducar a los 30 dias.
+  Conserva los ZIP que quieras probar o comparar.
+- [Releases](https://github.com/PaPer-DJ/PSXPackagerLNR/releases) se usara
+  para versiones publicadas y archivadas permanentemente tras validacion.
+- De momento la rama `master` se mantiene independiente del trabajo en
+  `lnr/windows-chd-build`. No hay release estable de LNR.
+
+### Importar CHDMAN: tres fuentes accesibles desde el programa
+
+Al pulsar **Importar ZIP...** aparece una ventana con enlaces
+clicables a [Recalbox](https://wiki.recalbox.com/es/tutorials/utilities/rom-conversion/chdman),
+[OnionUI](https://onionui.github.io/docs/advanced/chdman) y
+[MAME oficial](https://www.mamedev.org/release.html).
+Abren el navegador **sin cerrar la confirmación**, de modo que puedes
+descargar primero el paquete y después elegir **Sí, importar ZIP**
+para seleccionar el archivo local, o **No** para cancelar. Abrir
+una de esas páginas no inicia ninguna importación ni ejecuta archivos.
+
+### Limpiar y copiar registro
+
+En **Actividad y resultados**, el nuevo botón **Limpiar registro**
+vacía solo el panel y los mensajes de esta sesión acumulados desde la
+última limpieza. Se sitúa antes de **Copiar registro**, seguido de **Abrir carpeta PBP**.
+No elimina los informes TXT ya guardados, no afecta a archivos de juegos
+y no cancela las conversiones: los nuevos mensajes siguen apareciendo.
+Tras limpiar, **Copiar registro** recoge únicamente los mensajes nuevos.
+
+### Interfaz del lote: nuevo reparto y apagado opcional
+
+La lista de juegos CHD tiene más espacio al iniciar el programa:
+el panel **Actividad y resultados** empieza a **200 px de altura**,
+frente a los 300 px de betas anteriores. La posición del separador
+sigue siendo redimensionable y personalizable; se adapta una sola vez
+el antiguo tamaño predeterminado.
+
+La tabla centra sus columnas numéricas, las autoajusta y deja
+la mayor parte del espacio restante a **Estado/Progreso**. Al acabar
+se indica **Lote Finalizado · Tiempo total**.
+
+La casilla **Apagar equipo al finalizar el lote** está siempre desactivada
+por defecto y exige confirmación. Solo se activa si se ha completado
+al menos una conversión sin errores, cancelación ni problemas de
+eliminación. Se inicia una cuenta atrás local de **60 segundos**
+con botón Cancelar. El cierre de la GUI durante ese tiempo también
+cancela la petición. Después se solicita un apagado normal de Windows
+(`shutdown.exe /s /t 0`), sin forzar el cierre de programas. **Guarda
+antes tus trabajos abiertos**: Windows puede impedir el apagado si hay
+archivos sin guardar.
+
+### Identidad visual y barra de progreso del lote
+
+El logotipo original aportado **LNR MOD** se usa como sello pequeño y
+discreto de la edición LNR, no como sustitución del programa original.
+Pulsando sobre el sello en la ventana de conversión, o desde el menú
+**Acerca de LNR...**, se abren los créditos originales, la licencia MIT
+y enlaces al proyecto original y al fork.
+
+La **barra inferior** expresa el porcentaje de juegos terminados
+(correctos, saltados o errores) del lote. Es un porcentaje **exacto por
+número de juegos**, no la media de fases ni el avance en bytes de un
+PBP en curso.
+
+Tras completar al menos una conversión, se muestra la **estimación
+aproximada del tiempo restante** basada en el tamaño de los CHD pendientes
+y los segundos por MB observados en conversiones correctas del lote.
+Al principio aparece «calculando»; el tiempo puede variar mucho según
+el juego y el dispositivo. No se promete una hora de finalización exacta.
+
+## Guía de opciones y seguridad
+
+La finalidad de **PSXPackagerLNR** es facilitar convertir **colecciones
+de PlayStation 1 en CHD directamente a PBP**, en lotes y con una GUI,
+sin comandos, CHDMAN ni conversión intermedia a BIN/CUE.
+
+La función principal no ha cambiado. Solo si habilitas expresamente
+**Eliminar CHD convertidos** se intentan borrar los CHD al terminar
+correctamente un PBP nuevo. Esa opción siempre está desactivada
+al abrir la ventana o iniciar un lote, exige otra confirmación y
+**el borrado es irreversible**. No es una verificación de compatibilidad
+de emulador. Al menos debe haber espacio libre para generar el PBP
+antes de borrar el CHD. Los PBP provisionales se escriben en el mismo
+volumen de destino para evitar copias completas innecesarias.
+
+[Manual completo en castellano y explicación de todas las opciones](LNR/GUI-AYUDA.md).
+
+### Suite de discos (beta experimental)
+
+Desde el menú **Suite de discos · PBP/CHD/CD/DVD** también puedes
+realizar conversiones por lotes:
+
+- **PBP → CHD (PS1)**: genera un CHD por disco, incluso desde PBP
+  multidisco, tras extracción temporal automatizada a BIN/CUE.
+- **PBP → BIN/CUE (PS1)**: extrae pistas de uno o varios discos a BIN/CUE
+  desde PBP sin CHDMAN, conservando la estructura disponible.
+- **PBP → ISO (PS1)**: solo una pista de datos MODE1 o MODE2 Form1 de
+  2048 bytes por sector. Rechaza audio CD, XA Form2, multidisco y demás
+  casos que perderían información. Para conservación y grabación de PS1,
+  **usa BIN/CUE** en vez de ISO.
+- **CHD → BIN/CUE (CD)**: imágenes para aplicaciones de grabación de CD,
+  con pistas CD-Audio cuando se encuentren en la imagen original.
+  Dirigido a PS1, Saturn y PS2 publicado en CD.
+- **CHD → ISO (DVD)**: para juegos PS2 publicados en DVD; no se deben
+  convertir indiscriminadamente discos DVD a un BIN/CUE de CD.
+
+**Importante:** los modos **PBP→CHD, CHD→BIN/CUE y CHD→ISO**
+requieren `chdman.exe` de MAME. **PBP→BIN/CUE y PBP→ISO limitado
+no lo necesitan.** Esta beta **no redistribuye CHDMAN**.
+Puedes obtener por tu cuenta un paquete ZIP de
+[Recalbox](https://wiki.recalbox.com/es/tutorials/utilities/rom-conversion/chdman)
+o [OnionUI](https://onionui.github.io/docs/advanced/chdman)
+y pulsar **Importar ZIP...** desde la suite. La aplicación extrae solo
+`chdman.exe` a `%LOCALAPPDATA%\\PSXPackagerLNR\\Tools` y lo
+detecta automáticamente en siguientes sesiones. También puedes
+colocarlo junto a la GUI o pulsar **Localizar...**. Consulta
+[la fuente oficial de MAME](https://www.mamedev.org/release.html) y
+[su documentación CHDMAN](https://docs.mamedev.org/tools/chdman.html).
+La suite no sobrescribe ni elimina archivos de origen, y conserva
+cualquier resultado correcto producido antes de un error.
+
+**Pendiente de validar en equipos reales:** pista de audio en Saturn/PS1,
+PBP multidisco a CHD y CHD de DVD PS2 a ISO. No asegura recuperación
+de información de subcanales perdida en un PBP preexistente.
+
+## Estado de desarrollo
+
+Estamos validando la conversion directa **CHD a PBP sin CHDMAN**, incluida
+la gestion de pistas de audio CD y archivos multidisco. La version de pruebas
+para Windows x64 incluye la interfaz grafica original **con una ventana
+adicional LNR: CHD a PBP por lotes**, la CLI compilada desde el codigo fuente
+mas reciente y un **Toolkit portable** con un conversor por lotes
+alternativo basado en BAT/PowerShell.
+
+### Usar la nueva interfaz grafica LNR (version de prueba)
+
+1. En [GitHub Actions](https://github.com/PaPer-DJ/PSXPackagerLNR/actions)
+   descarga el artefacto Windows mas reciente de la rama
+   `lnr/windows-chd-build`.
+2. Extrae el ZIP numerado que termina en `-GUI-win-x64.zip` completo en una carpeta
+   de Windows (no ejecutes el programa directamente dentro del ZIP).
+3. Inicia `PSXPackagerGUI.exe` y pulsa el nuevo menu
+   **CHD a PBP - LNR**.
+4. Pulsa **Ver carpetas...**. El explorador LNR muestra **subcarpetas
+   a la izquierda y los CHD con su tamaño a la derecha**, para comprobar
+   su contenido antes de pulsar **Usar esta carpeta**. También puedes
+   pegar una ruta y pulsar Intro.
+5. La tabla se **carga automaticamente** tras seleccionar la carpeta
+   (tambien al recuperar la ultima carpeta o cambiar de modo). El botón
+   **Analizar** queda disponible para forzar una nueva lectura.
+6. Elige discos **separados** o **unidos** y nivel **1, 3, 5 o 9**
+   (3 es la opción inicial LNR; 5 sigue siendo el nivel estándar
+   original). Revisa los PBP existentes y pulsa **Convertir**.
+7. Deja **Eliminar .CHD convertidos** desactivado si deseas conservar
+   los originales. Si lo activas, la aplicación exige confirmación
+   adicional y solo intentará borrar CHD de conversiones nuevas y
+   comprobadas, nunca de errores ni destinos preexistentes. El borrado
+   directo es irreversible y la comprobación no garantiza compatibilidad.
+
+La distribucion GUI incluye tambien `psxpackager.exe`, necesario para
+la conversion directa. No requiere PowerShell ni CHDMAN; el Toolkit BAT
+sigue disponible como alternativa. La ventana muestra **porcentaje de progreso real de la fase de conversión**
+en cada juego, leido en directo del motor CLI (no es una estimacion). Las
+fases internas pueden empezar de nuevo en 0%, porque cada una publica su
+propio progreso; la barra inferior indica los juegos completados del lote.
+Tambien incluye cancelacion, comprobacion basica de salida y registro de
+resultados **ampliable hacia arriba o abajo arrastrando el separador**.
+
+Los estados de cada fila llevan indicadores diferentes:
+- **Completado**: marca verde.
+- **ERROR**: aspa roja.
+- **Saltado / Ya existe**: advertencia amarilla (nunca sobrescribe).
+- **Convirtiendo**: porcentaje y barra de avance de la fase actual.
+
+En el registro, cada mensaje informativo se muestra en una linea
+independiente. El aviso de confirmacion separa carpeta de destino,
+modo, compresion y avisos de seguridad.
+
+**Novedades de beta.3**: la tabla contiene **CHD (origen), PBP
+(destino), variacion con signo y tiempo de conversion** por juego. El
+porcentaje de progreso solo aparece al lado de la barra, no duplicado
+en el nombre de fase. Los PBP existentes muestran su tamaño al
+analizar. En caso multidisco el tamaño CHD es la suma de discos.
+La variacion indica **PBP - CHD**: positiva si crece y negativa si
+disminuye; no es una estimacion de compresion. Los tamaños se muestran
+en MiB como «MB» segun Windows (1 MB = 1 048 576 bytes). Pasando el
+raton por la variacion se ve el porcentaje relativo.
+
+**Novedades de beta.2**: botones **Copiar registro** y **Abrir carpeta PBP**,
+casilla **Seguir actividad** (puedes desmarcarla para revisar el registro
+sin saltos al final), ayudas y nombres de fases en castellano.
+La aplicacion guarda localmente la carpeta, el modo multidisco, nivel
+de compresion, tamaño de ventana y panel del registro, y la casilla
+de seguimiento al cerrar. El archivo es
+`%LOCALAPPDATA%\\PSXPackagerLNR\\gui-preferencias.json`;
+puedes borrarlo si deseas volver a los valores iniciales. No contiene
+ROMs ni modifica los ajustes del PSXPackager original.
+
+**Validado por GitHub Actions:** compila la GUI/CLI y supera pruebas
+del planificador del BAT y de ejecución de la CLI redirigida.
+**Ya probado por un usuario:** conversión desde GUI de Actua Soccer 3
+y Tomb Raider. **Pendiente para beta.2:** comprobación de las nuevas
+opciones visuales, prueba multidisco y cambio real de disco.
+
+- [Instrucciones del Toolkit](LNR/Batch/README.md)
+- [Compilaciones Windows y artefactos ZIP](https://github.com/PaPer-DJ/PSXPackagerLNR/actions)
+- [Solicitud de cambios en desarrollo](https://github.com/PaPer-DJ/PSXPackagerLNR/pull/1)
+
+El BAT ofrece discos **separados** (nombres exactos) o **unidos** (M3U) y
+niveles de compresion **1, 3, 5 y 9**; el nivel 3 es la recomendación
+inicial LNR. El Toolkit BAT no elimina nunca archivos CHD.
+Los juegos, BIOS y archivos protegidos por derechos de terceros **no se
+distribuyen** con el proyecto.
+
+> Nota: una conversion PBP correcta no garantiza que todos los emuladores
+> admitan audio CD, SBI o cambios de disco de la misma manera. Comprueba
+> cada plataforma. Los ejecutables siguen conservando los nombres originales
+> durante esta fase de validacion.
+
+---
+
+## Documentacion del proyecto original (conservada)
+
 # PSXPackager
 
 PSXPackager is a tool for converting PlayStation 1 Disc images to the EBOOT.PBP format and back.
