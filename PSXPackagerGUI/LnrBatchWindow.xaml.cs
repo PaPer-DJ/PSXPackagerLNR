@@ -695,8 +695,9 @@ namespace PSXPackagerGUI
 
                     if (shutdownRequested)
                     {
-                        if (completedNormally && !_batchCanceled &&
-                            _failed == 0 && _deleteWarnings == 0 && _succeeded > 0)
+                        if (LnrShutdownPolicy.MayShutdown(
+                                shutdownRequested, completedNormally, _batchCanceled,
+                                _failed, _deleteWarnings, _succeeded))
                         {
                             BeginShutdownCountdown();
                         }
