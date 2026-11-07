@@ -154,6 +154,23 @@ namespace PSXPackagerGUI
             new LnrAboutWindow { Owner = this }.ShowDialog();
         }
 
+        private void DeleteChd_OnChanged(object sender, RoutedEventArgs e)
+        {
+            if (!IsLoaded || _running || SummaryLabel == null) return;
+            if (DeleteChdCheck.IsChecked == true)
+            {
+                SummaryLabel.Text = "ATENCIÓN: los CHD convertidos correctamente se eliminarán de forma irreversible. Requiere doble confirmación.";
+                SummaryLabel.Foreground = System.Windows.Media.Brushes.Firebrick;
+            }
+            else
+            {
+                SummaryLabel.Text = _planFolder != null
+                    ? "Salida: " + Path.Combine(_planFolder, "PBP") + " · los CHD se conservarán."
+                    : "Los CHD originales permanecen intactos · Destino: subcarpeta PBP.";
+                SummaryLabel.Foreground = System.Windows.Media.Brushes.Black;
+            }
+        }
+
         private void Help_OnClick(object sender, RoutedEventArgs e)
         {
             new LnrHelpWindow { Owner = this }.ShowDialog();
