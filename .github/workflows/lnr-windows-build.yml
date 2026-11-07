@@ -13,6 +13,11 @@ on:
 permissions:
   contents: read
 
+# Only the newest commit on each development branch needs a Windows ZIP.
+concurrency:
+  group: lnr-windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   windows-x64:
     name: Build CLI and GUI (Windows x64)
