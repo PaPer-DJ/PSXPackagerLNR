@@ -80,19 +80,30 @@
                                    FontWeight="Bold" FontSize="15"
                                    Foreground="#FF975100" Margin="0,0,0,7"/>
                         <TextBlock TextWrapping="Wrap">
-                            DESACTIVADO por defecto. Si lo activas, se solicitará otra
-                            confirmación. Solo se intentarán borrar los CHD de conversiones
-                            nuevas que terminen con éxito, una vez escrito el PBP final y
-                            comprobados su tamaño y cabecera. No se borran CHD de juegos
-                            saltados porque ya existe un PBP, ni tras error o cancelación.
-                            Es un borrado definitivo, sin pasar por la Papelera.
+                            ¿PARA QUÉ SIRVE? Para convertir colecciones CHD grandes sin
+                            acumular todos los CHD y PBP en el mismo disco. De otro modo,
+                            ambas colecciones ocupan espacio simultáneamente, que puede
+                            acercarse al doble o superarlo. Después de generar cada PBP
+                            nuevo y comprobarlo básicamente, se eliminan sus CHD originales
+                            y se recupera espacio para continuar el lote.
                         </TextBlock>
                         <TextBlock TextWrapping="Wrap" Margin="0,8,0,0">
-                            IMPORTANTE: una comprobación técnica básica no garantiza que
-                            el juego funcione en tu consola. Conserva una copia de tus CHD
-                            si necesitas poder recuperar los originales. Los archivos
-                            M3U y SBI se conservan; un M3U puede dejar de ser utilizable
-                            si se eliminan sus CHD.
+                            Si quieres CONSERVAR tus CHD originales, NO actives esta casilla.
+                            Está DESACTIVADA por defecto y requiere confirmación adicional.
+                            Nunca borra CHD de juegos saltados por existir el PBP, ni
+                            trabajos fallidos o cancelados. El borrado es definitivo,
+                            sin pasar por la Papelera. Aun así, debes tener espacio
+                            libre para generar el PBP del juego que se está convirtiendo.
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="0,8,0,0">
+                            Si después necesitas CHD, la Suite CD / CHD / ISO permite
+                            convertir PBP a CHD de PS1 en lotes, utilizando CHDMAN.
+                            No obstante, eso NO garantiza reproducir exactamente la
+                            imagen original: subcanales, protecciones o metadatos que no
+                            se conservaran en el PBP podrían perderse. Para preservar
+                            tus discos originales, mantén copias independientes de CHD.
+                            Los M3U y SBI se mantienen, aunque un M3U puede dejar de
+                            funcionar si se eliminan los CHD a los que apunta.
                         </TextBlock>
                     </StackPanel>
                 </Border>
