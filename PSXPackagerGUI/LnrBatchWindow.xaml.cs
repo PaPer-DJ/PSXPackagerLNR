@@ -41,26 +41,59 @@ namespace PSXPackagerGUI
         private int _succeeded;
         private int _skipped;
         private int _failed;
+        private readonly LnrGuiPreferences _preferences;
 
         public LnrBatchWindow()
         {
             InitializeComponent();
             Title = "PSXPackagerLNR · " + LnrVersionInfo.Display + " | CHD a PBP";
             JobList.ItemsSource = _jobs;
+            _preferences = LnrGuiPreferences.Load();
 
-            // When installed as a portable toolkit, locate the ROM folder
-            // two levels above .tools\LNR_CHD_A_PBP.
             var current = new DirectoryInfo(AppContext.BaseDirectory);
-            if (current.Parent?.Name.Equals(".tools", StringComparison.OrdinalIgnoreCase) == true)
-            {
-                SourceBox.Text = current.Parent.Parent?.FullName ?? current.FullName;
-            }
-            else
-            {
-                SourceBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            }
+            var portableSource = current.Parent?.Name.Equals(".tools", StringComparison.OrdinalIgnoreCase) == true
+                ? current.Parent.Parent?.FullName : null;
+            var defaultFolder = portableSource ??
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            SourceBox.Text = Directory.Exists(_preferences.LastSourceFolder)
+                ? _preferences.LastSourceFolder : defaultFolder;
+
+            ModeCombo.SelectedIndex = _preferences.MultidiscMode is 0 or 1
+                ? _preferences.MultidiscMode : 0;
+            LevelCombo.SelectedIndex = _preferences.CompressionIndex is >= 0 and <= 2
+                ? _preferences.CompressionIndex : 1;
+            AutoScrollCheck.IsChecked = _preferences.FollowActivity;
+            if (_preferences.WindowWidth >= MinWidth && _preferences.WindowWidth <= SystemParameters.WorkArea.Width)
+                Width = _preferences.WindowWidth;
+            if (_preferences.WindowHeight >= MinHeight && _preferences.WindowHeight <= SystemParameters.WorkArea.Height)
+                Height = _preferences.WindowHeight;
+            if (_preferences.LogPanelHeight >= 150 && _preferences.LogPanelHeight <= 600)
+                LogPanelRow.Height = new GridLength(_preferences.LogPanelHeight);
+
             Append("PSXPackagerLNR " + LnrVersionInfo.Display);
             Append("Selecciona una carpeta con archivos CHD y pulsa Analizar.");
+            Append("La barra de cada juego indica el progreso de la fase actual; la inferior indica el avance del lote.");
+        }
+
+        private void SavePreferences()
+        {
+            try
+            {
+                LnrGuiPreferences.Save(new LnrGuiPreferences
+                {
+                    LastSourceFolder = SourceBox.Text.Trim().Trim('"'),
+                    MultidiscMode = ModeCombo.SelectedIndex,
+                    CompressionIndex = LevelCombo.SelectedIndex,
+                    FollowActivity = AutoScrollCheck.IsChecked == true,
+                    WindowWidth = ActualWidth,
+                    WindowHeight = ActualHeight,
+                    LogPanelHeight = LogPanelRow.ActualHeight
+                });
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+            {
+                Append("AVISO: no se pudieron guardar las preferencias: " + ex.Message);
+            }
         }
 
         private void Append(string message)
@@ -75,7 +108,8 @@ namespace PSXPackagerGUI
             }
             if (OutputBox.Text.Length > 160000)
                 OutputBox.Text = OutputBox.Text.Substring(OutputBox.Text.Length - 120000);
-            OutputBox.ScrollToEnd();
+            if (AutoScrollCheck.IsChecked == true)
+                OutputBox.ScrollToEnd();
         }
 
         private static string Size(long bytes) => (bytes / 1048576.0).ToString("N2", Es) + " MB";
@@ -97,6 +131,43 @@ namespace PSXPackagerGUI
                 _jobs.Clear();
                 _planFolder = null;
                 CountLabel.Text = "Pendiente de analizar";
+            }
+        }
+
+        private void CopyLog_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (_messages.Count == 0) return;
+            try
+            {
+                Clipboard.SetText(string.Join(Environment.NewLine, _messages));
+            }
+            catch (System.Runtime.InteropServices.ExternalException ex)
+            {
+                MessageBox.Show(this, "No se pudo copiar el registro: " + ex.Message,
+                                "Portapapeles ocupado", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void OpenPbp_OnClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var folder = Path.GetFullPath(SourceBox.Text.Trim().Trim('"'));
+                var output = Path.Combine(folder, "PBP");
+                if (!Directory.Exists(output))
+                {
+                    MessageBox.Show(this, "Todavía no existe una carpeta PBP en la ruta seleccionada. " +
+                                    "Se creará al empezar una conversión.",
+                                    "Carpeta de salida", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+                Process.Start(new ProcessStartInfo { FileName = output, UseShellExecute = true });
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or ArgumentException or Win32Exception)
+            {
+                MessageBox.Show(this, "No se pudo abrir la carpeta: " + ex.Message,
+                                "Carpeta de salida", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -540,7 +611,11 @@ namespace PSXPackagerGUI
 
         private void Window_OnClosing(object sender, CancelEventArgs e)
         {
-            if (!_running) return;
+            if (!_running)
+            {
+                SavePreferences();
+                return;
+            }
             e.Cancel = true;
             MessageBox.Show(this,
                 "Hay una conversión en curso. Pulsa Cancelar y cierra esta ventana cuando termine.",
