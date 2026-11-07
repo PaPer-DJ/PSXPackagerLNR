@@ -7,12 +7,12 @@ la licencia MIT y los creditos del software original.
 
 ## Versionado y descargas identificables
 
-La version de desarrollo actual es **v0.1.0-beta.6** (compresión nivel 3, borrado opcional de CHD y suite de discos experimental).
+La version de desarrollo actual es **v0.1.0-beta.7** (suite de discos e importación de CHDMAN desde ZIP).
 La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
 se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 **Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.6-bNN-GUI-win-x64.zip`.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.7-bNN-GUI-win-x64.zip`.
 Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
 y `Toolkit-win-x64.zip`.
 
@@ -77,8 +77,14 @@ realizar conversiones por lotes:
   convertir indiscriminadamente discos DVD a un BIN/CUE de CD.
 
 **Importante:** a diferencia de CHD→PBP, estos tres modos requieren
-`chdman.exe` de MAME. Esta beta **no lo incluye todavía**:
-colócalo junto a la GUI o usa **Localizar...**. Consulta
+`chdman.exe` de MAME. Esta beta **no redistribuye CHDMAN**.
+Puedes obtener por tu cuenta un paquete ZIP de
+[Recalbox](https://wiki.recalbox.com/es/tutorials/utilities/rom-conversion/chdman)
+o [OnionUI](https://onionui.github.io/docs/advanced/chdman)
+y pulsar **Importar ZIP...** desde la suite. La aplicación extrae solo
+`chdman.exe` a `%LOCALAPPDATA%\\PSXPackagerLNR\\Tools` y lo
+detecta automáticamente en siguientes sesiones. También puedes
+colocarlo junto a la GUI o pulsar **Localizar...**. Consulta
 [la fuente oficial de MAME](https://www.mamedev.org/release.html) y
 [su documentación CHDMAN](https://docs.mamedev.org/tools/chdman.html).
 La suite no sobrescribe ni elimina archivos de origen, y conserva
