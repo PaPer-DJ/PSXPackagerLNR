@@ -49,11 +49,20 @@
                 <TextBlock Text="Nivel de compresión"
                            FontWeight="Bold" FontSize="15" Margin="0,16,0,7"/>
                 <TextBlock TextWrapping="Wrap">
-                    1: compresión ligera. 3: equilibrio propuesto por LNR para consolas modestas
-                    y valor inicial de esta edición. 5: nivel estándar predeterminado del
-                    PSXPackager original. 9: compresión máxima, más lenta al crear el PBP.
-                    No está demostrado que el nivel 3 reproduzca siempre más fluido que el 5:
-                    el rendimiento depende del emulador y del dispositivo.
+                    1: compresión ligera y rápida. 3: recomendación LNR como compromiso
+                    práctico entre tamaño y velocidad de creación; es la selección inicial.
+                    5: nivel estándar del PSXPackager original. 9: compresión exhaustiva,
+                    generalmente más lenta al crear el archivo.
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" Margin="0,8,0,0">
+                    Base técnica: nuestro motor usa SharpZipLib 1.4.2. Sus niveles 1 a 4
+                    emplean un compresor rápido, mientras que 5 a 9 usan una búsqueda
+                    más exhaustiva de coincidencias. Estas estrategias se ejecutan al
+                    CREAR el PBP, no al DESCOMPRIMIRLO en la consola. Todos utilizan
+                    el formato DEFLATE; las diferencias reales de FPS, tiempos de
+                    carga y microtirones dependen también del emulador y el hardware.
+                    Por eso 3 es la preferencia LNR, no una garantía de mayor fluidez
+                    frente a 5 ni el nivel óptimo demostrado en todas las consolas.
                 </TextBlock>
 
                 <Border Background="#FFFFF5E8" Padding="12" Margin="0,18,0,0"
