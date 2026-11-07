@@ -14,7 +14,19 @@ try
     await ExpectRejectionAsync("AUDIO", 1, 0);
     await ExpectRejectionAsync("MODE2/2352", 2, 0x20);
     await TestMultipleTracksRejectedAsync();
+    // Shutdown must never be triggered by incomplete, cancelled or
+    // failed batches, nor after a batch in which every PBP was skipped.
+    if (!LnrShutdownPolicy.MayShutdown(true, true, false, 0, 0, 3))
+        throw new Exception("Completed batch should allow opted-in shutdown.");
+    if (LnrShutdownPolicy.MayShutdown(false, true, false, 0, 0, 3) ||
+        LnrShutdownPolicy.MayShutdown(true, false, false, 0, 0, 3) ||
+        LnrShutdownPolicy.MayShutdown(true, true, true, 0, 0, 3) ||
+        LnrShutdownPolicy.MayShutdown(true, true, false, 1, 0, 3) ||
+        LnrShutdownPolicy.MayShutdown(true, true, false, 0, 1, 3) ||
+        LnrShutdownPolicy.MayShutdown(true, true, false, 0, 0, 0))
+        throw new Exception("Unsafe automatic shutdown gate detected.");
     Console.WriteLine("LNR ISO smoke tests: 5 checks passed.");
+    Console.WriteLine("LNR shutdown policy: 7 safety conditions passed.");
 }
 finally
 {
