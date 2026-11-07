@@ -74,7 +74,7 @@ El porcentaje de la fila es el de la **fase** de conversión, no el de todo
 el juego. La barra inferior indica cuántos juegos del lote se han
 procesado y ofrece un tiempo restante **aproximado**, calibrado tras
 una conversión válida. **Copiar registro** facilita informar errores;
-**Limpiar registro** vacía el panel **Actividad y resultados** y el
+**Limpiar registro** (situado antes de **Copiar registro**) vacía el panel **Actividad y resultados** y el
 historial en memoria desde la última limpieza, de modo que **Copiar registro**
 solo copia los mensajes nuevos. **No borra informes TXT ya guardados**,
 los CHD ni los PBP, y no detiene ninguna conversión. Si hay un lote en
@@ -207,7 +207,13 @@ de estas dos conversiones de PBP (BIN/CUE, ISO limitado).
    y [OnionUI](https://onionui.github.io/docs/advanced/chdman).
    La versión incluida en el enlace de OnionUI es 0.251 y puede ser
    anterior a la versión oficial actual.
-4. Si has descargado un ZIP, pulsa **Importar ZIP...** y selecciónalo.
+4. Pulsa **Importar ZIP...**: se abrirá una ventana con enlaces
+   clicables a **Recalbox**, **OnionUI** y **MAME**. Los enlaces
+   abren las fuentes en el navegador sin cerrar el aviso; así puedes
+   descargar el paquete **antes** de responder. Después pulsa
+   **Sí, importar ZIP** para seleccionar el ZIP ya descargado, o
+   **No** para cancelar. Abrir un enlace no descarga ni ejecuta nada
+   automáticamente.
    LNR extraerá únicamente `chdman.exe` a
    `%LOCALAPPDATA%\\PSXPackagerLNR\\Tools` y lo reconocerá
    automáticamente en las siguientes sesiones; no tienes que copiar
@@ -221,10 +227,7 @@ de estas dos conversiones de PBP (BIN/CUE, ISO limitado).
    los originales y no sobrescribe los destinos existentes.
 6. Se limpian automáticamente los temporales de cada juego; no se
    borran archivos de salida completados antes de un error/cancelación.
-4. Pulsa **Convertir lote** y confirma. El programa conserva **todos**
-   los originales y no sobrescribe los destinos existentes.
-5. Se limpian automáticamente los temporales de cada juego; no se
-   borran archivos de salida completados antes de un error/cancelación.
+
 
 **PBP → CHD no es una conversión directa sin intermediarios**: para
 reconstruir un PBP se necesita extraer BIN/CUE en una carpeta temporal,
