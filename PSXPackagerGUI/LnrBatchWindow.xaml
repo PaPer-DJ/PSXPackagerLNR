@@ -4,7 +4,7 @@
         Title="PSXPackagerLNR | CHD a PBP"
         Width="1020" Height="830" MinWidth="810" MinHeight="660"
         WindowStartupLocation="CenterOwner"
-        Closing="Window_OnClosing">
+        Closing="Window_OnClosing" Loaded="Window_OnLoaded">
     <Window.Resources>
         <SolidColorBrush x:Key="LnrGreen" Color="#FF168944"/>
         <SolidColorBrush x:Key="LnrRed" Color="#FFD32F2F"/>
@@ -90,8 +90,10 @@
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="Carpeta CHD" VerticalAlignment="Center" Margin="0,0,12,0"/>
             <TextBox Grid.Column="1" x:Name="SourceBox" VerticalContentAlignment="Center"
-                     MinHeight="30" Margin="0,0,10,0"/>
-            <Button Grid.Column="2" x:Name="BrowseButton" Content="Examinar..."
+                     MinHeight="30" Margin="0,0,10,0"
+                     KeyDown="SourceBox_OnKeyDown" LostKeyboardFocus="SourceBox_OnLostKeyboardFocus"
+                     ToolTip="Selecciona una carpeta o pega aquí su ruta y pulsa Intro"/>
+            <Button Grid.Column="2" x:Name="BrowseButton" Content="Ver carpetas..."
                     Click="Browse_OnClick" MinHeight="30"/>
         </Grid>
 
@@ -109,7 +111,7 @@
                     <ColumnDefinition Width="105"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="Multidisco" VerticalAlignment="Center" Margin="0,0,9,0" ToolTip="Discos separados: un PBP por CHD. Unidos: un PBP por juego usando un M3U o la numeración de discos."/>
-                <ComboBox Grid.Column="1" x:Name="ModeCombo" SelectedIndex="0" ToolTip="El modo unido requiere que el emulador admita cambiar de disco"
+                <ComboBox Grid.Column="1" x:Name="ModeCombo" SelectedIndex="0" SelectionChanged="ModeCombo_OnSelectionChanged" ToolTip="El modo unido requiere que el emulador admita cambiar de disco"
                           VerticalAlignment="Center" MinHeight="30">
                     <ComboBoxItem Content="Separados (1:1)"/>
                     <ComboBoxItem Content="Unidos (M3U)"/>
@@ -134,7 +136,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <DockPanel Margin="0,0,0,6" LastChildFill="False">
-                <TextBlock Text="Juegos detectados" FontWeight="SemiBold" DockPanel.Dock="Left"/>
+                <TextBlock Text="Juegos CHD detectados" FontWeight="SemiBold" DockPanel.Dock="Left"/>
                 <TextBlock x:Name="CountLabel" DockPanel.Dock="Right" Text="0 trabajos"
                            HorizontalAlignment="Right" Margin="14,0,0,0"/>
             </DockPanel>
