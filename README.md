@@ -7,12 +7,12 @@ la licencia MIT y los creditos del software original.
 
 ## Versionado y descargas identificables
 
-La version de desarrollo actual es **v0.1.0-beta.12** (enlaces clicables de CHDMAN y orden de botones del registro).
+La version de desarrollo actual es **v0.1.0-beta.13** (fundamento técnico de la compresión nivel 3).
 La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
 se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 **Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.12-bNN-GUI-win-x64.zip`.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.13-bNN-GUI-win-x64.zip`.
 Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
 y `Toolkit-win-x64.zip`.
 
@@ -26,6 +26,35 @@ compilacion que se esta ejecutando. No hay que renombrar manualmente ZIPs.
   para versiones publicadas y archivadas permanentemente tras validacion.
 - De momento la rama `master` se mantiene independiente del trabajo en
   `lnr/windows-chd-build`. No hay release estable de LNR.
+
+### Por qué LNR recomienda compresión PBP nivel 3
+
+El motor de [PSXPackager utiliza SharpZipLib 1.4.2](Popstation/Popstation.csproj)
+para la compresión DEFLATE del contenido del PBP. La
+[tabla real de SharpZipLib 1.4.2](https://github.com/icsharpcode/SharpZipLib/blob/v1.4.2/src/ICSharpCode.SharpZipLib/Zip/Compression/DeflaterConstants.cs)
+emplea `DEFLATE_FAST` en los **niveles 1–4** y `DEFLATE_SLOW`
+en los **niveles 5–9**.
+
+En esta versión LNR se preselecciona **3 — Equilibrada (LNR)**
+como compromiso práctico de **velocidad de conversión y tamaño**.
+No es una promesa de mejores FPS en consolas modestas: las
+búsquedas greedy/lazy y las cadenas de hashes corresponden al
+**compresor que crea el archivo**, no al emulador que lo descomprime.
+El rendimiento al reproducir depende del emulador, CPU, microSD
+y patrón de acceso a los bloques.
+
+**Dato importante:** zlib clásico pasa de compresión rápida a
+búsqueda más intensiva en el **nivel 4**, pero SharpZipLib 1.4.2
+lo hace en el **nivel 5**. El propio nivel 4 de SharpZipLib
+no garantiza ser mejor que 3, porque algunos parámetros de búsqueda
+son menos exhaustivos que en nivel 3. Así, **3 es la recomendación
+técnica LNR**, no un óptimo universal de velocidad de descompresión
+demostrado. Se conservan las opciones 1, 5 y 9, así como la
+preferencia previamente guardada por cada usuario.
+
+La explicación, el cuadro comparativo y las fuentes están en
+[la guía de compresión PBP](LNR/GUI-AYUDA.md#4-compresión-pbp-y-justificación-técnica-del-nivel-3).
+No hemos modificado el valor por defecto de la CLI original (5).
 
 ### Importar CHDMAN: tres fuentes accesibles desde el programa
 
