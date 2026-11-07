@@ -170,6 +170,7 @@ namespace PSXPackagerGUI
                 _jobs.Clear();
                 _planFolder = null;
                 CountLabel.Text = "Carpeta no disponible";
+                RunButton.IsEnabled = false;
                 return;
             }
             if (!force && _planFolder != null
@@ -186,6 +187,7 @@ namespace PSXPackagerGUI
                 _jobs.Clear();
                 _planFolder = null;
                 CountLabel.Text = "0 juegos CHD";
+                RunButton.IsEnabled = false;
                 SummaryLabel.Text = "Selecciona una carpeta con archivos CHD.";
                 Append("AVISO: No se pudieron cargar los juegos de la carpeta: " + ex.Message);
             }
@@ -266,6 +268,7 @@ namespace PSXPackagerGUI
             CountLabel.Text = existing == 0
                 ? $"{_jobs.Count} PBP previstos"
                 : $"{_jobs.Count} PBP previstos · {existing} ya existen";
+            RunButton.IsEnabled = _jobs.Count > 0;
             SummaryLabel.Text = "Salida: " + outputFolder + " · originales intactos.";
             Append($"Plan preparado: {_jobs.Count} PBP / modo {(IsMerged ? "UNIDOS" : "SEPARADOS")}, compresión {SelectedLevel}.");
             if (existing > 0)
@@ -452,7 +455,7 @@ namespace PSXPackagerGUI
 
         private void SetControls(bool idle)
         {
-            RunButton.IsEnabled = idle;
+            RunButton.IsEnabled = idle && _jobs.Count > 0;
             ScanButton.IsEnabled = idle;
             BrowseButton.IsEnabled = idle;
             ModeCombo.IsEnabled = idle;
