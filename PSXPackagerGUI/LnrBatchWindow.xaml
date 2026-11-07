@@ -269,7 +269,7 @@
                               Checked="DeleteChd_OnChanged" Unchecked="DeleteChd_OnChanged"
                               FontWeight="SemiBold"
                               Content="Eliminar .CHD convertidos (irreversible)"
-                              ToolTip="DESACTIVADO por defecto. Solo borra los CHD de conversiones nuevas terminadas y verificadas básicamente; nunca los de PBP existentes, errores ni cancelaciones."/>
+                              ToolTip="Convierte colecciones grandes sin acumular dos catálogos completos: libera cada CHD tras crear y comprobar básicamente su PBP. Necesitas espacio para el PBP actual. Desactivado por defecto y borrado irreversible. Si quieres conservar los CHD originales, no actives esta casilla. La conversión inversa PBP → CHD no garantiza recuperar una imagen idéntica."/>
                 </DockPanel>
             </Grid>
         </Border>
