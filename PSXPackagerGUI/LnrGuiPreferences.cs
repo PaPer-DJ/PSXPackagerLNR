@@ -12,7 +12,22 @@ namespace PSXPackagerGUI
     {
         public string LastSourceFolder { get; set; } = "";
         public int MultidiscMode { get; set; }
-        public int CompressionIndex { get; set; } = 1;
+        // Old beta.4 preferences stored the combo index (0=1, 1=5, 2=9).
+        // Preserve explicitly saved legacy choices when upgrading to beta.5.
+        public int CompressionIndex { get; set; } = -1;
+        // New format stores the actual level; fresh installations default to 3.
+        public int? CompressionLevel { get; set; }
+
+        public int PreferredCompressionLevel =>
+            CompressionLevel is 1 or 3 or 5 or 9
+                ? CompressionLevel.Value
+                : CompressionIndex switch
+                {
+                    0 => 1,
+                    1 => 5,
+                    2 => 9,
+                    _ => 3
+                };
         public bool FollowActivity { get; set; } = true;
         public double WindowWidth { get; set; } = 1020;
         public double WindowHeight { get; set; } = 830;
