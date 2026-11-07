@@ -19,7 +19,25 @@ La interfaz permite seleccionar una carpeta, comprobar los juegos, convertir,
 consultar estadísticas, cancelar y abrir los resultados. Los juegos y
 firmware/BIOS **no** están incluidos.
 
-## 2. Seleccionar carpeta y analizar
+## 2. Cómo abrir PSXPackagerLNR (Windows)
+
+Al descargar y descomprimir el paquete **GUI-win-x64**, encontrarás
+dos ejecutables gráficos en la misma carpeta:
+
+- **`PSXPackagerLNR.exe` (recomendado)**: abre **directamente** la ventana
+  **CHD → PBP por lotes**, con todas las herramientas LNR y el acceso
+  a **Suite CD / CHD / ISO**. No hay que pasar por la pantalla clásica.
+- **`PSXPackagerGUI.exe` (opcional)**: conserva la interfaz original de
+  PSXPackager, con su editor, opciones y funciones propias; también
+  permite abrir las herramientas añadidas por LNR.
+
+Ambos utilizan **el mismo motor** y trabajan con la misma carpeta de
+herramientas. Se incluye `psxpackager.exe` (CLI) porque la interfaz
+lo necesita para convertir: **no lo elimines ni saques los ejecutables
+de la carpeta extraída**. Para CHD → PBP no hace falta CHDMAN; las
+operaciones adicionales que crean o extraen CHD sí pueden necesitarlo.
+
+## 2.1. Seleccionar carpeta y analizar
 
 - **Ver carpetas...** muestra subcarpetas y una vista previa de CHD con tamaños.
   Pulsa **Usar esta carpeta** para confirmarla.
