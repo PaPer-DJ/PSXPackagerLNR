@@ -4,6 +4,32 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.8 — 7 noviembre 2026 (PBP a BIN/CUE e ISO de datos)
+
+- Añadida **PBP → BIN/CUE** por lotes, para extraer juegos de PS1
+  sin CHDMAN. Los PBP multidisco producen varios CUE/BIN en una carpeta
+  por juego y se mantienen las pistas de CD disponibles.
+- Añadida **PBP → ISO de datos** para un caso técnicamente limitado:
+  únicamente un CD con una sola pista de datos de 2048 bytes
+  (MODE1/2048, MODE1/2352 o MODE2 Form1/2352).
+- El conversor a ISO **rechaza** PBP multidisco, CD-Audio, CD-XA
+  Form2, pistas múltiples, pausas y formatos no compatibles.
+  No crea ISOs parciales a sabiendas: recomienda usar BIN/CUE.
+  ISO NO es equivalente a una imagen de CD completo de PS1 ni sirve
+  para conservar todas las pistas de audio o subcanales.
+- Las conversiones PBP→BIN/CUE e ISO usan el lector del proyecto
+  original y no necesitan CHDMAN; los otros tres modos mantienen
+  su requisito de CHDMAN.
+- Se conservan siempre los originales y no se sobrescriben archivos
+  de destino existentes. Las extracciones provisionales se hacen
+  en carpetas temporales que se limpian tras éxito o error.
+- Añadidas **pruebas automáticas** de extracción ISO con sectores
+  MODE1 y MODE2 Form1 sintéticos, y rechazo de pistas de audio,
+  Form2 y CUE multidisco/multipista.
+
+**Pendiente:** validar extracción real de PBP a BIN/CUE y el caso
+ISO de datos en Windows. La suite sigue en pruebas beta.
+
 ## v0.1.0-beta.7 — 7 noviembre 2026 (importación de CHDMAN desde ZIP)
 
 - Nuevo botón **Importar ZIP...** en la suite de discos. Permite elegir
