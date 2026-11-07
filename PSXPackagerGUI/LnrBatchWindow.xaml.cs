@@ -676,37 +676,37 @@ namespace PSXPackagerGUI
                     _batchClock.Stop();
                     _activeJobClock = null;
                     _batchTotalClock?.Stop();
-                _batchFinishedNormally = completedNormally;
-                _running = false;
-                UpdateBatchProgress();
-                _activeProcess = null;
-                _cancel?.Dispose();
-                _cancel = null;
-                SetControls(true);
+                    _batchFinishedNormally = completedNormally;
+                    _running = false;
+                    UpdateBatchProgress();
+                    _activeProcess = null;
+                    _cancel?.Dispose();
+                    _cancel = null;
+                    SetControls(true);
 
-                if (_batchTotalClock != null)
-                    Append("Tiempo total del lote: " +
-                           ReadableTime(_batchTotalClock.Elapsed) + ".");
+                    if (_batchTotalClock != null)
+                        Append("Tiempo total del lote: " +
+                               ReadableTime(_batchTotalClock.Elapsed) + ".");
 
-                // Destructive and system-control options never persist.
-                DeleteChdCheck.IsChecked = false;
-                ShutdownCheck.IsChecked = false;
-                SaveLog();
+                    // Destructive and system-control options never persist.
+                    DeleteChdCheck.IsChecked = false;
+                    ShutdownCheck.IsChecked = false;
+                    SaveLog();
 
-                if (shutdownRequested)
-                {
-                    if (completedNormally && !_batchCanceled &&
-                        _failed == 0 && _deleteWarnings == 0 && _succeeded > 0)
+                    if (shutdownRequested)
                     {
-                        BeginShutdownCountdown();
+                        if (completedNormally && !_batchCanceled &&
+                            _failed == 0 && _deleteWarnings == 0 && _succeeded > 0)
+                        {
+                            BeginShutdownCountdown();
+                        }
+                        else
+                        {
+                            Append("APAGADO OMITIDO: lote cancelado, con errores o " +
+                                   "advertencias de borrado, o sin juegos convertidos.");
+                            SaveLog();
+                        }
                     }
-                    else
-                    {
-                        Append("APAGADO OMITIDO: lote cancelado, con errores o " +
-                               "advertencias de borrado, o sin juegos convertidos.");
-                        SaveLog();
-                    }
-                }
                 }
             }
         }
@@ -913,6 +913,9 @@ namespace PSXPackagerGUI
                         catch (Exception ex) { Append("AVISO: no se pudo borrar el temporal: " + ex.Message); }
                     }
                     processed++;
+                    // Sizes and timing may now be known; adapt the centered
+                    // columns without shortening the Status progress bar.
+                    ResizeJobColumns();
                     UpdateBatchProgress();
                 }
             }
