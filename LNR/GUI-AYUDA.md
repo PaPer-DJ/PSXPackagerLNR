@@ -104,9 +104,32 @@ algunas imágenes PBP incluso pueden ocupar más que sus CHD de origen.
 - [Tabla de estrategias del zlib clásico](https://github.com/madler/zlib/blob/develop/deflate.c).
 - [RFC 1950 — indicadores de nivel de compresión](https://www.rfc-editor.org/rfc/rfc1950).
 
-Las nuevas instalaciones de LNR utilizan el nivel **3**. Si un usuario
-guardó una selección distinta en una beta anterior, se respeta.
-No cambiamos el nivel predeterminado del motor CLI original: **5**.
+### Pruebas en PSP original realizadas por LaNaveRETRO
+
+En pruebas prácticas con una **PSP original**, comparando juegos de PS1
+convertidos a PBP con distintos niveles, **los niveles 1 a 3 han mostrado
+menores pausas de carga que los niveles 4 o 5 en determinados momentos**.
+Se trata de una observación directa sobre el dispositivo real,
+no de una deducción a partir de `DEFLATE_FAST` o `DEFLATE_SLOW`.
+
+En los juegos evaluados, al pasar del **3 a los niveles 4 o 5** se
+obtuvieron **solo algunos megabytes adicionales de reducción**; entre
+**5 y 9** el tamaño final cambió muy poco. Esta diferencia puede variar
+según el contenido del juego; no representa una media estadística
+de todo el catálogo de PS1 ni garantiza un tamaño determinado.
+
+**Elección LNR: nivel 3 por defecto**, especialmente como punto de
+partida para PBP destinados a PSP original. Se recomienda probar
+también 1 o 2 si algún juego sigue mostrando pausas. El nivel 3
+**no garantiza mejores FPS** ni elimina necesariamente problemas
+propios del emulador, la tarjeta de memoria o la consola.
+
+Desde esta edición, los valores predeterminados son **3 en la GUI
+clásica, 3 en la GUI por lotes y 3 en la CLI del fork LNR**.
+Se siguen respetando los ajustes ya guardados por cada usuario;
+seleccionar manualmente 1, 5 o 9 sigue siendo posible.
+**El proyecto original de RupertAvery permanece intacto y conserva
+su valor por defecto de 5**: el cambio a 3 es exclusivo del fork LNR.
 
 ## 5. Convertir y resultados
 
