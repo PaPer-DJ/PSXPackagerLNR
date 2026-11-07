@@ -44,22 +44,68 @@ firmware/BIOS **no** están incluidos.
   admiten los PBP multidisco. Prueba antes de convertir colecciones grandes.
 - Las listas `.m3u` y archivos `.sbi` permanecen en la carpeta original.
 
-## 4. Compresión PBP
+## 4. Compresión PBP y justificación técnica del nivel 3
 
-- **1 — Ligera**: compresión baja; útil como opción de comparación.
-- **3 — Equilibrada (LNR)**: opción inicial recomendada por esta edición
-  para comenzar pruebas en dispositivos modestos.
-- **5 — Estándar original**: nivel predeterminado del PSXPackager original.
-- **9 — Máxima**: prioriza el tamaño y normalmente tarda más en comprimir.
+PSXPackagerLNR recomienda **3 — Equilibrada (LNR)** como selección inicial,
+especialmente para preparar colecciones destinadas a consolas modestas.
+Es un **compromiso práctico entre tamaño y velocidad de creación del PBP**:
+no se ha demostrado que sea siempre el nivel más rápido al reproducir.
 
-**Importante:** no hay evidencia suficiente para asegurar que el nivel 3 sea
-siempre más rápido de descomprimir que el 5. El resultado y la fluidez
-dependen del juego, emulador, CPU, tarjeta y ajustes. Una compresión más alta
-**no** produce necesariamente siempre un PBP más pequeño.
+- **1 — Ligera (rápida)**: minimiza el esfuerzo al comprimir, pero a
+  menudo produce archivos mayores; útil si prima el tiempo de conversión.
+- **3 — Equilibrada (LNR, predeterminada)**: último nivel con búsqueda rápida
+  antes de que SharpZipLib 1.4.2 aumente la intensidad de búsqueda en
+  el nivel 5; preferido en esta edición por su equilibrio de creación/tamaño.
+- **5 — Estándar original**: nivel predeterminado del motor PSXPackager,
+  emplea búsqueda más exhaustiva durante la compresión.
+- **9 — Máxima**: búsqueda de coincidencias más costosa al comprimir;
+  no garantiza producir siempre el archivo más pequeño para cada juego.
 
-Las nuevas instalaciones de LNR utilizan 3. Si un usuario ya guardó una
-preferencia en una beta anterior, se respeta su selección previa. No se
-cambia el nivel predeterminado del motor CLI original.
+### Lo que está comprobado en el código
+
+El fork usa **SharpZipLib 1.4.2** y llama a
+`new Deflater(level, true)` para comprimir los sectores.
+La tabla de funciones `COMPR_FUNC` de esa versión asigna:
+
+| Nivel | Función del compresor | Consecuencia directa |
+|---|---|---|
+| 1, 2, 3 y 4 | `DEFLATE_FAST` | Búsqueda rápida de coincidencias al crear el archivo |
+| 5, 6, 7, 8 y 9 | `DEFLATE_SLOW` | Búsqueda más exhaustiva al crear el archivo |
+
+**Ojo con la diferencia entre implementaciones:** en **zlib clásico**
+el cambio a `deflate_slow` sucede en el **nivel 4**, mientras que en
+**SharpZipLib 1.4.2** (la biblioteca usada aquí) sucede en el **5**.
+Por tanto, el resumen que atribuye ese salto al 4 no describe
+exactamente el motor de esta aplicación.
+
+**La búsqueda de coincidencias, la evaluación perezosa (*lazy match*),
+las cadenas de hashes y el esfuerzo exhaustivo pertenecen al
+COMPRESOR que ejecuta PSXPackager en el PC.** Cuando la consola lee
+un PBP, su emulador solo interpreta el resultado de DEFLATE: no vuelve
+a probar esas cadenas de coincidencias. En la
+[especificación RFC 1950](https://www.rfc-editor.org/rfc/rfc1950),
+los indicadores de intensidad de compresión tampoco son necesarios
+para descomprimir. No se deduce de ahí ningún aumento automático de CPU,
+caída de FPS o microtirones entre niveles 3, 5 y 9.
+
+El tiempo de lectura real puede cambiar según **distribución de los
+bloques comprimidos, acceso a la microSD, caché, emulador y hardware**,
+pero hay que medirlo en la consola. El nivel 3 es una elección
+sensata de partida, no el mejor nivel universal demostrado. Tampoco
+es correcto prometer que 5–9 solo ahorran 1–2 %: depende del juego;
+algunas imágenes PBP incluso pueden ocupar más que sus CHD de origen.
+
+**Fuentes técnicas verificadas:**
+
+- [Código de compresión de este fork](../Popstation/Compression.cs).
+- [Versión SharpZipLib utilizada](../Popstation/Popstation.csproj).
+- [Tabla `COMPR_FUNC` de SharpZipLib 1.4.2](https://github.com/icsharpcode/SharpZipLib/blob/v1.4.2/src/ICSharpCode.SharpZipLib/Zip/Compression/DeflaterConstants.cs).
+- [Tabla de estrategias del zlib clásico](https://github.com/madler/zlib/blob/develop/deflate.c).
+- [RFC 1950 — indicadores de nivel de compresión](https://www.rfc-editor.org/rfc/rfc1950).
+
+Las nuevas instalaciones de LNR utilizan el nivel **3**. Si un usuario
+guardó una selección distinta en una beta anterior, se respeta.
+No cambiamos el nivel predeterminado del motor CLI original: **5**.
 
 ## 5. Convertir y resultados
 
