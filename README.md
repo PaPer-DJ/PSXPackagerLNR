@@ -7,12 +7,12 @@ la licencia MIT y los creditos del software original.
 
 ## Versionado y descargas identificables
 
-La version de desarrollo actual es **v0.1.0-beta.10** (columnas autoajustables, progreso ampliado, tiempo total, apagado optativo y panel de actividad más compacto).
+La version de desarrollo actual es **v0.1.0-beta.11** (nuevo botón para limpiar el registro de actividad).
 La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
 se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 **Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.10-bNN-GUI-win-x64.zip`.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.11-bNN-GUI-win-x64.zip`.
 Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
 y `Toolkit-win-x64.zip`.
 
@@ -26,6 +26,15 @@ compilacion que se esta ejecutando. No hay que renombrar manualmente ZIPs.
   para versiones publicadas y archivadas permanentemente tras validacion.
 - De momento la rama `master` se mantiene independiente del trabajo en
   `lnr/windows-chd-build`. No hay release estable de LNR.
+
+### Limpiar y copiar registro
+
+En **Actividad y resultados**, el nuevo botón **Limpiar registro**
+vacía solo el panel y los mensajes de esta sesión acumulados desde la
+última limpieza. Se sitúa entre **Copiar registro** y **Abrir carpeta PBP**.
+No elimina los informes TXT ya guardados, no afecta a archivos de juegos
+y no cancela las conversiones: los nuevos mensajes siguen apareciendo.
+Tras limpiar, **Copiar registro** recoge únicamente los mensajes nuevos.
 
 ### Interfaz del lote: nuevo reparto y apagado opcional
 
