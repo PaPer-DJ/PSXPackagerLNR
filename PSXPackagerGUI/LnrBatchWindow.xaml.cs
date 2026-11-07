@@ -714,18 +714,116 @@ namespace PSXPackagerGUI
             private string _status = "Pendiente";
             private int _progressPercent;
             private string _currentPhase = "Iniciando";
+            private long? _outputBytes;
+            private TimeSpan? _elapsed;
 
             public LnrConversionJob(string name, List<string> discs, string origin)
             {
                 Name = name;
                 Discs = discs;
                 Origin = origin;
+                try
+                {
+                    SourceBytes = discs.Sum(path => new FileInfo(path).Length);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Do not block all games if one file is not accessible.
+                    SourceBytes = null;
+                }
             }
 
             public string Name { get; }
             public List<string> Discs { get; }
             public int DiscCount => Discs.Count;
             public string Origin { get; }
+            public long? SourceBytes { get; }
+            public long? OutputBytes
+            {
+                get => _outputBytes;
+                set
+                {
+                    if (_outputBytes == value) return;
+                    _outputBytes = value;
+                    Notify(nameof(OutputSizeText));
+                    Notify(nameof(VariationText));
+                    Notify(nameof(VariationTooltip));
+                    Notify(nameof(VariationBrush));
+                }
+            }
+
+            public TimeSpan? Elapsed
+            {
+                get => _elapsed;
+                set
+                {
+                    if (_elapsed == value) return;
+                    _elapsed = value;
+                    Notify(nameof(ElapsedText));
+                }
+            }
+
+            public string SourceSizeText => SourceBytes.HasValue
+                ? Size(SourceBytes.Value) : "—";
+
+            public string OutputSizeText => OutputBytes.HasValue
+                ? Size(OutputBytes.Value) : "—";
+
+            // This measures PBP minus CHD: positive means PBP takes more space.
+            public long? SizeDifference => SourceBytes.HasValue && OutputBytes.HasValue
+                ? OutputBytes.Value - SourceBytes.Value : null;
+
+            public string VariationText
+            {
+                get
+                {
+                    if (!SizeDifference.HasValue) return "—";
+                    var diff = SizeDifference.Value;
+                    return (diff > 0 ? "+" : "") + Size(diff);
+                }
+            }
+
+            public string VariationTooltip
+            {
+                get
+                {
+                    if (!SizeDifference.HasValue || !SourceBytes.HasValue || SourceBytes == 0)
+                        return "Se calcula al disponer de ambos tamaños.";
+                    var diff = SizeDifference.Value;
+                    var percent = 100.0 * diff / SourceBytes.Value;
+                    var change = diff > 0 ? "El PBP ocupa más que el CHD"
+                               : diff < 0 ? "El PBP ocupa menos que el CHD"
+                               : "El tamaño es el mismo";
+                    return change + ": " + VariationText + " (" +
+                           (percent > 0 ? "+" : "") + percent.ToString("N2", Es) + " %).";
+                }
+            }
+
+            public System.Windows.Media.Brush VariationBrush =>
+                SizeDifference > 0 ? System.Windows.Media.Brushes.Firebrick :
+                SizeDifference < 0 ? System.Windows.Media.Brushes.ForestGreen :
+                System.Windows.Media.Brushes.DimGray;
+
+            public string ElapsedText
+            {
+                get
+                {
+                    if (!Elapsed.HasValue) return "—";
+                    var elapsed = Elapsed.Value;
+                    return elapsed.TotalHours >= 1
+                        ? elapsed.ToString(@"hh\:mm\:ss")
+                        : elapsed.ToString(@"mm\:ss");
+                }
+            }
+
+            public void ReadExistingPbp(string path)
+            {
+                try { OutputBytes = new FileInfo(path).Length; }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    OutputBytes = null;
+                }
+            }
 
             public string Status
             {
@@ -748,7 +846,6 @@ namespace PSXPackagerGUI
                     _progressPercent = value;
                     Notify(nameof(ProgressPercent));
                     Notify(nameof(ProgressLabel));
-                    Notify(nameof(DisplayStatus));
                 }
             }
 
@@ -765,9 +862,11 @@ namespace PSXPackagerGUI
             }
 
             public string ProgressLabel => ProgressPercent + "%";
-            // The CLI publishes the progress of each processing phase.
+
+            // Only display the phase name here. The percentage is already
+            // visible beside its graphical progress bar, avoiding duplication.
             public string DisplayStatus => Status == "Convirtiendo"
-                ? $"{CurrentPhase} · {ProgressPercent}%" : Status;
+                ? CurrentPhase : Status;
 
             private void Notify(string property)
             {
