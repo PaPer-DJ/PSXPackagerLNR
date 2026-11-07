@@ -239,7 +239,7 @@
                 </ComboBox>
                 <TextBlock Grid.Column="3" Text="Compresión" VerticalAlignment="Center" Margin="0,0,9,0"/>
                 <ComboBox Grid.Column="4" x:Name="LevelCombo" SelectedIndex="1"
-                          ToolTip="Nivel 3 recomendado por LNR: compromiso entre tamaño de PBP y velocidad de CREACIÓN. SharpZipLib 1.4.2 comprime con búsqueda rápida en niveles 1 a 4; en 5 a 9 usa búsqueda más exhaustiva. Esto NO significa que la consola reproduzca más rápido ni garantiza evitar tirones. El PSXPackager original utiliza 5."
+                          ToolTip="Recomendado: nivel 3. En pruebas de LaNaveRETRO con PSP original, los niveles 1 a 3 redujeron algunas esperas de carga frente a 4 y 5. En los juegos comparados, 4/5 ahorraron pocos MB extra y 5/9 apenas variaron de tamaño. Depende del juego: no garantiza mejores FPS. En LNR tanto GUI como CLI usan 3 por defecto; el proyecto original usaba 5."
                           VerticalAlignment="Center" MinHeight="30">
                     <ComboBoxItem Content="1 - Ligera (rápida)" Tag="1"/>
                     <ComboBoxItem Content="3 - Equilibrada (LNR)" Tag="3"/>
