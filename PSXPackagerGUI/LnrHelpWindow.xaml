@@ -101,6 +101,23 @@
                     Los PBP ya existentes se saltan sin sobrescribirlos.
                 </TextBlock>
 
+                <TextBlock Text="Tiempo total y apagado automático"
+                           FontWeight="Bold" FontSize="15" Margin="0,16,0,7"/>
+                <TextBlock TextWrapping="Wrap">
+                    Al terminar el lote, la barra inferior muestra el tiempo total
+                    transcurrido en la sesión. Las columnas numéricas se centran y
+                    ajustan a su contenido; el estado dispone de una barra ampliada.
+                    La casilla «Apagar equipo al finalizar el lote» está siempre
+                    desactivada por defecto y requiere confirmación adicional.
+                    Solo puede activarse si al menos un juego se convierte y no hay
+                    errores, cancelación ni advertencias de borrado. Después
+                    comienza una cuenta atrás de 60 segundos que puedes cancelar.
+                    Si cierras la ventana antes de que termine, el apagado se cancela.
+                    Se solicitará un apagado normal de Windows, sin forzar
+                    el cierre de aplicaciones: Windows puede retrasarlo si hay
+                    documentos sin guardar.
+                </TextBlock>
+
                 <TextBlock Text="Autoría y responsabilidad"
                            FontWeight="Bold" FontSize="15" Margin="0,16,0,7"/>
                 <TextBlock TextWrapping="Wrap">
