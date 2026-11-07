@@ -4,6 +4,24 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.9 — 7 noviembre 2026 (pulido de botones y espaciado)
+
+- Iconos vectoriales pequeños y nítidos en **Analizar** (lupa azul),
+  **Convertir** (Play verde), **Ayuda y opciones** (información) y
+  **Suite CD / CHD / ISO** (flechas verdes de conversión).
+- Aplicado el mismo estilo también a los botones de analizar, convertir
+  y ayuda de la suite de discos.
+- Espaciado uniforme de **8 píxeles** entre Analizar/Convertir y
+  Ayuda y opciones/Suite CD/CHD/ISO. Corrige el problema de botones
+  inferiores visualmente pegados.
+- Selector **Multidisco** estrechado de 185 a 150 píxeles, sin modificar
+  la descripción ni las opciones Separados (1:1) / Unidos (M3U).
+- Sin cambios en el motor de conversiones, algoritmos, archivos de
+  origen, ni compatibilidad de formatos.
+
+**Pendiente de prueba visual:** comprobar tamaño de los iconos y el
+espaciado en Windows con escalado de pantalla 100 %, 125 % y superior.
+
 ## v0.1.0-beta.8 — 7 noviembre 2026 (PBP a BIN/CUE e ISO de datos)
 
 - Añadida **PBP → BIN/CUE** por lotes, para extraer juegos de PS1
