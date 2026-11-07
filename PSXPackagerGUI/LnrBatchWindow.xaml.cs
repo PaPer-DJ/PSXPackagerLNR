@@ -1152,10 +1152,115 @@ namespace PSXPackagerGUI
             catch (Exception ex) { Append("AVISO: no se pudo guardar el informe: " + ex.Message); }
         }
 
+        private void BeginShutdownCountdown()
+        {
+            if (_shutdownPending) return;
+            _shutdownPending = true;
+            _shutdownSecondsRemaining = 60;
+            ShutdownCheck.IsChecked = true;
+            ShutdownCheck.IsEnabled = false;
+            ShutdownCheck.Content = $"Apagado de Windows en {_shutdownSecondsRemaining} s";
+            CancelScheduledShutdownButton.Visibility = Visibility.Visible;
+            CancelScheduledShutdownButton.IsEnabled = true;
+
+            Append("APAGADO OPCIONAL: lote completado sin errores. " +
+                   "Comienza una cuenta atrás de 60 segundos; puedes cancelarla aquí.");
+            Append("Windows recibirá un apagado normal sin cierre forzado de aplicaciones. " +
+                   "Guarda cualquier documento importante antes de que finalice la cuenta atrás.");
+            SaveLog();
+            _shutdownCountdown.Start();
+        }
+
+        private void CancelScheduledShutdown_OnClick(object sender, RoutedEventArgs e) =>
+            CancelShutdownCountdown("Apagado cancelado por el usuario.");
+
+        private void CancelShutdownCountdown(string reason)
+        {
+            if (!_shutdownPending) return;
+            _shutdownCountdown.Stop();
+            _shutdownPending = false;
+            _shutdownSecondsRemaining = 0;
+            CancelScheduledShutdownButton.Visibility = Visibility.Collapsed;
+            ShutdownCheck.Content = "Apagar equipo al finalizar el lote";
+            ShutdownCheck.IsChecked = false;
+            ShutdownCheck.IsEnabled = !_running;
+            Append(reason);
+            SaveLog();
+        }
+
+        private void ShutdownCountdown_OnTick(object sender, EventArgs e)
+        {
+            if (!_shutdownPending)
+            {
+                _shutdownCountdown.Stop();
+                return;
+            }
+
+            _shutdownSecondsRemaining--;
+            if (_shutdownSecondsRemaining > 0)
+            {
+                ShutdownCheck.Content = $"Apagado de Windows en {_shutdownSecondsRemaining} s";
+                return;
+            }
+
+            // Countdown is local to this GUI, not an OS-level forced shutdown.
+            _shutdownCountdown.Stop();
+            _shutdownPending = false;
+            CancelScheduledShutdownButton.Visibility = Visibility.Collapsed;
+            ShutdownCheck.IsChecked = false;
+            ShutdownCheck.Content = "Apagar equipo al finalizar el lote";
+            ShutdownCheck.IsEnabled = !_running;
+
+            Append("Cuenta atrás terminada: solicitando apagado normal de Windows.");
+            SaveLog();
+            try
+            {
+                var shutdownExecutable = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.System),
+                    "shutdown.exe");
+                var start = new ProcessStartInfo(shutdownExecutable)
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                // /t 0 does NOT imply /f. Windows may postpone shutdown
+                // to let other applications save unsaved work.
+                start.ArgumentList.Add("/s");
+                start.ArgumentList.Add("/t");
+                start.ArgumentList.Add("0");
+
+                using var process = Process.Start(start);
+                if (process == null)
+                    throw new InvalidOperationException("Windows no pudo iniciar shutdown.exe.");
+
+                if (process.WaitForExit(3000) && process.ExitCode != 0)
+                    throw new InvalidOperationException(
+                        $"Windows rechazó el apagado. Código: {process.ExitCode}.");
+
+                Append("Solicitud enviada. Windows puede retrasar el apagado " +
+                       "si otra aplicación tiene trabajo sin guardar.");
+                SaveLog();
+            }
+            catch (Exception ex) when (ex is Win32Exception or IOException
+                                       or UnauthorizedAccessException
+                                       or InvalidOperationException)
+            {
+                Append("ERROR: no se pudo solicitar el apagado: " + ex.Message);
+                SaveLog();
+                MessageBox.Show(this,
+                    "No se pudo apagar el equipo automáticamente.\n\n" + ex.Message,
+                    "Apagado no iniciado", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
         private void Window_OnClosing(object sender, CancelEventArgs e)
         {
             if (!_running)
             {
+                // Closing the GUI during its local countdown cancels the
+                // pending request. No Windows-level shutdown was scheduled.
+                if (_shutdownPending)
+                    CancelShutdownCountdown("Apagado automático cancelado al cerrar la aplicación.");
                 SavePreferences();
                 return;
             }
