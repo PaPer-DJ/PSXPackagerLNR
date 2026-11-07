@@ -132,7 +132,7 @@ namespace PSXPackagerGUI
                 foreach (var file in Directory.EnumerateFiles(folder)
                          .Where(f => string.Equals(Path.GetExtension(f),
                              SourceExtension, StringComparison.OrdinalIgnoreCase))
-                         .OrderBy(Path.GetFileName, StringComparer.CurrentCultureIgnoreCase))
+                         .OrderBy(file => Path.GetFileName(file), StringComparer.CurrentCultureIgnoreCase))
                 {
                     var size = new FileInfo(file).Length;
                     _jobs.Add(new DiscJob(file, (size / 1048576.0).ToString("N2", _es) + " MB"));
@@ -284,7 +284,7 @@ namespace PSXPackagerGUI
                 await ExecuteAsync(exe, new[] { "-i", job.Source, "-o", stage,
                                                  "-s", "-f", "%FILENAME%" }, token);
                 var cues = Directory.EnumerateFiles(stage, "*.cue", SearchOption.TopDirectoryOnly)
-                                    .OrderBy(Path.GetFileName).ToList();
+                                    .OrderBy(file => Path.GetFileName(file), StringComparer.CurrentCultureIgnoreCase).ToList();
                 if (cues.Count == 0)
                     throw new InvalidDataException("El PBP no proporcionó ningún archivo CUE. " +
                                                    "Comprueba que contiene discos PS1 compatibles.");
