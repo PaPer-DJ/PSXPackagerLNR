@@ -28,6 +28,16 @@
                     intermedios. Utiliza la tecnología del proyecto PSXPackager original.
                 </TextBlock>
 
+                <TextBlock Text="Arranque directo desde PSXPackagerLNR.exe"
+                           FontWeight="Bold" FontSize="15" Margin="0,16,0,7"/>
+                <TextBlock TextWrapping="Wrap">
+                    El paquete Windows incluye PSXPackagerLNR.exe, que abre
+                    directamente este conversor por lotes. Si prefieres
+                    la interfaz clásica original con sus herramientas adicionales,
+                    también puedes abrir PSXPackagerGUI.exe. Ambos usan el mismo motor.
+                    No borres psxpackager.exe: la GUI lo utiliza en segundo plano.
+                </TextBlock>
+
                 <TextBlock Text="Carpeta CHD y Analizar"
                            FontWeight="Bold" FontSize="15" Margin="0,16,0,7"/>
                 <TextBlock TextWrapping="Wrap">
