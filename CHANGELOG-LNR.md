@@ -4,6 +4,33 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.15 — 7 noviembre 2026 (anexo técnico para usuarios avanzados)
+
+- Incorporado un **anexo técnico extenso al final de la información LNR
+  en el README**, justo antes de la documentación del proyecto original,
+  que permanece conservada y separada.
+- Explicación de **DEFLATE: LZ77, Huffman, greedy/lazy matching, hash
+  chains y límites de búsqueda**, con la tabla de parámetros
+  `GOOD_LENGTH`, `MAX_LAZY`, `NICE_LENGTH` y `MAX_CHAIN`
+  **para todos los niveles 1 a 9** de SharpZipLib 1.4.2.
+- Se presentan las **observaciones de LaNaveRETRO en PSP original**:
+  pausas de carga más cortas para niveles 1–3 frente a 4–5 en algunos
+  juegos, y ahorro adicional pequeño del 4 al 5 y del 5 al 9 en
+  las imágenes comparadas.
+- Se distingue **trabajo de compresión en PC** de **descompresión
+  durante la ejecución en PSP**. No se afirma que el compresor
+  ejecute búsquedas hash en PSP, ni se atribuye una reducción de
+  CPU demostrada sin medidas específicas. Se justifica el nivel 3
+  como **recomendación práctica**, no como garantía universal.
+- Ventana **Acerca de PSXPackagerLNR**: discreta referencia y enlace
+  clicable al análisis, al final de los créditos; contenido desplazable
+  y tamaño ajustado para pantallas pequeñas.
+- El manual y la presentación inicial del fork enlazan al anexo;
+  créditos, licencia, algoritmo, niveles predeterminados y salidas
+  de conversión no se modifican.
+
+**Pendiente:** revisión visual del diálogo «Acerca de» en Windows.
+
 ## v0.1.0-beta.14 — 7 noviembre 2026 (nivel 3 por defecto en toda la suite y pruebas en PSP)
 
 - **Nivel 3 predeterminado en todas las interfaces del fork**: GUI
