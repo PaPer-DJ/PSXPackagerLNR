@@ -97,7 +97,11 @@
                     El porcentaje de cada fila corresponde a la fase actual. La barra
                     inferior muestra juegos procesados y ofrece una estimación orientativa
                     del tiempo restante cuando hay datos suficientes. Puedes ampliar el
-                    registro arrastrando su separador, copiarlo o desactivar «Seguir actividad».
+                    registro arrastrando su separador, copiarlo, vaciar el panel con
+                    «Limpiar registro» o desactivar «Seguir actividad».
+                    Limpiar vacía también los mensajes acumulados desde la última limpieza,
+                    pero no borra informes ya guardados ni archivos convertidos.
+                    Si hay un lote activo, los nuevos mensajes continúan apareciendo.
                     Los PBP ya existentes se saltan sin sobrescribirlos.
                 </TextBlock>
 
