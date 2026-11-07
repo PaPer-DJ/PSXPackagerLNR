@@ -65,7 +65,10 @@ técnica LNR**, no un óptimo universal de velocidad de descompresión
 demostrado. Se conservan las opciones 1, 5 y 9, así como la
 preferencia previamente guardada por cada usuario.
 
-La explicación, las pruebas y las fuentes están en
+Hay también un [**anexo técnico completo al final de la información LNR**](#anexo-tecnico-lnr-nivel-3),
+con la tabla exacta de parámetros 1–9, LZ77/Huffman, greedy/lazy match,
+las pruebas en PSP y las limitaciones de la conclusión. El resumen
+de uso se encuentra en
 [la guía de compresión PBP](LNR/GUI-AYUDA.md#4-compresión-pbp-y-justificación-técnica-del-nivel-3).
 **En el fork LNR se utiliza 3 por defecto en todas las interfaces**.
 El PSXPackager original de RupertAvery no se modifica y sigue
