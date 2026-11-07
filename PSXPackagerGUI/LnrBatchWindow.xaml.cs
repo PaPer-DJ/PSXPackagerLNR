@@ -53,6 +53,17 @@ namespace PSXPackagerGUI
         private long _calibratedBytes;
         private double _calibratedSeconds;
         private bool _batchCanceled;
+        private Stopwatch _batchTotalClock;
+        private bool _batchFinishedNormally;
+
+        // For safety the countdown is local to the GUI, not a queued
+        // Windows shutdown /t > 0 (which implicitly forces other apps).
+        private readonly DispatcherTimer _shutdownCountdown = new()
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        private bool _shutdownPending;
+        private int _shutdownSecondsRemaining;
 
         public LnrBatchWindow()
         {
@@ -60,6 +71,8 @@ namespace PSXPackagerGUI
             Title = "PSXPackagerLNR · " + LnrVersionInfo.Display + " | CHD a PBP";
             JobList.ItemsSource = _jobs;
             _batchClock.Tick += (sender, e) => UpdateBatchProgress();
+            _shutdownCountdown.Tick += ShutdownCountdown_OnTick;
+            ShutdownCheck.IsChecked = false; // Opt-in never persisted.
             _preferences = LnrGuiPreferences.Load();
 
             var current = new DirectoryInfo(AppContext.BaseDirectory);
@@ -374,6 +387,8 @@ namespace PSXPackagerGUI
                 _calibratedBytes = 0;
                 _calibratedSeconds = 0;
                 _batchCanceled = false;
+                _batchFinishedNormally = false;
+                _batchTotalClock = null;
             }
             var outputFolder = Path.Combine(folder, "PBP");
             var existing = 0;
@@ -517,6 +532,17 @@ namespace PSXPackagerGUI
         private async void Run_OnClick(object sender, RoutedEventArgs e)
         {
             if (_running) return;
+            if (_shutdownPending)
+            {
+                MessageBox.Show(this,
+                    "Ya hay un apagado pendiente. Pulsa «Cancelar apagado» " +
+                    "antes de comenzar otro lote.",
+                    "Apagado programado", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            bool shutdownRequested = false;
+            bool completedNormally = false;
             try
             {
                 var folder = Path.GetFullPath(SourceBox.Text.Trim().Trim('"'));
@@ -568,6 +594,32 @@ namespace PSXPackagerGUI
                     if (confirmDelete != MessageBoxResult.Yes) return;
                 }
 
+                shutdownRequested = ShutdownCheck.IsChecked == true;
+                if (shutdownRequested)
+                {
+                    var confirmShutdown = MessageBox.Show(this,
+                        "APAGAR EL EQUIPO TRAS COMPLETAR EL LOTE\n\n" +
+                        "Solo se iniciará si al menos un juego se convierte y " +
+                        "el lote termina sin errores ni cancelación.\n" +
+                        "Si hay advertencias sobre el borrado de CHD, tampoco se apagará.\n\n" +
+                        "Al finalizar tendrás 60 segundos para CANCELAR el apagado " +
+                        "desde esta ventana. La cuenta atrás depende de que " +
+                        "PSXPackagerLNR permanezca abierto.\n\n" +
+                        "Después Windows intentará un apagado NORMAL, sin forzar " +
+                        "el cierre de otras aplicaciones. Si tienes documentos " +
+                        "sin guardar, Windows puede bloquear o retrasar el apagado.\n\n" +
+                        "¿Activar este apagado automático para el lote actual?",
+                        "Confirmar apagado automático",
+                        MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    if (confirmShutdown != MessageBoxResult.Yes)
+                    {
+                        ShutdownCheck.IsChecked = false;
+                        return;
+                    }
+                }
+
+                _batchTotalClock = Stopwatch.StartNew();
+                _batchFinishedNormally = false;
                 _running = true;
                 _cancel = new CancellationTokenSource();
                 SetControls(false);
@@ -601,6 +653,7 @@ namespace PSXPackagerGUI
                 if (deleteOriginals)
                     Append("MODO LIBERAR ESPACIO: se intentarán eliminar CHD solo tras completar y comprobar su PBP; borrado irreversible.");
                 await ConvertAllAsync(cli, folder, SelectedLevel, deleteOriginals, _cancel.Token);
+                completedNormally = !_cancel.IsCancellationRequested;
             }
             catch (OperationCanceledException)
             {
@@ -616,15 +669,38 @@ namespace PSXPackagerGUI
             {
                 _batchClock.Stop();
                 _activeJobClock = null;
+                _batchTotalClock?.Stop();
+                _batchFinishedNormally = completedNormally;
                 _running = false;
                 UpdateBatchProgress();
                 _activeProcess = null;
                 _cancel?.Dispose();
                 _cancel = null;
                 SetControls(true);
-                // Reset destructive option after every run: opt-in must be deliberate.
+
+                if (_batchTotalClock != null)
+                    Append("Tiempo total del lote: " +
+                           ReadableTime(_batchTotalClock.Elapsed) + ".");
+
+                // Destructive and system-control options never persist.
                 DeleteChdCheck.IsChecked = false;
+                ShutdownCheck.IsChecked = false;
                 SaveLog();
+
+                if (shutdownRequested)
+                {
+                    if (completedNormally && !_batchCanceled &&
+                        _failed == 0 && _deleteWarnings == 0 && _succeeded > 0)
+                    {
+                        BeginShutdownCountdown();
+                    }
+                    else
+                    {
+                        Append("APAGADO OMITIDO: lote cancelado, con errores o " +
+                               "advertencias de borrado, o sin juegos convertidos.");
+                        SaveLog();
+                    }
+                }
             }
         }
 
@@ -636,6 +712,7 @@ namespace PSXPackagerGUI
             ModeCombo.IsEnabled = idle;
             LevelCombo.IsEnabled = idle;
             DeleteChdCheck.IsEnabled = idle;
+            ShutdownCheck.IsEnabled = idle && !_shutdownPending;
             SourceBox.IsEnabled = idle;
             CancelButton.IsEnabled = !idle;
         }
@@ -922,8 +999,14 @@ namespace PSXPackagerGUI
                 SummaryLabel.Text = $"Correctos: {_succeeded} · Saltados: {_skipped} · Errores: {_failed}";
             if (!_running)
             {
-                EtaLabel.Text = _batchCanceled ? "Lote cancelado"
-                    : total > 0 && completed >= total ? "Lote finalizado" : "Tiempo restante: sin calcular";
+                var elapsed = _batchTotalClock == null
+                    ? "" : " · Tiempo total: " + ReadableTime(_batchTotalClock.Elapsed);
+                EtaLabel.Text = _batchCanceled
+                    ? "Lote cancelado" + elapsed
+                    : _batchFinishedNormally && total > 0
+                        ? (_failed == 0 ? "Lote Finalizado" : "Lote finalizado con errores") + elapsed
+                        : _batchTotalClock != null ? "Lote interrumpido" + elapsed
+                        : "Tiempo restante: sin calcular";
                 return;
             }
 
