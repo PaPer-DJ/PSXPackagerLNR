@@ -112,8 +112,8 @@ menores pausas de carga que los niveles 4 o 5 en determinados momentos**.
 Se trata de una observación directa sobre el dispositivo real,
 no de una deducción a partir de `DEFLATE_FAST` o `DEFLATE_SLOW`.
 
-En los juegos evaluados, al pasar del **3 a los niveles 4 o 5** se
-obtuvieron **solo algunos megabytes adicionales de reducción**; entre
+En los juegos evaluados, al pasar del **nivel 4 al 5** se obtuvieron
+**solo algunos megabytes adicionales de reducción**; entre los niveles
 **5 y 9** el tamaño final cambió muy poco. Esta diferencia puede variar
 según el contenido del juego; no representa una media estadística
 de todo el catálogo de PS1 ni garantiza un tamaño determinado.
