@@ -54,50 +54,84 @@
             <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}"
                        TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
         </DataTemplate>
+        <Style x:Key="LnrCenteredColumnHeader" TargetType="{x:Type GridViewColumnHeader}">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <DataTemplate x:Key="LnrDiscCountTemplate">
+            <Grid HorizontalAlignment="Stretch">
+                <TextBlock Text="{Binding DiscCount}" HorizontalAlignment="Center"
+                           TextAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrOriginTemplate">
+            <Grid HorizontalAlignment="Stretch">
+                <TextBlock Text="{Binding Origin}" HorizontalAlignment="Center"
+                           TextAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+        </DataTemplate>
         <DataTemplate x:Key="LnrChdSizeTemplate">
-            <TextBlock Text="{Binding SourceSizeText}" TextAlignment="Right"
-                       ToolTip="Tamaño total de los CHD de origen; en juegos multidisco se suman todos"
-                       VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <Grid HorizontalAlignment="Stretch">
+                <TextBlock Text="{Binding SourceSizeText}" TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           ToolTip="Tamaño total de los CHD de origen; en juegos multidisco se suman todos"
+                           VerticalAlignment="Center"/>
+            </Grid>
         </DataTemplate>
         <DataTemplate x:Key="LnrPbpSizeTemplate">
-            <TextBlock Text="{Binding OutputSizeText}" TextAlignment="Right"
-                       ToolTip="Tamaño del PBP generado o, si ya existía, del archivo del destino"
-                       VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <Grid HorizontalAlignment="Stretch">
+                <TextBlock Text="{Binding OutputSizeText}" TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           ToolTip="Tamaño del PBP generado o, si ya existía, del archivo del destino"
+                           VerticalAlignment="Center"/>
+            </Grid>
         </DataTemplate>
         <DataTemplate x:Key="LnrVariationTemplate">
-            <TextBlock Text="{Binding VariationText}" TextAlignment="Right"
-                       Foreground="{Binding VariationBrush}"
-                       ToolTip="{Binding VariationTooltip}"
-                       VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <Grid HorizontalAlignment="Stretch">
+                <TextBlock Text="{Binding VariationText}" TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Foreground="{Binding VariationBrush}"
+                           ToolTip="{Binding VariationTooltip}"
+                           VerticalAlignment="Center"/>
+            </Grid>
         </DataTemplate>
         <DataTemplate x:Key="LnrElapsedTemplate">
-            <TextBlock Text="{Binding ElapsedText}" TextAlignment="Right"
-                       ToolTip="Tiempo transcurrido en la conversión de este juego"
-                       VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <Grid HorizontalAlignment="Stretch">
+                <TextBlock Text="{Binding ElapsedText}" TextAlignment="Center"
+                           HorizontalAlignment="Center"
+                           ToolTip="Tiempo transcurrido en la conversión de este juego"
+                           VerticalAlignment="Center"/>
+            </Grid>
         </DataTemplate>
         <DataTemplate x:Key="LnrStatusTemplate">
-            <StackPanel VerticalAlignment="Center" Margin="3,1,3,1">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <!-- Grid stretches to fill the entire status column.
+                 A StackPanel shrank to text width and made the bar tiny. -->
+            <Grid HorizontalAlignment="Stretch" Margin="3,1,3,1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock x:Name="StatusIcon" Text="○" FontSize="14"
                                Foreground="#FF8792A0" FontWeight="Bold"
                                VerticalAlignment="Center" Width="23"/>
                     <TextBlock x:Name="StatusText" Text="{Binding DisplayStatus}" ToolTip="{Binding DisplayStatus}"
                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
-                <Grid x:Name="ProgressDetails" Visibility="Collapsed"
-                      Margin="23,4,4,2" Height="12">
+                <Grid Grid.Row="1" x:Name="ProgressDetails" Visibility="Collapsed"
+                      HorizontalAlignment="Stretch" Margin="9,4,5,2" Height="13">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="43"/>
+                        <ColumnDefinition Width="44"/>
                     </Grid.ColumnDefinitions>
-                    <ProgressBar Grid.Column="0" Height="9" Margin="0,1,6,0"
+                    <ProgressBar Grid.Column="0" Height="10" Margin="0,1,7,0"
                                  Minimum="0" Maximum="100" Foreground="{StaticResource LnrGreen}"
                                  Value="{Binding ProgressPercent}"/>
                     <TextBlock Grid.Column="1" Text="{Binding ProgressLabel}"
                                FontSize="11" Foreground="#FF49586B"
-                               VerticalAlignment="Center" TextAlignment="Right"/>
+                               VerticalAlignment="Center" TextAlignment="Center"/>
                 </Grid>
-            </StackPanel>
+            </Grid>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Status}" Value="Convirtiendo">
                     <Setter TargetName="ProgressDetails" Property="Visibility" Value="Visible"/>
@@ -251,17 +285,25 @@
                            HorizontalAlignment="Right" Margin="14,0,0,0"/>
             </DockPanel>
             <ListView Grid.Row="1" x:Name="JobList" ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                      HorizontalContentAlignment="Stretch">
+                      HorizontalContentAlignment="Stretch"
+                      SizeChanged="JobList_OnSizeChanged">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="Nombre PBP" CellTemplate="{StaticResource LnrGameNameTemplate}" Width="232"/>
-                        <GridViewColumn Header="Discos" DisplayMemberBinding="{Binding DiscCount}" Width="49"/>
-                        <GridViewColumn Header="Origen" DisplayMemberBinding="{Binding Origin}" Width="76"/>
-                        <GridViewColumn Header="CHD" CellTemplate="{StaticResource LnrChdSizeTemplate}" Width="101"/>
-                        <GridViewColumn Header="PBP" CellTemplate="{StaticResource LnrPbpSizeTemplate}" Width="101"/>
-                        <GridViewColumn Header="Variación" CellTemplate="{StaticResource LnrVariationTemplate}" Width="116"/>
-                        <GridViewColumn Header="Tiempo" CellTemplate="{StaticResource LnrElapsedTemplate}" Width="68"/>
-                        <GridViewColumn Header="Estado / Progreso" CellTemplate="{StaticResource LnrStatusTemplate}" Width="220"/>
+                        <GridViewColumn Header="Discos" CellTemplate="{StaticResource LnrDiscCountTemplate}"
+                                        HeaderContainerStyle="{StaticResource LnrCenteredColumnHeader}" Width="56"/>
+                        <GridViewColumn Header="Origen" CellTemplate="{StaticResource LnrOriginTemplate}"
+                                        HeaderContainerStyle="{StaticResource LnrCenteredColumnHeader}" Width="76"/>
+                        <GridViewColumn Header="CHD" CellTemplate="{StaticResource LnrChdSizeTemplate}"
+                                        HeaderContainerStyle="{StaticResource LnrCenteredColumnHeader}" Width="101"/>
+                        <GridViewColumn Header="PBP" CellTemplate="{StaticResource LnrPbpSizeTemplate}"
+                                        HeaderContainerStyle="{StaticResource LnrCenteredColumnHeader}" Width="101"/>
+                        <GridViewColumn Header="Variación" CellTemplate="{StaticResource LnrVariationTemplate}"
+                                        HeaderContainerStyle="{StaticResource LnrCenteredColumnHeader}" Width="116"/>
+                        <GridViewColumn Header="Tiempo" CellTemplate="{StaticResource LnrElapsedTemplate}"
+                                        HeaderContainerStyle="{StaticResource LnrCenteredColumnHeader}" Width="68"/>
+                        <GridViewColumn Header="Estado / Progreso" CellTemplate="{StaticResource LnrStatusTemplate}"
+                                        HeaderContainerStyle="{StaticResource LnrCenteredColumnHeader}" Width="220"/>
                     </GridView>
                 </ListView.View>
             </ListView>
@@ -319,11 +361,15 @@
         </Grid>
 
         <Grid Grid.Row="6" Margin="0,12,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="120"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
+            <StackPanel Grid.Row="0" Grid.Column="0">
                 <Grid Margin="0,0,0,5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -342,8 +388,20 @@
                 <TextBlock x:Name="SummaryLabel" Margin="0,6,0,0"
                            Text="Los CHD originales permanecen intactos · Destino: subcarpeta PBP."/>
             </StackPanel>
-            <Button Grid.Column="1" x:Name="CancelButton" Content="Cancelar"
+            <Button Grid.Row="0" Grid.Column="1" x:Name="CancelButton" Content="Cancelar"
                     Click="Cancel_OnClick" Margin="12,0,0,0" IsEnabled="False"/>
+            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal"
+                        HorizontalAlignment="Right" Margin="0,10,0,0">
+                <Button x:Name="CancelScheduledShutdownButton"
+                        Content="Cancelar apagado programado"
+                        Visibility="Collapsed" Click="CancelScheduledShutdown_OnClick"
+                        Margin="0,0,12,0" Padding="9,5"
+                        ToolTip="Cancela el apagado de Windows pendiente mediante shutdown /a"/>
+                <CheckBox x:Name="ShutdownCheck"
+                          Content="Apagar equipo al finalizar el lote"
+                          IsChecked="False" VerticalAlignment="Center"
+                          ToolTip="Desactivado siempre por defecto. Requiere confirmación adicional. Solo se programa si termina sin errores ni cancelación y se ha convertido al menos un juego. Windows concede 60 segundos para cancelar el apagado."/>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>
