@@ -161,6 +161,9 @@
             <MenuItem Header="CHD → PBP por lotes · LNR" Click="LnrBatch_OnClick"
                       ToolTip="Conversor CHD directo por lotes con opciones multidisco"
                       FontWeight="SemiBold" Margin="6,0,0,0"/>
+            <MenuItem Header="Suite de discos · PBP/CHD/CD/DVD" Click="LnrSuite_OnClick"
+                      ToolTip="Conversión por lotes PBP→CHD, CHD→BIN/CUE (CD) y CHD→ISO (DVD)"
+                      FontWeight="SemiBold" Margin="8,0,0,0"/>
             <MenuItem Header="Acerca de LNR…" Click="LnrAbout_OnClick"
                       ToolTip="Créditos originales, licencia MIT y versión LNR"
                       Margin="8,0,0,0"/>
