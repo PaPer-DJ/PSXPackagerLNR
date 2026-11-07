@@ -7,12 +7,12 @@ la licencia MIT y los creditos del software original.
 
 ## Versionado y descargas identificables
 
-La version de desarrollo actual es **v0.1.0-beta.7** (suite de discos e importación de CHDMAN desde ZIP).
+La version de desarrollo actual es **v0.1.0-beta.8** (suite de discos e importación de CHDMAN desde ZIP).
 La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
 se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 **Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.7-bNN-GUI-win-x64.zip`.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.8-bNN-GUI-win-x64.zip`.
 Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
 y `Toolkit-win-x64.zip`.
 
@@ -70,14 +70,21 @@ realizar conversiones por lotes:
 
 - **PBP → CHD (PS1)**: genera un CHD por disco, incluso desde PBP
   multidisco, tras extracción temporal automatizada a BIN/CUE.
+- **PBP → BIN/CUE (PS1)**: extrae pistas de uno o varios discos a BIN/CUE
+  desde PBP sin CHDMAN, conservando la estructura disponible.
+- **PBP → ISO (PS1)**: solo una pista de datos MODE1 o MODE2 Form1 de
+  2048 bytes por sector. Rechaza audio CD, XA Form2, multidisco y demás
+  casos que perderían información. Para conservación y grabación de PS1,
+  **usa BIN/CUE** en vez de ISO.
 - **CHD → BIN/CUE (CD)**: imágenes para aplicaciones de grabación de CD,
   con pistas CD-Audio cuando se encuentren en la imagen original.
   Dirigido a PS1, Saturn y PS2 publicado en CD.
 - **CHD → ISO (DVD)**: para juegos PS2 publicados en DVD; no se deben
   convertir indiscriminadamente discos DVD a un BIN/CUE de CD.
 
-**Importante:** a diferencia de CHD→PBP, estos tres modos requieren
-`chdman.exe` de MAME. Esta beta **no redistribuye CHDMAN**.
+**Importante:** los modos **PBP→CHD, CHD→BIN/CUE y CHD→ISO**
+requieren `chdman.exe` de MAME. **PBP→BIN/CUE y PBP→ISO limitado
+no lo necesitan.** Esta beta **no redistribuye CHDMAN**.
 Puedes obtener por tu cuenta un paquete ZIP de
 [Recalbox](https://wiki.recalbox.com/es/tutorials/utilities/rom-conversion/chdman)
 o [OnionUI](https://onionui.github.io/docs/advanced/chdman)
