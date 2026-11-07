@@ -4,6 +4,24 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.13 — 7 noviembre 2026 (explicación técnica de compresión nivel 3)
+
+- Se mantiene el **nivel 3 predeterminado en la GUI LNR**; se mejora
+  el texto del selector y la ayuda integrada con una explicación
+  basada en el código real de SharpZipLib 1.4.2.
+- **Verificado:** en esta biblioteca los niveles **1–4** usan
+  `DEFLATE_FAST`, mientras **5–9** usan `DEFLATE_SLOW` para
+  generar el PBP. Esto difiere del zlib clásico, cuyo umbral está
+  entre 3 y 4.
+- Recomendamos el 3 por el compromiso de **velocidad de compresión,
+  tamaño y sencillez**, pero no afirmamos falsamente que la CPU de
+  la consola tenga que repetir el cálculo de cadenas o búsquedas
+  lazy/hash durante la descompresión.
+- La documentación incluye fuentes y distingue explícitamente
+  rendimiento de creación de PBP frente a reproducción/emulación.
+- El motor original, formato PBP, niveles disponibles, preferencias
+  existentes y datos de usuario no se han modificado.
+
 ## v0.1.0-beta.12 — 7 noviembre 2026 (orden de botones y enlaces para importar CHDMAN)
 
 - **Limpiar registro** pasa a situarse **antes de Copiar registro**
