@@ -64,8 +64,9 @@
                     carga y microtirones dependen también del emulador y el hardware.
                     LaNaveRETRO ha comprobado en una PSP original que, en algunos
                     juegos de PS1, los niveles 1 a 3 acortan las esperas de carga
-                    frente a los niveles 4 o 5. En sus pruebas, el ahorro adicional
-                    de 4/5 fue de pocos MB y el de 5/9 resultó muy pequeño.
+                    frente a los niveles 4 o 5. En sus pruebas, la diferencia de tamaño
+                    entre niveles 4 y 5 fue de pocos MB, y entre 5 y 9
+                    apenas hubo ahorro adicional.
                     Es una observación práctica de determinados juegos, no una
                     garantía universal ni una consecuencia necesaria del algoritmo.
                     Por eso 3 es la preferencia LNR: el rendimiento real depende
