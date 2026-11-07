@@ -135,10 +135,27 @@ ventana por lotes con tres modos:
 
 1. Selecciona una de las tres conversiones en la lista desplegable.
 2. Indica la carpeta de origen. Pulsa **Analizar** y revisa los archivos.
-3. Sitúa **`chdman.exe` oficial de MAME** junto a `PSXPackagerGUI.exe`,
-   o usa el botón **Localizar...** para seleccionar un ejecutable existente.
-   Esta beta **todavía no incluye CHDMAN** en el ZIP, ni lo instala por
-   su cuenta. Obtén las herramientas de las fuentes oficiales de MAME.
+3. Consigue una copia legítima de **CHDMAN**. La fuente preferida es
+   [MAME oficial](https://www.mamedev.org/release.html).
+   También hay ZIP prácticos en
+   [Recalbox](https://wiki.recalbox.com/es/tutorials/utilities/rom-conversion/chdman)
+   y [OnionUI](https://onionui.github.io/docs/advanced/chdman).
+   La versión incluida en el enlace de OnionUI es 0.251 y puede ser
+   anterior a la versión oficial actual.
+4. Si has descargado un ZIP, pulsa **Importar ZIP...** y selecciónalo.
+   LNR extraerá únicamente `chdman.exe` a
+   `%LOCALAPPDATA%\\PSXPackagerLNR\\Tools` y lo reconocerá
+   automáticamente en las siguientes sesiones; no tienes que copiar
+   archivos manualmente. En la importación se comprueba una cabecera
+   de ejecutable Windows y se registra SHA-256, pero esto NO garantiza
+   autenticidad ni ausencia de malware: usa únicamente paquetes fiables.
+   Alternativamente puedes poner `chdman.exe` junto a la GUI o
+   pulsar **Localizar...** para usar uno ya instalado. El ZIP de LNR
+   no redistribuye el ejecutable de MAME.
+5. Pulsa **Convertir lote** y confirma. El programa conserva **todos**
+   los originales y no sobrescribe los destinos existentes.
+6. Se limpian automáticamente los temporales de cada juego; no se
+   borran archivos de salida completados antes de un error/cancelación.
 4. Pulsa **Convertir lote** y confirma. El programa conserva **todos**
    los originales y no sobrescribe los destinos existentes.
 5. Se limpian automáticamente los temporales de cada juego; no se
