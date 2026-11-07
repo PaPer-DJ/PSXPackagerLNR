@@ -121,7 +121,8 @@ namespace PSXPackagerGUI
                     FollowActivity = AutoScrollCheck.IsChecked == true,
                     WindowWidth = ActualWidth,
                     WindowHeight = ActualHeight,
-                    LogPanelHeight = LogPanelRow.ActualHeight
+                    LogPanelHeight = LogPanelRow.ActualHeight,
+                    LayoutVersion = 2
                 });
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
