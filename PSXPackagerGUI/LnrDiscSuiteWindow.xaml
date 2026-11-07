@@ -62,7 +62,7 @@
                 <ColumnDefinition Width="124"/>
                 <ColumnDefinition Width="112"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="CHDMAN" VerticalAlignment="Center"
+            <TextBlock x:Name="ChdmanLabel" Text="CHDMAN" VerticalAlignment="Center"
                        ToolTip="Solo se necesita para PBP→CHD y CHD→BIN/CUE/ISO. PBP→BIN/CUE e ISO simple usan el motor original."/>
             <TextBox Grid.Column="1" x:Name="ChdmanBox" MinHeight="31"
                      VerticalContentAlignment="Center"
