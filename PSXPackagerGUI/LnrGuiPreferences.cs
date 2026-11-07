@@ -31,7 +31,12 @@ namespace PSXPackagerGUI
         public bool FollowActivity { get; set; } = true;
         public double WindowWidth { get; set; } = 1020;
         public double WindowHeight { get; set; } = 830;
-        public double LogPanelHeight { get; set; } = 300;
+        // Beta.10 favours a larger list of detected CHD games.
+        public double LogPanelHeight { get; set; } = 200;
+        // Old versions saved the previous default height (300) without
+        // marking whether the user had changed it. Migrate that exact
+        // value once, preserving all other custom splitter positions.
+        public int LayoutVersion { get; set; }
 
         private static string PreferencesPath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -41,9 +46,18 @@ namespace PSXPackagerGUI
         {
             try
             {
-                if (!File.Exists(PreferencesPath)) return new LnrGuiPreferences();
-                return JsonSerializer.Deserialize<LnrGuiPreferences>(File.ReadAllText(PreferencesPath))
-                       ?? new LnrGuiPreferences();
+                if (!File.Exists(PreferencesPath))
+                    return new LnrGuiPreferences { LayoutVersion = 2 };
+
+                var preferences = JsonSerializer.Deserialize<LnrGuiPreferences>(
+                    File.ReadAllText(PreferencesPath)) ?? new LnrGuiPreferences();
+                if (preferences.LayoutVersion < 2)
+                {
+                    if (Math.Abs(preferences.LogPanelHeight - 300.0) < 1)
+                        preferences.LogPanelHeight = 200;
+                    preferences.LayoutVersion = 2;
+                }
+                return preferences;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
                                        or JsonException or ArgumentException)
