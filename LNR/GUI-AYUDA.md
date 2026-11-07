@@ -77,6 +77,47 @@ una conversión válida. **Copiar registro** facilita informar errores;
 **Abrir carpeta PBP** abre los resultados. Puedes ampliar el registro
 arrastrando el separador y desmarcar **Seguir actividad** para consultarlo.
 
+### Columnas, progreso de fase y duración total (beta.10)
+
+En la tabla, **Nombre PBP** permanece alineado a la izquierda; las columnas
+**Discos, Origen, CHD, PBP, Variación, Tiempo y Estado/Progreso** se centran.
+Los anchos de las columnas de datos se calculan con el texto visible y
+la columna de estado aprovecha el espacio restante. En ventanas estrechas
+se mantiene un desplazamiento horizontal en vez de comprimir la barra.
+Durante cada conversión, la barra verde se extiende hasta justo antes
+del porcentaje. El porcentaje es **de la fase**, no del juego completo.
+
+Al finalizar, la barra inferior indica **«Lote Finalizado · Tiempo total:
+mm:ss»** o, si ha durado una hora o más, **hh:mm:ss**. También se informa
+si el lote ha sido cancelado o ha terminado con errores. El tiempo
+cuenta desde el comienzo de la conversión del lote hasta su finalización,
+incluidos los archivos saltados.
+
+### Apagar equipo al finalizar (beta.10)
+
+- La casilla **Apagar equipo al finalizar el lote** aparece en la parte
+  inferior derecha, desmarcada por defecto. **Nunca se recuerda marcada.**
+- Requiere confirmación antes de empezar; se considera una acción
+  independiente de la opción de borrado de CHD.
+- Solo se programa si **al menos un juego se ha convertido** y todos los
+  trabajos terminan sin error ni cancelación ni advertencias de borrado.
+  Si todo se salta porque ya existe, **no apaga el equipo**.
+- Después del lote empieza una **cuenta atrás local de 60 segundos** en
+  la GUI. Se puede anular con **Cancelar apagado programado**. Cerrar la
+  aplicación durante la cuenta atrás también cancela el apagado.
+- Al terminar la cuenta atrás, Windows recibe una solicitud de apagado
+  **normal y sin forzar aplicaciones** (`shutdown.exe /s /t 0`).
+  Windows puede aplazarlo o impedirlo si hay documentos sin guardar.
+- No se usa `shutdown /t 60`, porque en Windows los retardos positivos
+  llevan implícito un cierre forzado de programas, con posible pérdida
+  de datos. El apagado depende de que la GUI siga abierta durante su
+  cuenta atrás; no se agenda en segundo plano.
+
+**Importante:** comprueba que los trabajos ajenos al conversor están
+guardados y que no hay otras tareas importantes en ejecución antes de
+activar esta opción. Es una función avanzada y no está habilitada por
+defecto.
+
 ## 6. Eliminar CHD convertidos — función avanzada
 
 **Desactivada en cada inicio y en cada lote; nunca se recuerda activada.**
