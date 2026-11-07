@@ -121,18 +121,46 @@ o no queda suficiente espacio para producir su PBP.
 
 ## 7. Conversión inversa y formatos de disco: alcance de la suite
 
-La edición LNR se está ampliando para admitir también:
+La edición beta.6 incorpora un botón **Suite CD / CHD / ISO** en el
+conversor y una entrada independiente en el menú principal. Es una
+ventana por lotes con tres modos:
 
-| Dirección | Tecnología | Limitaciones |
+| Dirección | Salida | Limitaciones |
 |---|---|---|
-| PBP → BIN/CUE | Extracción disponible en PSXPackager | PS1; multidisco produce discos separados |
-| PBP → CHD | Extraer BIN/CUE y comprimir con CHDMAN | Se necesita espacio temporal para BIN/CUE; no es reversión bit a bit garantizada |
-| CHD de CD → BIN/CUE | `chdman extractcd` | PS1, Saturn y PS2 en CD; incluye pistas de audio cuando están preservadas |
-| CHD de DVD → ISO | `chdman extractdvd` | PS2 en DVD; no usar BIN/CUE de CD por defecto |
+| PBP → CHD | `CHD/Nombre.chd`, uno por disco PS1 | PSXPackager extrae temporalmente BIN/CUE y CHDMAN genera el CHD; no se recuperan subcanales ya perdidos |
+| CHD de CD → BIN/CUE | `BIN_CUE/Juego/Juego.cue` y `.bin` | PS1, Saturn y PS2 en CD; conserva las pistas de audio disponibles en el CHD |
+| CHD de DVD → ISO | `ISO/Juego.iso` | PS2 en DVD, no CD; usa `chdman extractdvd` |
 
-Las operaciones con CHDMAN necesitan el ejecutable oficial de MAME
-y están **separadas** de la función directa de CHD→PBP. La documentación
-de CHDMAN está en <https://docs.mamedev.org/tools/chdman.html>.
+**Funcionamiento de la suite (beta experimental):**
+
+1. Selecciona una de las tres conversiones en la lista desplegable.
+2. Indica la carpeta de origen. Pulsa **Analizar** y revisa los archivos.
+3. Sitúa **`chdman.exe` oficial de MAME** junto a `PSXPackagerGUI.exe`,
+   o usa el botón **Localizar...** para seleccionar un ejecutable existente.
+   Esta beta **todavía no incluye CHDMAN** en el ZIP, ni lo instala por
+   su cuenta. Obtén las herramientas de las fuentes oficiales de MAME.
+4. Pulsa **Convertir lote** y confirma. El programa conserva **todos**
+   los originales y no sobrescribe los destinos existentes.
+5. Se limpian automáticamente los temporales de cada juego; no se
+   borran archivos de salida completados antes de un error/cancelación.
+
+**PBP → CHD no es una conversión directa sin intermediarios**: para
+reconstruir un PBP se necesita extraer BIN/CUE en una carpeta temporal,
+crear el CHD con CHDMAN y comprobarlo con `chdman verify`. El usuario
+no tiene que gestionar manualmente esos archivos, pero necesita suficiente
+espacio libre para la extracción temporal. En un PBP multidisco, se
+generan varios CHD independientes.
+
+**CHD → BIN/CUE no graba físicamente ningún disco.** Produce las
+imágenes que puedes abrir en un programa de grabación compatible con
+pistas múltiples. Para PS2 DVD, genera ISO y utiliza un DVD adecuado.
+La grabación física, posibles protecciones, subcanales y compatibilidad
+con el hardware original dependen de las imágenes y del dispositivo.
+
+Las operaciones con CHDMAN están **separadas** de la función directa
+CHD→PBP, que sigue funcionando **sin CHDMAN**. Fuentes oficiales:
+<https://www.mamedev.org/release.html> y
+<https://docs.mamedev.org/tools/chdman.html>.
 
 Un `.PBP` de PS1 no es un formato para Saturn ni PS2. Los `.CHD` de
 DVD deben restaurarse como ISO y grabarse, si procede, en soporte DVD,
