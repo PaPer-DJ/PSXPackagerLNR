@@ -7,12 +7,12 @@ la licencia MIT y los creditos del software original.
 
 ## Versionado y descargas identificables
 
-La version propia de LaNaveRETRO comienza en **v0.1.0-beta.1**.
+La version de pruebas actual es **v0.1.0-beta.2** (la anterior fue beta.1).
 La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
 se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 **Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.1-b59-GUI-win-x64.zip`.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.2-bNN-GUI-win-x64.zip`.
 Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
 y `Toolkit-win-x64.zip`.
 
@@ -41,15 +41,15 @@ alternativo basado en BAT/PowerShell.
 1. En [GitHub Actions](https://github.com/PaPer-DJ/PSXPackagerLNR/actions)
    descarga el artefacto Windows mas reciente de la rama
    `lnr/windows-chd-build`.
-2. Extrae `PSXPackagerLNR-GUI-win-x64.zip` completo en una carpeta
+2. Extrae el ZIP numerado que termina en `-GUI-win-x64.zip` completo en una carpeta
    de Windows (no ejecutes el programa directamente dentro del ZIP).
 3. Inicia `PSXPackagerGUI.exe` y pulsa el nuevo menu
    **CHD a PBP - LNR**.
 4. Selecciona la carpeta que contiene los CHD. Elige **separados** o
    **unidos** y nivel **1, 5 o 9** (5 es el predeterminado).
-5. Pulsa **Analizar**, revisa el plan y despues **Convertir**.
-   Los PBP apareceran en la subcarpeta `PBP`. Los originales no
-   se modifican y los destinos existentes se omiten.
+5. Pulsa **Analizar**, revisa el plan (los PBP existentes se marcan como
+   **Saltado / Ya existe**) y despues **Convertir**. Los PBP apareceran
+   en la subcarpeta `PBP`. Los CHD originales no se modifican.
 
 La distribucion GUI incluye tambien `psxpackager.exe`, necesario para
 la conversion directa. No requiere PowerShell ni CHDMAN; el Toolkit BAT
@@ -70,9 +70,21 @@ En el registro, cada mensaje informativo se muestra en una linea
 independiente. El aviso de confirmacion separa carpeta de destino,
 modo, compresion y avisos de seguridad.
 
+**Novedades de beta.2**: botones **Copiar registro** y **Abrir carpeta PBP**,
+casilla **Seguir actividad** (puedes desmarcarla para revisar el registro
+sin saltos al final), ayudas y nombres de fases en castellano.
+La aplicacion guarda localmente la carpeta, el modo multidisco, nivel
+de compresion, tamaño de ventana y panel del registro, y la casilla
+de seguimiento al cerrar. El archivo es
+`%LOCALAPPDATA%\\PSXPackagerLNR\\gui-preferencias.json`;
+puedes borrarlo si deseas volver a los valores iniciales. No contiene
+ROMs ni modifica los ajustes del PSXPackager original.
+
 **Validado por GitHub Actions:** compila la GUI/CLI y supera pruebas
-del planificador del BAT. **Pendiente:** probar conversiones reales
-en Windows desde la nueva ventana, pistas CD-Audio y cambio de disco.
+del planificador del BAT y de ejecución de la CLI redirigida.
+**Ya probado por un usuario:** conversión desde GUI de Actua Soccer 3
+y Tomb Raider. **Pendiente para beta.2:** comprobación de las nuevas
+opciones visuales, prueba multidisco y cambio real de disco.
 
 - [Instrucciones del Toolkit](LNR/Batch/README.md)
 - [Compilaciones Windows y artefactos ZIP](https://github.com/PaPer-DJ/PSXPackagerLNR/actions)
