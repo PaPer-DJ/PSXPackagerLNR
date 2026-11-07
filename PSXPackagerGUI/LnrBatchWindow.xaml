@@ -178,6 +178,10 @@
                         Click="Run_OnClick" MinHeight="31"/>
                 <DockPanel Grid.Row="1" Grid.ColumnSpan="8" Margin="0,11,0,0"
                            LastChildFill="False">
+                    <Button DockPanel.Dock="Right" x:Name="SuiteButton"
+                            Content="Suite CD / CHD / ISO" Padding="10,5"
+                            Margin="0,0,8,0" Click="Suite_OnClick"
+                            ToolTip="Otras conversiones: PBP→CHD, CHD→BIN/CUE y CHD→ISO"/>
                     <Button DockPanel.Dock="Right" x:Name="HelpButton"
                             Content="Ayuda y opciones" Padding="10,5"
                             Click="Help_OnClick"
