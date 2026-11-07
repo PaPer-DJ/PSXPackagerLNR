@@ -334,3 +334,21 @@ que tengas derecho a copiar o respaldar.
 - Proyecto original: <https://github.com/RupertAvery/PSXPackager>
 - Fork LNR: <https://github.com/PaPer-DJ/PSXPackagerLNR>
 - Documentación técnica CHDMAN: <https://docs.mamedev.org/tools/chdman.html>
+
+### Anexo técnico del fork: compresión PBP nivel 3
+
+Para quienes quieran conocer el motivo detallado de esta decisión,
+hemos añadido al final de la parte LNR del
+[README del fork](../README.md#anexo-tecnico-lnr-nivel-3)
+un análisis con las **pruebas realizadas por LaNaveRETRO en PSP
+original**, los parámetros exactos de SharpZipLib 1.4.2 para los
+niveles 1 a 9 y la explicación de LZ77, Huffman, greedy/lazy match
+y cadenas hash.
+
+Es importante distinguir **las pausas de carga observadas en PSP**
+del **trabajo de compresión que realiza el PC**. Los parámetros
+de búsqueda de coincidencias no se vuelven a calcular durante
+la descompresión, y las pruebas no constituyen una medición aislada
+del consumo de CPU de la PSP. El nivel 3 se mantiene como
+**recomendación práctica de LNR**, no como promesa universal de
+rendimiento superior para todos los juegos.
