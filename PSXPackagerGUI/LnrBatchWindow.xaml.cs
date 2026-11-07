@@ -336,6 +336,15 @@ namespace PSXPackagerGUI
             }
         }
 
+        private void ClearLog_OnClick(object sender, RoutedEventArgs e)
+        {
+            // Only clears the current on-screen/session log, never generated
+            // PBPs, CHDs, persisted report files or conversion counters.
+            // New conversion messages will continue to appear normally.
+            _messages.Clear();
+            OutputBox.Clear();
+        }
+
         private void OpenPbp_OnClick(object sender, RoutedEventArgs e)
         {
             try
