@@ -99,13 +99,31 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,14">
-            <TextBlock Text="CHD → PBP por lotes" FontSize="22" FontWeight="SemiBold"/>
-            <TextBlock Text="Conversión directa, sin CHDMAN ni archivos BIN/CUE intermedios."
-                       Foreground="#FF5A6776" Margin="0,4,0,0"/>
-            <TextBlock Text="Basado en PSXPackager de RupertAvery y sus colaboradores · Interfaz y herramientas LNR: LaNaveRETRO."
-                       FontSize="11" Foreground="#FF5A6776" Margin="0,3,0,0"/>
-        </StackPanel>
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="165"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                <TextBlock Text="CHD → PBP por lotes" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock Text="Conversión directa, sin CHDMAN ni archivos BIN/CUE intermedios."
+                           Foreground="#FF5A6776" Margin="0,4,0,0"/>
+                <TextBlock Text="Basado en PSXPackager de RupertAvery y colaboradores · Adaptación LaNaveRETRO."
+                           FontSize="11" Foreground="#FF5A6776" Margin="0,3,0,0"/>
+            </StackPanel>
+            <Button Grid.Column="1" Click="LnrAbout_OnClick"
+                    ToolTip="Créditos, autoría y licencia"
+                    Background="Transparent" BorderThickness="0" Padding="3" Cursor="Hand"
+                    HorizontalAlignment="Right" VerticalAlignment="Center">
+                <StackPanel HorizontalAlignment="Center">
+                    <Image Width="152" Height="35" Stretch="Uniform"
+                           Source="pack://application:,,,/Branding/lnr-mod-logo.png"/>
+                    <TextBlock Text="Créditos y licencia"
+                               TextAlignment="Center" FontSize="10"
+                               Foreground="#FF607084" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Button>
+        </Grid>
 
         <Grid Grid.Row="1" Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
