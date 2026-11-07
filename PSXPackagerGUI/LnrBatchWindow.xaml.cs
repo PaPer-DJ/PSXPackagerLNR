@@ -586,8 +586,17 @@ namespace PSXPackagerGUI
                     {
                         var sbi = Path.ChangeExtension(disc, ".sbi");
                         if (!File.Exists(sbi)) continue;
-                        var copy = Path.Combine(dest, Path.GetFileName(sbi));
-                        if (!File.Exists(copy)) File.Copy(sbi, copy);
+                        try
+                        {
+                            var copy = Path.Combine(dest, Path.GetFileName(sbi));
+                            if (!File.Exists(copy)) File.Copy(sbi, copy);
+                        }
+                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                        {
+                            // The PBP was already converted correctly: an optional
+                            // external SBI failure must not mark it as a broken PBP.
+                            Append("AVISO: PBP completado, pero no se pudo copiar SBI: " + ex.Message);
+                        }
                         if (job.Discs.Count > 1)
                             Append("AVISO: SBI externo de juego multidisco. Comprueba soporte en tu emulador.");
                     }
