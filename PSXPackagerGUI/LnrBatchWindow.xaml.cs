@@ -70,8 +70,16 @@ namespace PSXPackagerGUI
 
             ModeCombo.SelectedIndex = _preferences.MultidiscMode is 0 or 1
                 ? _preferences.MultidiscMode : 0;
-            LevelCombo.SelectedIndex = _preferences.CompressionIndex is >= 0 and <= 2
-                ? _preferences.CompressionIndex : 1;
+            var preferredLevel = _preferences.PreferredCompressionLevel;
+            LevelCombo.SelectedIndex = preferredLevel switch
+            {
+                1 => 0,
+                5 => 2,
+                9 => 3,
+                _ => 1
+            };
+            // Destructive options are intentionally never restored from preferences.
+            DeleteChdCheck.IsChecked = false;
             AutoScrollCheck.IsChecked = _preferences.FollowActivity;
             if (_preferences.WindowWidth >= MinWidth && _preferences.WindowWidth <= SystemParameters.WorkArea.Width)
                 Width = _preferences.WindowWidth;
@@ -93,7 +101,8 @@ namespace PSXPackagerGUI
                 {
                     LastSourceFolder = SourceBox.Text.Trim().Trim('"'),
                     MultidiscMode = ModeCombo.SelectedIndex,
-                    CompressionIndex = LevelCombo.SelectedIndex,
+                    CompressionIndex = -1,
+                    CompressionLevel = SelectedLevel,
                     FollowActivity = AutoScrollCheck.IsChecked == true,
                     WindowWidth = ActualWidth,
                     WindowHeight = ActualHeight,
@@ -141,6 +150,11 @@ namespace PSXPackagerGUI
         private void LnrAbout_OnClick(object sender, RoutedEventArgs e)
         {
             new LnrAboutWindow { Owner = this }.ShowDialog();
+        }
+
+        private void Help_OnClick(object sender, RoutedEventArgs e)
+        {
+            new LnrHelpWindow { Owner = this }.ShowDialog();
         }
 
         private void Browse_OnClick(object sender, RoutedEventArgs e)
@@ -507,6 +521,7 @@ namespace PSXPackagerGUI
             BrowseButton.IsEnabled = idle;
             ModeCombo.IsEnabled = idle;
             LevelCombo.IsEnabled = idle;
+            DeleteChdCheck.IsEnabled = idle;
             SourceBox.IsEnabled = idle;
             CancelButton.IsEnabled = !idle;
         }
