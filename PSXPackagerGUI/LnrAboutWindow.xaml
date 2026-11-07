@@ -1,8 +1,8 @@
 <Window x:Class="PSXPackagerGUI.LnrAboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Acerca de PSXPackagerLNR" Width="610" Height="440"
-        MinWidth="550" MinHeight="420" ResizeMode="NoResize"
+        Title="Acerca de PSXPackagerLNR" Width="650" Height="510"
+        MinWidth="600" MinHeight="465" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
     <Grid Margin="22">
         <Grid.RowDefinitions>
@@ -41,6 +41,16 @@
                 Se conservan la licencia MIT y los avisos de autoría del proyecto.
                 Esta adaptación se distribuye como fork independiente, sin afiliación
                 oficial con el autor del software original.
+            </TextBlock>
+            <TextBlock TextWrapping="Wrap" Foreground="#FF344559" Margin="0,15,0,0">
+                <Run FontWeight="SemiBold">¿Por qué compresión PBP nivel 3?</Run>
+                <LineBreak/>
+                Elección LNR basada en pruebas de carga en PSP original y en el
+                análisis de SharpZipLib. Los detalles, parámetros y límites
+                de la conclusión se explican en:
+                <Hyperlink NavigateUri="https://github.com/PaPer-DJ/PSXPackagerLNR/blob/lnr/windows-chd-build/README.md#anexo-tecnico-lnr-nivel-3"
+                           RequestNavigate="CompressionTechnical_OnRequestNavigate"
+                           Foreground="#FF1766B0">Anexo técnico: nivel 3 y pruebas en PSP</Hyperlink>
             </TextBlock>
         </StackPanel>
 
