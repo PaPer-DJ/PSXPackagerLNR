@@ -43,8 +43,16 @@ PSXPackagerLNR-Toolkit-win-x64.zip directamente en tu carpeta de juegos.
   (Disc 1), (Disc 2), etc. Solo agrupa series completas de 2 a 5
   discos consecutivos. Un M3U incompleto o ambiguo se omite con aviso
   para evitar generar un juego mutilado.
-- Compresion 1 (minima), 5 (normal y valor predeterminado en el programa),
-  9 (maxima).
+- Compresión 1 (ligera), 3 (equilibrada y predeterminada LNR),
+  5 (estándar histórico del proyecto original) y 9 (máxima).
+  La GUI clásica, la GUI por lotes, el BAT/PowerShell y la CLI LNR
+  usan 3 por defecto en instalaciones nuevas; se respetan preferencias
+  previamente guardadas en las interfaces gráficas.
+- En pruebas propias sobre una PSP original, los PBP creados con
+  niveles 1–3 cargaron más rápido que 4 o 5 en determinados momentos
+  de algunos juegos de PS1. Las ganancias de tamaño al pasar a 4–5 y 9
+  fueron pequeñas en esos casos; no se garantiza para todos los títulos.
+  Las búsquedas exhaustivas del compresor no se ejecutan al reproducir.
 
 ## Seguridad
 
