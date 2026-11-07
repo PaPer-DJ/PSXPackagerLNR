@@ -396,11 +396,11 @@
                         Content="Cancelar apagado programado"
                         Visibility="Collapsed" Click="CancelScheduledShutdown_OnClick"
                         Margin="0,0,12,0" Padding="9,5"
-                        ToolTip="Cancela el apagado de Windows pendiente mediante shutdown /a"/>
+                        ToolTip="Cancela la cuenta atrás local antes de solicitar el apagado normal de Windows"/>
                 <CheckBox x:Name="ShutdownCheck"
                           Content="Apagar equipo al finalizar el lote"
                           IsChecked="False" VerticalAlignment="Center"
-                          ToolTip="Desactivado siempre por defecto. Requiere confirmación adicional. Solo se programa si termina sin errores ni cancelación y se ha convertido al menos un juego. Windows concede 60 segundos para cancelar el apagado."/>
+                          ToolTip="Desactivado por defecto. Solo se activa con confirmación y si al menos un juego acaba sin errores ni cancelación. La app concede 60 segundos para cancelar antes de solicitar un apagado normal sin forzar programas abiertos."/>
             </StackPanel>
         </Grid>
     </Grid>
