@@ -7,12 +7,12 @@ la licencia MIT y los creditos del software original.
 
 ## Versionado y descargas identificables
 
-La version de pruebas actual es **v0.1.0-beta.4** (logo LNR y estimación del lote).
+La version de desarrollo actual es **v0.1.0-beta.6** (compresión nivel 3, borrado opcional de CHD y suite de discos experimental).
 La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
 se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 **Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.4-bNN-GUI-win-x64.zip`.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.6-bNN-GUI-win-x64.zip`.
 Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
 y `Toolkit-win-x64.zip`.
 
@@ -46,6 +46,48 @@ y los segundos por MB observados en conversiones correctas del lote.
 Al principio aparece «calculando»; el tiempo puede variar mucho según
 el juego y el dispositivo. No se promete una hora de finalización exacta.
 
+## Guía de opciones y seguridad
+
+La finalidad de **PSXPackagerLNR** es facilitar convertir **colecciones
+de PlayStation 1 en CHD directamente a PBP**, en lotes y con una GUI,
+sin comandos, CHDMAN ni conversión intermedia a BIN/CUE.
+
+La función principal no ha cambiado. Solo si habilitas expresamente
+**Eliminar CHD convertidos** se intentan borrar los CHD al terminar
+correctamente un PBP nuevo. Esa opción siempre está desactivada
+al abrir la ventana o iniciar un lote, exige otra confirmación y
+**el borrado es irreversible**. No es una verificación de compatibilidad
+de emulador. Al menos debe haber espacio libre para generar el PBP
+antes de borrar el CHD. Los PBP provisionales se escriben en el mismo
+volumen de destino para evitar copias completas innecesarias.
+
+[Manual completo en castellano y explicación de todas las opciones](LNR/GUI-AYUDA.md).
+
+### Suite de discos (beta experimental)
+
+Desde el menú **Suite de discos · PBP/CHD/CD/DVD** también puedes
+realizar conversiones por lotes:
+
+- **PBP → CHD (PS1)**: genera un CHD por disco, incluso desde PBP
+  multidisco, tras extracción temporal automatizada a BIN/CUE.
+- **CHD → BIN/CUE (CD)**: imágenes para aplicaciones de grabación de CD,
+  con pistas CD-Audio cuando se encuentren en la imagen original.
+  Dirigido a PS1, Saturn y PS2 publicado en CD.
+- **CHD → ISO (DVD)**: para juegos PS2 publicados en DVD; no se deben
+  convertir indiscriminadamente discos DVD a un BIN/CUE de CD.
+
+**Importante:** a diferencia de CHD→PBP, estos tres modos requieren
+`chdman.exe` de MAME. Esta beta **no lo incluye todavía**:
+colócalo junto a la GUI o usa **Localizar...**. Consulta
+[la fuente oficial de MAME](https://www.mamedev.org/release.html) y
+[su documentación CHDMAN](https://docs.mamedev.org/tools/chdman.html).
+La suite no sobrescribe ni elimina archivos de origen, y conserva
+cualquier resultado correcto producido antes de un error.
+
+**Pendiente de validar en equipos reales:** pista de audio en Saturn/PS1,
+PBP multidisco a CHD y CHD de DVD PS2 a ISO. No asegura recuperación
+de información de subcanales perdida en un PBP preexistente.
+
 ## Estado de desarrollo
 
 Estamos validando la conversion directa **CHD a PBP sin CHDMAN**, incluida
@@ -71,9 +113,14 @@ alternativo basado en BAT/PowerShell.
 5. La tabla se **carga automaticamente** tras seleccionar la carpeta
    (tambien al recuperar la ultima carpeta o cambiar de modo). El botón
    **Analizar** queda disponible para forzar una nueva lectura.
-6. Elige discos **separados** o **unidos** y nivel **1, 5 o 9** (5 es
-   el predeterminado). Revisa los PBP marcados **Saltado / Ya existe**
-   y pulsa **Convertir**. Los CHD originales no se modifican.
+6. Elige discos **separados** o **unidos** y nivel **1, 3, 5 o 9**
+   (3 es la opción inicial LNR; 5 sigue siendo el nivel estándar
+   original). Revisa los PBP existentes y pulsa **Convertir**.
+7. Deja **Eliminar .CHD convertidos** desactivado si deseas conservar
+   los originales. Si lo activas, la aplicación exige confirmación
+   adicional y solo intentará borrar CHD de conversiones nuevas y
+   comprobadas, nunca de errores ni destinos preexistentes. El borrado
+   directo es irreversible y la comprobación no garantiza compatibilidad.
 
 La distribucion GUI incluye tambien `psxpackager.exe`, necesario para
 la conversion directa. No requiere PowerShell ni CHDMAN; el Toolkit BAT
@@ -125,7 +172,8 @@ opciones visuales, prueba multidisco y cambio real de disco.
 - [Solicitud de cambios en desarrollo](https://github.com/PaPer-DJ/PSXPackagerLNR/pull/1)
 
 El BAT ofrece discos **separados** (nombres exactos) o **unidos** (M3U) y
-niveles de compresion **1, 5 y 9**, con el nivel 5 como opcion normal.
+niveles de compresion **1, 3, 5 y 9**; el nivel 3 es la recomendación
+inicial LNR. El Toolkit BAT no elimina nunca archivos CHD.
 Los juegos, BIOS y archivos protegidos por derechos de terceros **no se
 distribuyen** con el proyecto.
 
