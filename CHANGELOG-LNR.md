@@ -4,6 +4,56 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.6 — 7 noviembre 2026 (suite de discos: versión experimental)
+
+- Nuevo módulo gráfico **Suite de discos** desde el menú principal y
+  desde la ventana CHD→PBP, con conversiones por lotes:
+  **PBP→CHD (PS1)**, **CHD→BIN/CUE (CD de PS1/Saturn/PS2)**
+  y **CHD→ISO (DVD de PS2)**.
+- PBP→CHD utiliza la extracción BIN/CUE del PSXPackager original,
+  luego `chdman createcd` y `chdman verify` por disco, sin
+  pasos manuales; temporales limpiados automáticamente.
+- El modo CD usa `chdman extractcd` y recupera `CUE+BIN`;
+  el modo DVD usa `chdman extractdvd` y genera `ISO`.
+- Los originales se conservan siempre en la suite, incluso si falla
+  una conversión; no se sobrescriben salidas existentes.
+  Los resultados se guardan en `CHD`, `BIN_CUE` o `ISO`.
+- **Dependencia separada**: estas conversiones nuevas requieren
+  `chdman.exe` oficial de MAME, todavía NO incorporado al ZIP.
+  Se puede localizar mediante la GUI o colocarlo junto al ejecutable.
+  El modo principal CHD→PBP permanece independiente de CHDMAN.
+- Nuevos manuales, explicación de los formatos CD/DVD y protección
+  de pistas de audio.
+
+**Pendiente de pruebas manuales**: extracción multidisco PBP→CHD, audio
+de CD de Saturn/PS1 y extracción ISO de DVD PS2. No publicar estable.
+
+## v0.1.0-beta.5 — 7 noviembre 2026 (compresión y borrado avanzado)
+
+- Se añade **nivel 3** en el selector de compresión PBP, propuesto
+  como equilibrio inicial LNR para consolas económicas. Se mantienen
+  niveles 1/5/9. El motor original sigue teniendo el nivel 5 por defecto.
+- La GUI guarda el **nivel numérico**, adaptando sin pérdida las
+  preferencias de quienes habían seleccionado 1, 5 o 9 en beta anterior.
+- Nueva casilla **Eliminar .CHD convertidos (irreversible)**, siempre
+  desactivada en cada sesión y en cada lote, con confirmación doble.
+- Borrado solo después de conversión nueva satisfactoria: valida cabecera
+  y tamaño del PBP provisional y del definitivo; preserva CHD saltados,
+  fallidos o cancelados y protege archivos modificados tras el análisis.
+- El PBP provisional se genera en la misma unidad del resultado final;
+  se mueve sin una segunda copia completa, aunque **sí requiere espacio
+  para crear un PBP antes de eliminar el CHD**.
+- Si falla la copia de un SBI auxiliar, se conservan los CHD; M3U/SBI
+  nunca se eliminan. Registro indica cada archivo borrado o conservado.
+- Nueva ventana **Ayuda y opciones**, integrada en la aplicación, y
+  [manual en castellano](LNR/GUI-AYUDA.md) con objetivos del fork,
+  funcionamiento, riesgos, pistas de audio y gestión de espacio.
+- Toolkit BAT/PowerShell incorpora nivel 3; el Toolkit nunca borra CHD.
+
+**Limitación de seguridad**: una validación de archivo PBP no garantiza
+que funcione en una consola, y borrar archivos es irreversible. Requiere
+prueba práctica explícita antes de recomendarlo públicamente.
+
 ## v0.1.0-beta.4 — 7 noviembre 2026 (marca LNR y avance global)
 
 - Logo real **LNR MOD**, aportado para esta edición, optimizado y
