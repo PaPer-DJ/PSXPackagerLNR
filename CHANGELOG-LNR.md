@@ -4,6 +4,17 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.18 — 7 noviembre 2026 (acceso directo sin ejecutable lanzador)
+
+- El paquete GUI Windows x64 sustituye el ejecutable auxiliar `PSXPackagerLNR.exe` por `PSXPackagerLNR - Conversion por lotes.lnk`.
+- El acceso directo abre `PSXPackagerGUI.exe --lnr-batch`, usando el enrutamiento que ya existía en beta.17 y mostrando directamente la ventana LNR de conversión por lotes.
+- `PSXPackagerGUI.exe` sin argumentos mantiene la interfaz clásica. `psxpackager.exe` sigue incluido como motor de conversión.
+- Se elimina la compilación MSVC del lanzador Win32 y se añade comprobación de creación y contenido del acceso directo en GitHub Actions.
+- Los accesos directos de Windows pueden depender de su ubicación: se recomienda extraer el paquete completo y verificar el enlace después de desplazar la carpeta.
+- No se modifican las operaciones de conversión, borrado, compresión ni los valores guardados por el usuario.
+
+**Estado:** beta de desarrollo; probar arranque del enlace y funcionamiento después de mover la carpeta en Windows.
+
 ## v0.1.0-beta.17 — 7 noviembre 2026 (lanzador ligero sin duplicación)
 
 - **PSXPackagerLNR.exe ya no es una copia completa de PSXPackagerGUI.exe.**
