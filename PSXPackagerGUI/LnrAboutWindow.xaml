@@ -28,7 +28,9 @@
                        Foreground="#FF52667D" Margin="0,3,0,0"/>
         </StackPanel>
 
-        <StackPanel Grid.Row="2" Margin="0,0,0,8">
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,8">
+            <StackPanel Margin="0,0,8,0">
             <TextBlock Text="Créditos del proyecto original" FontWeight="SemiBold" Margin="0,0,0,5"/>
             <TextBlock TextWrapping="Wrap" Foreground="#FF344559">
                 PSXPackager: autor original David Khristepher Santos
@@ -52,7 +54,8 @@
                            RequestNavigate="CompressionTechnical_OnRequestNavigate"
                            Foreground="#FF1766B0">Anexo técnico: nivel 3 y pruebas en PSP</Hyperlink>
             </TextBlock>
-        </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
 
         <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
