@@ -592,6 +592,13 @@ namespace PSXPackagerGUI
                 {
                     var confirmDelete = MessageBox.Show(this,
                         "BORRADO DEFINITIVO DE LOS CHD DE ORIGEN\n\n" +
+                        "Esta opción permite convertir grandes lotes sin acumular a la vez " +
+                        "todos los CHD y todos los PBP en el disco.\n" +
+                        "Se libera el espacio de cada CHD DESPUÉS de generar y comprobar " +
+                        "básicamente su nuevo PBP. Debes tener espacio para ese PBP.\n\n" +
+                        "Si quieres CONSERVAR tus CHD originales, NO continúes.\n" +
+                        "PBP → CHD puede recrear una imagen útil, pero NO garantiza " +
+                        "recuperar exactamente el CHD original.\n\n" +
                         "Se eliminarán únicamente los CHD de conversiones NUEVAS " +
                         "que terminen correctamente y cuyo PBP se haya escrito y comprobado.\n\n" +
                         "Los CHD de juegos omitidos (PBP ya existente), fallidos o cancelados " +
