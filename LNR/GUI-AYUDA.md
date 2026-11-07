@@ -24,18 +24,23 @@ firmware/BIOS **no** están incluidos.
 Al descargar y descomprimir el paquete **GUI-win-x64**, encontrarás
 dos ejecutables gráficos en la misma carpeta:
 
-- **`PSXPackagerLNR.exe` (recomendado)**: abre **directamente** la ventana
+- **`PSXPackagerLNR.exe` (recomendado)**: es un **pequeño lanzador
+  nativo de Windows** que abre directamente la ventana
   **CHD → PBP por lotes**, con todas las herramientas LNR y el acceso
-  a **Suite CD / CHD / ISO**. No hay que pasar por la pantalla clásica.
+  a **Suite CD / CHD / ISO**. No necesita duplicar el ejecutable
+  completo de la GUI ni pasar por la pantalla clásica.
 - **`PSXPackagerGUI.exe` (opcional)**: conserva la interfaz original de
   PSXPackager, con su editor, opciones y funciones propias; también
   permite abrir las herramientas añadidas por LNR.
 
-Ambos utilizan **el mismo motor** y trabajan con la misma carpeta de
-herramientas. Se incluye `psxpackager.exe` (CLI) porque la interfaz
-lo necesita para convertir: **no lo elimines ni saques los ejecutables
-de la carpeta extraída**. Para CHD → PBP no hace falta CHDMAN; las
-operaciones adicionales que crean o extraen CHD sí pueden necesitarlo.
+El lanzador `PSXPackagerLNR.exe` **no contiene otra copia de la
+interfaz ni del motor**: llama a `PSXPackagerGUI.exe` con un
+parámetro de inicio interno. También se incluye `psxpackager.exe`
+(CLI) porque la GUI lo necesita para convertir. **Extrae todo
+el ZIP y no muevas los ejecutables fuera de la carpeta**. Para
+un icono en el escritorio, crea un acceso directo de Windows al
+lanzador. La conversión CHD→PBP no precisa CHDMAN; algunas
+conversiones de la Suite sí lo requieren.
 
 ## 2.1. Seleccionar carpeta y analizar
 
