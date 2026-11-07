@@ -6,11 +6,13 @@ Este repositorio es un fork de [RupertAvery/PSXPackager](https://github.com/Rupe
 
 GitHub Actions genera tres ZIP con versión y número de compilación:
 
-- **GUI-win-x64.zip** (recomendado): incorpora **`PSXPackagerLNR.exe`**,
-  que abre directamente el conversor CHD→PBP por lotes; y
-  **`PSXPackagerGUI.exe`**, para acceder opcionalmente a la
-  interfaz clásica original de PSXPackager. Ambos ejecutables
-  comparten el mismo código de GUI y las mismas herramientas.
+- **GUI-win-x64.zip** (recomendado): incorpora
+  **`PSXPackagerLNR.exe`**, un **lanzador nativo Win32 muy pequeño**
+  que abre directamente la GUI del conversor LNR CHD→PBP por lotes,
+  y **`PSXPackagerGUI.exe`**, que contiene el código completo
+  de la aplicación y permite acceder a la interfaz clásica original.
+  Ambos usan la misma GUI y el motor de conversión: el lanzador
+  no incluye otra copia de .NET.
 - **CLI-win-x64.zip**: programa de línea de comandos `psxpackager.exe`.
 - **Toolkit-win-x64.zip**: scripts portables BAT y PowerShell.
 
@@ -20,12 +22,21 @@ muevas archivos individuales**: extrae todo el ZIP y ejecuta
 `PSXPackagerLNR.exe`. Ambas interfaces usan el mismo motor y
 la conversión CHD→PBP no necesita CHDMAN.
 
-La compilación se realiza con .NET 8 **autocontenido y SingleFile**
-en Windows x64. El proceso publica un único paquete de la GUI y
-genera dos nombres de ejecutable a partir de él: el código de
-arranque comprueba el nombre del proceso y abre la ventana apropiada.
-No se mantiene una segunda versión del motor ni se necesita instalar
-.NET en el equipo de destino.
+La aplicación principal se publica con .NET 8 **autocontenido y
+SingleFile** para Windows x64. **Solo se distribuye una copia
+completa de esa aplicación**. Aparte se compila un pequeño ejecutable
+de C nativo (`LNR/Launcher/PSXPackagerLNR.c`) con MSVC y un
+icono del proyecto original. Este lanzador llama a
+`PSXPackagerGUI.exe --lnr-batch`, que selecciona la ventana de
+conversión por lotes desde `App.OnStartup`. Si se abre
+`PSXPackagerGUI.exe` normalmente, aparece la interfaz clásica.
+
+La compilación comprueba que el lanzador mida **menos de 1 MB**
+(y que el ZIP incluya ambos EXE gráficos más `psxpackager.exe`).
+**No precisa instalar .NET adicional** en la máquina destino,
+pero es necesario conservar `PSXPackagerGUI.exe` y el resto
+del paquete al lado del lanzador. Una copia suelta del lanzador
+no puede sustituir a toda la aplicación.
 
 La rama del código fuente incluye un lector de CHD: `PSXPackager.Common/Chd`, y la CLI admite `.chd` como entrada. Esto **no implica que todos los CHD o todos los emuladores sean compatibles**.
 
