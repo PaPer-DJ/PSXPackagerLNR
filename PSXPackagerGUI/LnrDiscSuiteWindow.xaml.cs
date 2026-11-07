@@ -45,6 +45,7 @@ namespace PSXPackagerGUI
             var importedChdman = ImportedChdmanPath;
             ChdmanBox.Text = File.Exists(localChdman) ? localChdman
                            : File.Exists(importedChdman) ? importedChdman : "";
+            UpdateChdmanUi();
             Log("PBP → BIN/CUE y PBP → ISO de datos no necesitan CHDMAN.");
             Log("La creación/extracción de CHD utiliza CHDMAN de MAME. No cambia ni elimina originales.");
             Log("Los PBP multidisco se extraerán y convertirán a un CHD independiente por disco.");
@@ -78,7 +79,20 @@ namespace PSXPackagerGUI
 
         private void Mode_OnChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (IsLoaded && !_running) Scan();
+            if (IsLoaded && !_running)
+            {
+                UpdateChdmanUi();
+                Scan();
+            }
+        }
+
+        private void UpdateChdmanUi()
+        {
+            var required = NeedsChdman;
+            ChdmanLabel.Text = required ? "CHDMAN *" : "CHDMAN (no necesario)";
+            ChdmanBox.IsEnabled = required && !_running;
+            FindChdmanButton.IsEnabled = required && !_running;
+            ImportChdmanButton.IsEnabled = required && !_running;
         }
 
         private void Source_OnKeyDown(object sender, KeyEventArgs e)
@@ -269,12 +283,12 @@ namespace PSXPackagerGUI
         {
             _running = running;
             BrowseButton.IsEnabled = !running;
-            FindChdmanButton.IsEnabled = !running;
-            ImportChdmanButton.IsEnabled = !running;
+            FindChdmanButton.IsEnabled = !running && NeedsChdman;
+            ImportChdmanButton.IsEnabled = !running && NeedsChdman;
             AnalyzeButton.IsEnabled = !running;
             ModeBox.IsEnabled = !running;
             SourceBox.IsEnabled = !running;
-            ChdmanBox.IsEnabled = !running;
+            ChdmanBox.IsEnabled = !running && NeedsChdman;
             ConvertButton.IsEnabled = !running && _jobs.Count > 0;
             CancelButton.IsEnabled = running;
         }
