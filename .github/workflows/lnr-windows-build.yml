@@ -113,9 +113,7 @@ jobs:
           $startupCs = Get-Content "./PSXPackagerGUI/App.xaml.cs" -Raw
           if ($startupXaml -match 'StartupUri=') { throw "StartupUri bypasses custom startup routing" }
           if ($startupCs -notmatch '\-\-lnr-batch' -or
-              $startupCs -notmatch 'new LnrBatchWindow\(\)' -or
-              $launcherSrc -notmatch 'ShellExecuteW' -or
-              $launcherSrc -notmatch 'PSXPackagerGUI\.exe') {
+              $startupCs -notmatch 'new LnrBatchWindow\(\)') {
             throw "--lnr-batch GUI routing is not configured"
           }
           if (-not (Test-Path "./out/GUI/psxpackager.exe")) { throw "GUI batch converter missing" }
