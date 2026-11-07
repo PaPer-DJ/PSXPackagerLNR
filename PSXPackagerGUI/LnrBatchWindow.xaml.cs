@@ -171,6 +171,11 @@ namespace PSXPackagerGUI
             }
         }
 
+        private void Suite_OnClick(object sender, RoutedEventArgs e)
+        {
+            new LnrDiscSuiteWindow { Owner = this }.ShowDialog();
+        }
+
         private void Help_OnClick(object sender, RoutedEventArgs e)
         {
             new LnrHelpWindow { Owner = this }.ShowDialog();
