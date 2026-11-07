@@ -105,6 +105,11 @@ namespace PSXPackagerGUI
             new LnrAboutWindow { Owner = this }.ShowDialog();
         }
 
+        private void LnrSuite_OnClick(object sender, RoutedEventArgs e)
+        {
+            new LnrDiscSuiteWindow { Owner = this }.ShowDialog();
+        }
+
         private void LnrBatch_OnClick(object sender, RoutedEventArgs e)
         {
             var window = new LnrBatchWindow { Owner = this };
