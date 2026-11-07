@@ -239,6 +239,19 @@
                 <ColumnDefinition Width="120"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0">
+                <Grid Margin="0,0,0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" x:Name="BatchPercentLabel"
+                               Text="Avance del lote: 0 % (0/0)"
+                               FontWeight="SemiBold"/>
+                    <TextBlock Grid.Column="1" x:Name="EtaLabel"
+                               Text="Tiempo restante: sin calcular"
+                               Foreground="#FF546679" Margin="14,0,0,0"
+                               ToolTip="Estimación orientativa a partir de las conversiones completadas y los tamaños CHD; puede variar mucho según el juego."/>
+                </Grid>
                 <ProgressBar x:Name="WorkProgress" Height="12" Minimum="0" Maximum="100"
                              Foreground="{StaticResource LnrGreen}"/>
                 <TextBlock x:Name="SummaryLabel" Margin="0,6,0,0"
