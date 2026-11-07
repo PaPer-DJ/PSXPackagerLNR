@@ -37,7 +37,9 @@ namespace PSXPackagerGUI.Pages
                 IsFirstRun = true;
                 settings = new SettingsModel
                 {
-                    CompressionLevel = 5,
+                    // LNR default for fresh installations: validated on actual PSP hardware.
+                    // Preserve settings already saved by the user on later launches.
+                    CompressionLevel = 3,
                     FileNameFormat = "%FILENAME%",
                     Batch = new BatchSettingsModel()
                     {
