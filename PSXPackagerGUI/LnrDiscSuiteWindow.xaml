@@ -57,14 +57,18 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="130"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="124"/>
+                <ColumnDefinition Width="112"/>
             </Grid.ColumnDefinitions>
             <TextBlock Text="CHDMAN" VerticalAlignment="Center"
-                       ToolTip="Herramienta oficial de MAME para crear y extraer CHD de CD/DVD"/>
+                       ToolTip="Utilidad de MAME: herramienta independiente, con sus propias licencias"/>
             <TextBox Grid.Column="1" x:Name="ChdmanBox" MinHeight="31"
                      VerticalContentAlignment="Center"
-                     ToolTip="Ruta local de chdman.exe. Puedes ponerlo junto a PSXPackagerGUI.exe."/>
-            <Button Grid.Column="2" x:Name="FindChdmanButton" Content="Localizar..."
+                     ToolTip="Ruta de chdman.exe. Puedes importarlo desde un ZIP o localizar el que ya tengas."/>
+            <Button Grid.Column="2" x:Name="ImportChdmanButton" Content="Importar ZIP..."
+                    Margin="9,0,0,0" Click="ImportChdman_OnClick"
+                    ToolTip="Importa un chdman.exe de un ZIP que hayas descargado de MAME, Recalbox u OnionUI"/>
+            <Button Grid.Column="3" x:Name="FindChdmanButton" Content="Localizar..."
                     Margin="9,0,0,0" Click="FindChdman_OnClick"/>
         </Grid>
 
