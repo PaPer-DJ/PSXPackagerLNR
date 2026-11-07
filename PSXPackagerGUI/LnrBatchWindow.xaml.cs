@@ -641,6 +641,7 @@ namespace PSXPackagerGUI
                     if (produced.Length != 1) throw new InvalidDataException(
                         $"Se esperaba un PBP; encontrados: {produced.Length}.");
                     var pbp = produced[0];
+                    var stagedLength = new FileInfo(pbp).Length;
                     using (var stream = File.OpenRead(pbp))
                     {
                         var header = new byte[4];
@@ -653,13 +654,18 @@ namespace PSXPackagerGUI
                     if (File.Exists(finalPath))
                         throw new IOException("El PBP de destino apareció durante la conversión.");
                     File.Move(pbp, finalPath);
-                    // Important before the optional irreversible deletion:
-                    // verify the committed destination, not only the staged file.
-                    var finalInfo = new FileInfo(finalPath);
-                    if (finalInfo.Length < 4096 || finalInfo.Length != new FileInfo(pbp).Length)
+                    // A same-volume rename is atomic, but verify the committed
+                    // file rather than trusting only the staging directory.
+                    using (var finalStream = File.OpenRead(finalPath))
                     {
-                        // The staging path no longer exists after File.Move, so
-                        // validation below is used instead of a staged FileInfo.
+                        var magic = new byte[4];
+                        if (finalStream.Length != stagedLength ||
+                            finalStream.Length < 4096 ||
+                            finalStream.Read(magic, 0, magic.Length) != magic.Length ||
+                            magic[0] != 0 || magic[1] != 0x50 ||
+                            magic[2] != 0x42 || magic[3] != 0x50)
+                            throw new InvalidDataException(
+                                "PBP final incompleto o sin cabecera válida. No se borrará ningún CHD.");
                     }
                     var sourceBytes = job.SourceBytes ?? job.Discs.Sum(path => new FileInfo(path).Length);
                     var newBytes = new FileInfo(finalPath).Length;
@@ -675,6 +681,7 @@ namespace PSXPackagerGUI
                     job.Status = "Completado";
                     Append($"OK: {Size(sourceBytes)} CHD → {Size(newBytes)} PBP; variación PBP vs CHD {job.VariationText}; tiempo {job.ElapsedText}.");
 
+                    var auxiliaryCopiesOk = true;
                     foreach (var disc in job.Discs)
                     {
                         var sbi = Path.ChangeExtension(disc, ".sbi");
@@ -686,12 +693,30 @@ namespace PSXPackagerGUI
                         }
                         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                         {
-                            // The PBP was already converted correctly: an optional
-                            // external SBI failure must not mark it as a broken PBP.
+                            auxiliaryCopiesOk = false;
+                            // Optional SBI failures don't invalidate the PBP, but
+                            // they block destructive cleanup for this game.
                             Append("AVISO: PBP completado, pero no se pudo copiar SBI: " + ex.Message);
                         }
                         if (job.Discs.Count > 1)
                             Append("AVISO: SBI externo de juego multidisco. Comprueba soporte en tu emulador.");
+                    }
+
+                    if (deleteOriginals)
+                    {
+                        if (!auxiliaryCopiesOk)
+                        {
+                            _deleteWarnings++;
+                            Append("AVISO: CHD conservados porque un archivo SBI auxiliar no se pudo copiar.");
+                        }
+                        else if (cancel.IsCancellationRequested)
+                        {
+                            Append("AVISO: se ha solicitado cancelar; CHD originales conservados.");
+                        }
+                        else
+                        {
+                            DeleteConvertedChds(job, cancel);
+                        }
                     }
                 }
                 catch (OperationCanceledException)
@@ -724,6 +749,8 @@ namespace PSXPackagerGUI
             }
 
             Append($"FIN. Correctos: {_succeeded}, omitidos: {_skipped}, errores: {_failed}.");
+            if (deleteOriginals)
+                Append($"CHD eliminados tras éxito: {_deletedChds}. Avisos de conservación/borrado: {_deleteWarnings}.");
             if (_sumOriginal > 0)
             {
                 var difference = _sumConverted - _sumOriginal;
@@ -732,6 +759,55 @@ namespace PSXPackagerGUI
                 Append($"Total convertido: {Size(_sumOriginal)} CHD → {Size(_sumConverted)} PBP.");
                 Append($"Variación total PBP respecto a CHD: {sign}{Size(difference)} " +
                        $"({(percent > 0 ? "+" : "")}{percent.ToString("N2", Es)} %).");
+            }
+        }
+
+        /// <summary>
+        /// Deletes source CHDs only for a *newly generated* and checked PBP.
+        /// This is not a guarantee of game compatibility, only a basic file check.
+        /// Never deletes M3U playlists or SBI sidecars. No trash/recycle bin.
+        /// </summary>
+        private void DeleteConvertedChds(LnrConversionJob job, CancellationToken cancel)
+        {
+            foreach (var source in job.Discs)
+            {
+                if (cancel.IsCancellationRequested)
+                {
+                    _deleteWarnings++;
+                    Append("AVISO: cancelación detectada; se detuvo el borrado de CHD restantes.");
+                    return;
+                }
+
+                try
+                {
+                    // Do not follow links or remove changed/missing sources.
+                    var info = new FileInfo(source);
+                    if (!info.Exists || (info.Attributes & FileAttributes.ReparsePoint) != 0)
+                    {
+                        _deleteWarnings++;
+                        Append("AVISO: CHD no borrado (ruta ausente o enlace): " + source);
+                        continue;
+                    }
+                    if (job.OriginalFiles.TryGetValue(source, out var original) &&
+                        (original.Length != info.Length || original.LastWriteTimeUtc != info.LastWriteTimeUtc))
+                    {
+                        _deleteWarnings++;
+                        Append("AVISO: CHD modificado desde el análisis; se conserva: " + source);
+                        continue;
+                    }
+
+                    File.Delete(source);
+                    _deletedChds++;
+                    Append("CHD eliminado tras convertir correctamente: " + Path.GetFileName(source) +
+                           " (liberados " + Size(info.Length) + ").");
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                           or ArgumentException or NotSupportedException)
+                {
+                    _deleteWarnings++;
+                    Append("AVISO: no se pudo borrar CHD; original conservado: " +
+                           Path.GetFileName(source) + ". " + ex.Message);
+                }
             }
         }
 
@@ -937,7 +1013,14 @@ namespace PSXPackagerGUI
                 Origin = origin;
                 try
                 {
-                    SourceBytes = discs.Sum(path => new FileInfo(path).Length);
+                    long size = 0;
+                    foreach (var path in discs)
+                    {
+                        var info = new FileInfo(path);
+                        OriginalFiles[path] = (info.Length, info.LastWriteTimeUtc);
+                        size += info.Length;
+                    }
+                    SourceBytes = size;
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
@@ -948,6 +1031,7 @@ namespace PSXPackagerGUI
 
             public string Name { get; }
             public List<string> Discs { get; }
+            public Dictionary<string, (long Length, DateTime LastWriteTimeUtc)> OriginalFiles { get; } = new(StringComparer.OrdinalIgnoreCase);
             public int DiscCount => Discs.Count;
             public string Origin { get; }
             public long? SourceBytes { get; }
