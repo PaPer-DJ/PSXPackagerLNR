@@ -4,6 +4,35 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.4 — 7 noviembre 2026 (marca LNR y avance global)
+
+- Logo real **LNR MOD**, aportado para esta edición, optimizado y
+  guardado como recurso gráfico propio del fork. Se muestra pequeño
+  en la cabecera de CHD→PBP para no restar espacio a los juegos.
+- Nueva ventana **Acerca de LNR** con el logo más visible, número de
+  versión, atribución al programa original, referencia a la licencia MIT
+  y enlaces a los repositorios original y LNR. El icono y las
+  funciones originales no se sustituyen.
+- Porcentaje **global y exacto de archivos procesados** en la barra
+  inferior, independiente del porcentaje de cada fase del motor CLI.
+- **Tiempo restante orientativo** desde que finaliza la primera
+  conversión válida: usa segundos por byte observado y los tamaños
+  reales de los CHD que quedan por convertir.
+- El tiempo restante se refresca durante la conversión una vez por
+  segundo. Puede variar considerablemente por pistas de audio,
+  número de discos, complejidad y velocidad de almacenamiento.
+  Cuando un juego tarda bastante más que lo esperado se muestra
+  «recalculando», no un falso 0 s.
+- Si se refresca el análisis se reinician los cálculos del lote.
+  Los archivos preexistentes no cuentan como procesados hasta que
+  el lote realmente los salta.
+- El código original de PSXPackager y la licencia MIT permanecen
+  intactos; `master` no se ha fusionado.
+
+**Por comprobar en Windows:** legibilidad del logo, ventana de créditos,
+porcentaje global y variación de la estimación con juegos de tamaños
+distintos. No es aún una versión estable.
+
 ## v0.1.0-beta.3 — 7 noviembre 2026 (estadísticas por juego)
 
 - Eliminado el porcentaje duplicado del estado: el texto muestra la
