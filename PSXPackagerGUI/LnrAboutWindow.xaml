@@ -31,10 +31,11 @@
         <StackPanel Grid.Row="2" Margin="0,0,0,8">
             <TextBlock Text="Créditos del proyecto original" FontWeight="SemiBold" Margin="0,0,0,5"/>
             <TextBlock TextWrapping="Wrap" Foreground="#FF344559">
-                PSXPackager es un proyecto de sus autores originales,
-                desarrollado y mantenido en el repositorio de RupertAvery.
-                Esta edición LNR incorpora herramientas de conversión y ajustes de interfaz,
-                pero no reivindica la creación de PSXPackager.
+                PSXPackager: autor original David Khristepher Santos
+                (copyright 2020, licencia MIT). Proyecto y mejoras mantenidos en el
+                repositorio de RupertAvery y sus colaboradores. Esta edición LNR
+                adapta la interfaz y añade herramientas, sin atribuirse la
+                creación del programa original.
             </TextBlock>
             <TextBlock TextWrapping="Wrap" Foreground="#FF344559" Margin="0,10,0,0">
                 Se conservan la licencia MIT y los avisos de autoría del proyecto.
