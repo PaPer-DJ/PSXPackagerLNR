@@ -10,6 +10,31 @@
         <SolidColorBrush x:Key="LnrRed" Color="#FFD32F2F"/>
         <SolidColorBrush x:Key="LnrAmber" Color="#FFB27A16"/>
         <SolidColorBrush x:Key="LnrBlue" Color="#FF205EA6"/>
+        <DataTemplate x:Key="LnrGameNameTemplate">
+            <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}"
+                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrChdSizeTemplate">
+            <TextBlock Text="{Binding SourceSizeText}" TextAlignment="Right"
+                       ToolTip="Tamaño total de los CHD de origen; en juegos multidisco se suman todos"
+                       VerticalAlignment="Center" Margin="0,0,5,0"/>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrPbpSizeTemplate">
+            <TextBlock Text="{Binding OutputSizeText}" TextAlignment="Right"
+                       ToolTip="Tamaño del PBP generado o, si ya existía, del archivo del destino"
+                       VerticalAlignment="Center" Margin="0,0,5,0"/>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrVariationTemplate">
+            <TextBlock Text="{Binding VariationText}" TextAlignment="Right"
+                       Foreground="{Binding VariationBrush}"
+                       ToolTip="{Binding VariationTooltip}"
+                       VerticalAlignment="Center" Margin="0,0,5,0"/>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrElapsedTemplate">
+            <TextBlock Text="{Binding ElapsedText}" TextAlignment="Right"
+                       ToolTip="Tiempo transcurrido en la conversión de este juego"
+                       VerticalAlignment="Center" Margin="0,0,5,0"/>
+        </DataTemplate>
         <DataTemplate x:Key="LnrStatusTemplate">
             <StackPanel VerticalAlignment="Center" Margin="3,1,3,1">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -144,10 +169,14 @@
                       HorizontalContentAlignment="Stretch">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="Nombre PBP" DisplayMemberBinding="{Binding Name}" Width="405"/>
-                        <GridViewColumn Header="Discos" DisplayMemberBinding="{Binding DiscCount}" Width="65"/>
-                        <GridViewColumn Header="Origen" DisplayMemberBinding="{Binding Origin}" Width="100"/>
-                        <GridViewColumn Header="Estado / Progreso de la fase" CellTemplate="{StaticResource LnrStatusTemplate}" Width="350"/>
+                        <GridViewColumn Header="Nombre PBP" CellTemplate="{StaticResource LnrGameNameTemplate}" Width="232"/>
+                        <GridViewColumn Header="Discos" DisplayMemberBinding="{Binding DiscCount}" Width="49"/>
+                        <GridViewColumn Header="Origen" DisplayMemberBinding="{Binding Origin}" Width="76"/>
+                        <GridViewColumn Header="CHD" CellTemplate="{StaticResource LnrChdSizeTemplate}" Width="101"/>
+                        <GridViewColumn Header="PBP" CellTemplate="{StaticResource LnrPbpSizeTemplate}" Width="101"/>
+                        <GridViewColumn Header="Variación" CellTemplate="{StaticResource LnrVariationTemplate}" Width="116"/>
+                        <GridViewColumn Header="Tiempo" CellTemplate="{StaticResource LnrElapsedTemplate}" Width="68"/>
+                        <GridViewColumn Header="Estado / Progreso" CellTemplate="{StaticResource LnrStatusTemplate}" Width="220"/>
                     </GridView>
                 </ListView.View>
             </ListView>
