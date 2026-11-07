@@ -1,14 +1,31 @@
-# PSXPackagerLNR — primera compilación Windows
+# PSXPackagerLNR — compilación Windows y ejecutables
 
-Este repositorio es un fork de [RupertAvery/PSXPackager](https://github.com/RupertAvery/PSXPackager). El software original y su código fuente no son una creación de LaNaveRETRO. Se mantiene la licencia MIT y los avisos de autoría correspondientes.
+Este repositorio es un fork de [RupertAvery/PSXPackager](https://github.com/RupertAvery/PSXPackager). LaNaveRETRO no creó el motor original. Se conserva la licencia MIT y la autoría original.
 
-## Objetivo de esta rama
+## Compilación Windows x64 y distribución
 
-Compilar el **código fuente actual** para Windows x64 y obtener:
-- `PSXPackagerLNR-CLI-win-x64.zip`: aplicación de línea de comandos (ejecutable original `psxpackager.exe`).
-- `PSXPackagerLNR-GUI-win-x64.zip`: aplicación gráfica (ejecutable original `PSXPackagerGUI.exe`).
+GitHub Actions genera tres ZIP con versión y número de compilación:
 
-Los nombres de los ejecutables **no se han cambiado aún**; esta primera fase comprueba la compilación del código original. Los paquetes llevan la marca LNR para distinguirlos.
+- **GUI-win-x64.zip** (recomendado): incorpora **`PSXPackagerLNR.exe`**,
+  que abre directamente el conversor CHD→PBP por lotes; y
+  **`PSXPackagerGUI.exe`**, para acceder opcionalmente a la
+  interfaz clásica original de PSXPackager. Ambos ejecutables
+  comparten el mismo código de GUI y las mismas herramientas.
+- **CLI-win-x64.zip**: programa de línea de comandos `psxpackager.exe`.
+- **Toolkit-win-x64.zip**: scripts portables BAT y PowerShell.
+
+La compilación GUI incluye además el motor `psxpackager.exe`,
+la base de datos, créditos, licencia y manuales. **No borres ni
+muevas archivos individuales**: extrae todo el ZIP y ejecuta
+`PSXPackagerLNR.exe`. Ambas interfaces usan el mismo motor y
+la conversión CHD→PBP no necesita CHDMAN.
+
+La compilación se realiza con .NET 8 **autocontenido y SingleFile**
+en Windows x64. El proceso publica un único paquete de la GUI y
+genera dos nombres de ejecutable a partir de él: el código de
+arranque comprueba el nombre del proceso y abre la ventana apropiada.
+No se mantiene una segunda versión del motor ni se necesita instalar
+.NET en el equipo de destino.
 
 La rama del código fuente incluye un lector de CHD: `PSXPackager.Common/Chd`, y la CLI admite `.chd` como entrada. Esto **no implica que todos los CHD o todos los emuladores sean compatibles**.
 
@@ -17,7 +34,8 @@ La rama del código fuente incluye un lector de CHD: `PSXPackager.Common/Chd`, y
 1. Ve a la pestaña **Actions**.
 2. Abre **LNR Windows CHD-to-PBP builds**.
 3. Selecciona **Run workflow**, rama `lnr/windows-chd-build`.
-4. Cuando termine correctamente, descarga el artefacto **PSXPackagerLNR-Windows-x64**, que contiene los dos ZIP.
+4. Cuando termine correctamente, descarga el artefacto de la compilación
+   **PSXPackagerLNR-v...-b...-Windows-x64**, que contiene los tres ZIP.
 
 El flujo publica ejecutables **autocontenidos**, de modo que no es necesario instalar .NET 8 por separado en la máquina destino. Si la compilación falla, revisa el log del trabajo antes de distribuirlos.
 
@@ -43,9 +61,17 @@ Para conservar el nombre se utiliza por defecto `%FILENAME%`, cambiando solo la 
 
 Este workflow valida la presencia del ejecutable, los recursos y la ayuda de la CLI, **pero no prueba la conversión efectiva con una imagen CHD**.
 
-## Próximas mejoras LNR
+## Estado de la edición
 
-Menú para elegir discos unidos o separados, procesamiento por lotes desde `.tools\LNR_CHD_A_PBP`, gestión de PBP existentes, registro de errores y personalización opcional de la GUI.
+La GUI LNR permite elegir discos separados/unidos, nivel 3 de compresión
+predeterminado, conversión directa CHD→PBP, vista previa de juegos,
+progreso y registro, y una Suite de discos experimental con modos
+PBP/CHD/BIN-CUE/ISO.
+
+Las funciones de borrado de CHD y apagado automático son opcionales y
+**siempre están desactivadas por defecto**. Antes de publicar una versión
+estable deben completarse pruebas reales de las conversiones adicionales
+y de estas funciones avanzadas.
 
 ## Licencia y créditos
 
