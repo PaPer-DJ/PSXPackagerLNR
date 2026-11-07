@@ -122,17 +122,13 @@ namespace PSXPackagerGUI
 
         private void ImportChdman_OnClick(object sender, RoutedEventArgs e)
         {
-            var choice = MessageBox.Show(this,
-                "Selecciona un ZIP de CHDMAN descargado de una fuente de confianza.\n\n" +
-                "Recalbox y OnionUI ofrecen paquetes ZIP, pero CHDMAN pertenece al " +
-                "proyecto MAME y tiene su propia licencia.\n" +
-                "La importación extraerá únicamente chdman.exe a tu carpeta de usuario.\n" +
-                "No se ejecutará todavía. Al convertir, se utilizará el programa que hayas importado.\n\n" +
-                "Para mayor garantía, recomendamos la distribución oficial de MAME.\n\n" +
-                "¿Seleccionar un archivo ZIP?",
-                "Importación de CHDMAN de terceros",
-                MessageBoxButton.YesNo, MessageBoxImage.Information);
-            if (choice != MessageBoxResult.Yes) return;
+            // A standard MessageBox cannot render hyperlinks. This modal
+            // introduction lets users open the Recalbox, OnionUI or MAME
+            // sources in their browser BEFORE answering Yes or No.
+            // Opening a source is informational: import still requires
+            // an explicit Yes and selection of a local ZIP.
+            var intro = new LnrChdmanImportDialog { Owner = this };
+            if (intro.ShowDialog() != true) return;
 
             var picker = new OpenFileDialog
             {
