@@ -102,6 +102,12 @@ jobs:
           & "./out/CLI/psxpackager.exe" --help
           if ($LASTEXITCODE -ne 0) { throw "CLI --help failed ($LASTEXITCODE)" }
 
+      - name: Test data-only PBP to ISO safety (synthetic CD sectors)
+        shell: pwsh
+        run: |
+          dotnet run --project ./LNR/Tests/LnrIsoSmokeTest.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw "LNR ISO safety tests failed" }
+
       - name: Regression test - CLI without console handle
         shell: pwsh
         run: |
