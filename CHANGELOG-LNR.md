@@ -4,6 +4,20 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.12 — 7 noviembre 2026 (orden de botones y enlaces para importar CHDMAN)
+
+- **Limpiar registro** pasa a situarse **antes de Copiar registro**
+  en Actividad y resultados; Abrir carpeta PBP permanece a la derecha.
+- El aviso de **Importar ZIP...** de CHDMAN se sustituye por una
+  ventana de confirmación con **enlaces clicables** a las páginas de
+  Recalbox, OnionUI y las descargas oficiales de MAME.
+- Los enlaces abren el navegador sin cerrar el cuadro, de modo que
+  se puede descargar el ZIP antes de elegir **Sí, importar ZIP** o **No**.
+- No se descarga, ejecuta ni instala software automáticamente al pulsar
+  un enlace. El usuario sigue eligiendo expresamente el ZIP local.
+- README y manual actualizados. Las conversiones y archivos existentes
+  no sufren cambios.
+
 ## v0.1.0-beta.11 — 7 noviembre 2026 (limpiar registro de actividad)
 
 - Añadido botón **Limpiar registro** inmediatamente a la derecha de
