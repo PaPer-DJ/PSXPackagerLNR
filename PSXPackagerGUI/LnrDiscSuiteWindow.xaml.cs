@@ -45,17 +45,21 @@ namespace PSXPackagerGUI
             var importedChdman = ImportedChdmanPath;
             ChdmanBox.Text = File.Exists(localChdman) ? localChdman
                            : File.Exists(importedChdman) ? importedChdman : "";
-            Log("Este módulo utiliza CHDMAN de MAME. No cambia ni elimina imágenes originales.");
+            Log("PBP → BIN/CUE y PBP → ISO de datos no necesitan CHDMAN.");
+            Log("La creación/extracción de CHD utiliza CHDMAN de MAME. No cambia ni elimina originales.");
             Log("Los PBP multidisco se extraerán y convertirán a un CHD independiente por disco.");
             Scan();
         }
 
         private int Mode => ModeBox.SelectedIndex < 0 ? 0 : ModeBox.SelectedIndex;
-        private string SourceExtension => Mode == 0 ? ".pbp" : ".chd";
+        private string SourceExtension => Mode <= 2 ? ".pbp" : ".chd";
+        private bool NeedsChdman => Mode == 0 || Mode >= 3;
         private string OutputSubdirectory => Mode switch
         {
             0 => "CHD",
             1 => "BIN_CUE",
+            2 => "ISO",
+            3 => "BIN_CUE",
             _ => "ISO"
         };
 
@@ -282,13 +286,13 @@ namespace PSXPackagerGUI
             if (_jobs.Count == 0) return;
 
             var chdman = ChdmanBox.Text.Trim().Trim('"');
-            if (!File.Exists(chdman) ||
+            if (NeedsChdman && (!File.Exists(chdman) ||
                 !string.Equals(Path.GetFileName(chdman), "chdman.exe",
-                    StringComparison.OrdinalIgnoreCase))
+                    StringComparison.OrdinalIgnoreCase)))
             {
                 MessageBox.Show(this,
                     "Este módulo necesita chdman.exe de la distribución oficial de MAME.\n\n" +
-                    "Colócalo junto a PSXPackagerGUI.exe o usa «Localizar...».\n" +
+                    "Usa «Importar ZIP...», colócalo junto a la GUI o pulsa «Localizar...».\n" +
                     "Puedes obtener MAME y consultar la herramienta en https://www.mamedev.org/release.html\n\n" +
                     "El conversor directo CHD → PBP continúa funcionando SIN CHDMAN.",
                     "Falta CHDMAN", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -303,7 +307,13 @@ namespace PSXPackagerGUI
                           "No se eliminará ningún original.\n" +
                           "Los resultados existentes se respetarán.\n\n" +
                           (Mode == 0
-                              ? "PBP → CHD utiliza BIN/CUE intermedios temporales, que se eliminan al terminar cada juego."
+                              ? "PBP → CHD utiliza BIN/CUE intermedios temporales para comprimir cada disco."
+                              : Mode == 1
+                              ? "PBP → BIN/CUE conserva las pistas de CD disponibles en el PBP, incluso multidisco."
+                              : Mode == 2
+                              ? "AVISO: ISO solo admite un CD de datos sin audio, sin XA Form 2 ni multidisco.\n" +
+                                "Un ISO NO sirve para reconstruir o grabar un CD completo de PS1.\n" +
+                                "Los juegos no compatibles darán error sin generar ISO: usa BIN/CUE."
                               : "Elige el tipo correcto de disco: CD (BIN/CUE) o DVD (ISO).") +
                           "\n\n¿Iniciar el lote?";
             if (MessageBox.Show(this, message, "Confirmar lote de la suite",
@@ -326,7 +336,9 @@ namespace PSXPackagerGUI
                         var made = Mode switch
                         {
                             0 => await PbpToChdAsync(job, destination, chdman, _cancel.Token),
-                            1 => await ChdToCueAsync(job, destination, chdman, _cancel.Token),
+                            1 => await PbpToCueAsync(job, destination, _cancel.Token),
+                            2 => await PbpToIsoAsync(job, destination, _cancel.Token),
+                            3 => await ChdToCueAsync(job, destination, chdman, _cancel.Token),
                             _ => await ChdToIsoAsync(job, destination, chdman, _cancel.Token)
                         };
                         job.OutputCount = made.ToString(CultureInfo.InvariantCulture);
@@ -424,6 +436,139 @@ namespace PSXPackagerGUI
                     Log("OK: " + Path.GetFileName(output));
                 }
                 return converted;
+            }
+            finally
+            {
+                CleanStage(stage);
+            }
+        }
+
+        /// <summary>
+        /// The PSXPackager engine already extracts PBP discs into CUE and BIN.
+        /// Move the complete extraction atomically into its own folder,
+        /// preserving disc order and CD-Audio tracks when available.
+        /// </summary>
+        private async Task<int> PbpToCueAsync(DiscJob job, string dest,
+                                             CancellationToken token)
+        {
+            var cli = Path.Combine(AppContext.BaseDirectory, "psxpackager.exe");
+            if (!File.Exists(cli))
+                throw new FileNotFoundException("Falta psxpackager.exe junto a la GUI.", cli);
+
+            var name = Path.GetFileNameWithoutExtension(job.Source);
+            var finalFolder = Path.Combine(dest, name);
+            if (Directory.Exists(finalFolder))
+            {
+                Log("SALTADO: existe carpeta BIN/CUE: " + name);
+                return 0;
+            }
+
+            var stage = NewStageFolder(dest);
+            try
+            {
+                Log("Extrayendo los discos y pistas de " + job.Name + " a BIN/CUE.");
+                await ExecuteAsync(cli, new[]
+                {
+                    "-i", job.Source, "-o", stage, "-s", "-f", "%FILENAME%"
+                }, token);
+
+                var cues = Directory.EnumerateFiles(stage, "*.cue", SearchOption.TopDirectoryOnly).ToArray();
+                var bins = Directory.EnumerateFiles(stage, "*.bin", SearchOption.TopDirectoryOnly).ToArray();
+                if (cues.Length == 0 || bins.Length == 0)
+                    throw new InvalidDataException(
+                        "El PBP no generó BIN/CUE completos; no se publicará la salida.");
+
+                foreach (var cue in cues)
+                {
+                    var cueText = File.ReadAllText(cue);
+                    var referenced = System.Text.RegularExpressions.Regex.Matches(
+                        cueText, "^\\s*FILE\\s+\\\"(?<name>[^\\\"]+)\\\"\\s+BINARY",
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase |
+                        System.Text.RegularExpressions.RegexOptions.Multiline);
+                    if (referenced.Count == 0)
+                        throw new InvalidDataException(
+                            "Falta el nombre del BIN asociado a " + Path.GetFileName(cue));
+
+                    foreach (System.Text.RegularExpressions.Match match in referenced)
+                    {
+                        var binName = match.Groups["name"].Value;
+                        if (binName != Path.GetFileName(binName) ||
+                            !binName.EndsWith(".bin", StringComparison.OrdinalIgnoreCase) ||
+                            !File.Exists(Path.Combine(stage, binName)) ||
+                            new FileInfo(Path.Combine(stage, binName)).Length < 2048)
+                            throw new InvalidDataException(
+                                "El CUE referencia un BIN ausente o inseguro: " + binName);
+                    }
+                }
+
+                if (Directory.Exists(finalFolder))
+                {
+                    Log("SALTADO: la carpeta apareció durante la extracción: " + name);
+                    return 0;
+                }
+                token.ThrowIfCancellationRequested();
+                Directory.Move(stage, finalFolder);
+                Log($"OK: {cues.Length} disco(s) extraídos en BIN/CUE: " + name);
+                return cues.Length;
+            }
+            finally
+            {
+                CleanStage(stage);
+            }
+        }
+
+        /// <summary>
+        /// Not a full-disc reconstruction: exports only 2048-byte user data
+        /// from single-track Mode1/Mode2 Form1 CDs. No CD-Audio, XA Form2
+        /// or multisession/multidisc content is silently discarded.
+        /// </summary>
+        private async Task<int> PbpToIsoAsync(DiscJob job, string dest,
+                                             CancellationToken token)
+        {
+            var cli = Path.Combine(AppContext.BaseDirectory, "psxpackager.exe");
+            if (!File.Exists(cli))
+                throw new FileNotFoundException("Falta psxpackager.exe junto a la GUI.", cli);
+
+            var name = Path.GetFileNameWithoutExtension(job.Source);
+            var output = Path.Combine(dest, name + ".iso");
+            if (File.Exists(output))
+            {
+                Log("SALTADO: ya existe " + Path.GetFileName(output));
+                return 0;
+            }
+
+            var stage = NewStageFolder(dest);
+            try
+            {
+                Log("Comprobando si el PBP contiene un único disco y pista de datos: " + job.Name);
+                await ExecuteAsync(cli, new[]
+                {
+                    "-i", job.Source, "-o", stage, "-s", "-f", "%FILENAME%"
+                }, token);
+
+                var cues = Directory.EnumerateFiles(stage, "*.cue", SearchOption.TopDirectoryOnly).ToArray();
+                if (cues.Length != 1)
+                    throw new InvalidDataException(
+                        "El PBP contiene varios discos o no generó un CUE válido. " +
+                        "ISO no conserva multidisco: utiliza PBP → BIN/CUE.");
+
+                var provisional = Path.Combine(stage, name + ".iso");
+                var sectors = await LnrDataTrackIsoExporter.ExportAsync(
+                    cues[0], provisional, token);
+                if (new FileInfo(provisional).Length != sectors * 2048L)
+                    throw new InvalidDataException("El tamaño del ISO no coincide con los datos leídos.");
+
+                token.ThrowIfCancellationRequested();
+                if (File.Exists(output))
+                {
+                    Log("SALTADO: el ISO apareció durante el procesamiento.");
+                    return 0;
+                }
+                File.Move(provisional, output);
+                Log("OK: ISO de datos (" + sectors + " sectores): " + Path.GetFileName(output));
+                Log("AVISO: ISO no es una imagen de CD completo para grabación; " +
+                    "para PS1 usa BIN/CUE cuando quieras preservar el disco.");
+                return 1;
             }
             finally
             {
