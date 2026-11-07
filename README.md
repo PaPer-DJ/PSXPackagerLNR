@@ -42,8 +42,8 @@ Hay dos motivos diferentes para esta decisión:
 1. **Pruebas prácticas en PSP original por LaNaveRETRO:** en ciertos
    momentos de carga de algunos juegos PS1, los archivos PBP creados
    con niveles **1–3 cargaron antes** que los creados con 4 o 5.
-   En los juegos probados, 4–5 ahorraron solo unos pocos MB adicionales
-   y 5–9 produjeron diferencias muy pequeñas de tamaño.
+   En los juegos probados, pasar de nivel 4 a 5 ahorró solo unos
+   pocos MB, y pasar de 5 a 9 aportó muy poco espacio adicional.
    Estos son resultados de pruebas propias, **no una media validada
    de todo el catálogo ni una garantía para cualquier PSP o emulador**.
 2. **Velocidad de generación en PC:** el nivel 3 utiliza la búsqueda
