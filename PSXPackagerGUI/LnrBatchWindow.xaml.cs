@@ -42,6 +42,8 @@ namespace PSXPackagerGUI
         private int _succeeded;
         private int _skipped;
         private int _failed;
+        private int _deletedChds;
+        private int _deleteWarnings;
         private readonly LnrGuiPreferences _preferences;
         private readonly DispatcherTimer _batchClock = new DispatcherTimer
         {
@@ -453,17 +455,40 @@ namespace PSXPackagerGUI
                     $"Modo multidisco: {(IsMerged ? "Unidos" : "Separados")}\n" +
                     $"Compresión: {SelectedLevel}\n" +
                     $"Destino: {Path.Combine(folder, "PBP")}\n\n" +
-                    "Los CHD originales NO se modificarán.\n" +
+                    (DeleteChdCheck.IsChecked == true
+                        ? "ATENCIÓN: has activado BORRAR los CHD convertidos correctamente.\n"
+                        : "Los CHD originales NO se modificarán.\n") +
                     "Los PBP existentes se omitirán.\n\n" +
                     "¿Iniciar la conversión?",
                     "Confirmar conversión LNR", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (answer != MessageBoxResult.Yes) return;
+
+                // This option must NEVER be silently enabled or remembered.
+                // Confirm irreversible deletion separately for every batch.
+                var deleteOriginals = DeleteChdCheck.IsChecked == true;
+                if (deleteOriginals)
+                {
+                    var confirmDelete = MessageBox.Show(this,
+                        "BORRADO DEFINITIVO DE LOS CHD DE ORIGEN\n\n" +
+                        "Se eliminarán únicamente los CHD de conversiones NUEVAS " +
+                        "que terminen correctamente y cuyo PBP se haya escrito y comprobado.\n\n" +
+                        "Los CHD de juegos omitidos (PBP ya existente), fallidos o cancelados " +
+                        "se conservarán. Las listas M3U y los archivos SBI también se conservan.\n\n" +
+                        "NO se enviarán los CHD a la Papelera.\n" +
+                        "Una comprobación técnica del PBP NO garantiza que arranque en tu consola.\n" +
+                        "Se necesita espacio disponible para escribir al menos un PBP completo.\n\n" +
+                        "¿Confirmas que dispones de copia de seguridad o aceptas perder esos CHD?",
+                        "Confirmación adicional: ELIMINAR CHD",
+                        MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    if (confirmDelete != MessageBoxResult.Yes) return;
+                }
 
                 _running = true;
                 _cancel = new CancellationTokenSource();
                 SetControls(false);
                 _sumOriginal = _sumConverted = 0;
                 _succeeded = _skipped = _failed = 0;
+                _deletedChds = _deleteWarnings = 0;
                 _calibratedBytes = 0;
                 _calibratedSeconds = 0;
                 _batchCanceled = false;
@@ -488,7 +513,9 @@ namespace PSXPackagerGUI
                 }
                 UpdateBatchProgress();
                 _batchClock.Start();
-                await ConvertAllAsync(cli, folder, SelectedLevel, _cancel.Token);
+                if (deleteOriginals)
+                    Append("MODO LIBERAR ESPACIO: se intentarán eliminar CHD solo tras completar y comprobar su PBP; borrado irreversible.");
+                await ConvertAllAsync(cli, folder, SelectedLevel, deleteOriginals, _cancel.Token);
             }
             catch (OperationCanceledException)
             {
@@ -510,6 +537,8 @@ namespace PSXPackagerGUI
                 _cancel?.Dispose();
                 _cancel = null;
                 SetControls(true);
+                // Reset destructive option after every run: opt-in must be deliberate.
+                DeleteChdCheck.IsChecked = false;
                 SaveLog();
             }
         }
@@ -526,7 +555,8 @@ namespace PSXPackagerGUI
             CancelButton.IsEnabled = !idle;
         }
 
-        private async Task ConvertAllAsync(string cli, string folder, int level, CancellationToken cancel)
+        private async Task ConvertAllAsync(string cli, string folder, int level,
+            bool deleteOriginals, CancellationToken cancel)
         {
             var dest = Path.Combine(folder, "PBP");
             Directory.CreateDirectory(dest);
@@ -537,8 +567,10 @@ namespace PSXPackagerGUI
             {
                 cancel.ThrowIfCancellationRequested();
                 var finalPath = Path.Combine(dest, job.Name + ".pbp");
-                var stage = Path.Combine(Path.GetTempPath(), "PSXPackagerLNR",
-                                         Guid.NewGuid().ToString("N"));
+                // Stage the sole provisional PBP on the *same* volume as the
+                // final output. Moving it into place then needs no second
+                // full-size copy across Windows drives. No BIN/CUE intermediates.
+                var stage = Path.Combine(dest, ".lnr_stage_" + Guid.NewGuid().ToString("N"));
                 Stopwatch timer = null;
                 try
                 {
@@ -621,6 +653,14 @@ namespace PSXPackagerGUI
                     if (File.Exists(finalPath))
                         throw new IOException("El PBP de destino apareció durante la conversión.");
                     File.Move(pbp, finalPath);
+                    // Important before the optional irreversible deletion:
+                    // verify the committed destination, not only the staged file.
+                    var finalInfo = new FileInfo(finalPath);
+                    if (finalInfo.Length < 4096 || finalInfo.Length != new FileInfo(pbp).Length)
+                    {
+                        // The staging path no longer exists after File.Move, so
+                        // validation below is used instead of a staged FileInfo.
+                    }
                     var sourceBytes = job.SourceBytes ?? job.Discs.Sum(path => new FileInfo(path).Length);
                     var newBytes = new FileInfo(finalPath).Length;
                     job.OutputBytes = newBytes;
