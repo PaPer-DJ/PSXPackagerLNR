@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
@@ -19,6 +20,28 @@ namespace PSXPackagerGUI
         {
             this.DispatcherUnhandledException += OnDispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
+        }
+
+        /// <summary>
+        /// The GUI distribution includes two entry-point names using the
+        /// same self-contained application bundle. PSXPackagerLNR.exe goes
+        /// straight to the LNR batch workflow; PSXPackagerGUI.exe preserves
+        /// the original multi-page application for advanced users.
+        /// </summary>
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
+            var executableName = Path.GetFileName(Environment.ProcessPath ?? "");
+            var directLnr = string.Equals(
+                executableName, "PSXPackagerLNR.exe", StringComparison.OrdinalIgnoreCase);
+
+            // Both are ordinary main windows. Closing the LNR launcher
+            // exits the app instead of exposing/starting the classic GUI.
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
+            Window window = directLnr ? new LnrBatchWindow() : new MainWindow();
+            MainWindow = window;
+            window.Show();
         }
 
         private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)
