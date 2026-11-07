@@ -4,6 +4,29 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.3 — 7 noviembre 2026 (estadísticas por juego)
+
+- Eliminado el porcentaje duplicado del estado: el texto muestra la
+  fase actual (por ejemplo, «Escribiendo PBP») y el porcentaje se muestra
+  **una sola vez**, junto a su barra gráfica.
+- Nuevas columnas **CHD, PBP, Variación y Tiempo** en la tabla. CHD suma
+  los discos en modo multidisco; el PBP se mide al finalizar o, si
+  ya existía, al analizar la carpeta.
+- La variación está expresada como **PBP menos CHD**: signo positivo
+  (rojo) cuando el PBP crece, negativo (verde) cuando ocupa menos.
+  El porcentaje relativo aparece como ayuda al pasar el cursor.
+- Cronómetro por archivo para identificar conversiones lentas.
+  La duración permanece en la fila tras completar o fallar.
+- El resumen del lote informa la variación con el mismo criterio
+  que la tabla, sin presentar como «ahorro» un incremento de tamaño.
+- Un fallo al copiar un archivo SBI auxiliar se comunica como aviso
+  sin deshacer el éxito de un PBP correctamente convertido.
+- Ajustados los anchos de columnas y recortados los nombres largos
+  visualmente, mostrando el nombre completo al pasar el cursor.
+
+**Pendiente de validación manual en Windows**: comprobar anchuras,
+colores, medidas y tiempos en archivos CHD reales. No es una release estable.
+
 ## v0.1.0-beta.2 — 7 noviembre 2026 (interfaz pulida)
 
 - Nuevo **explorador de carpetas con vista previa CHD**: muestra las
