@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Navigation;
 
 namespace PSXPackagerGUI
 {
@@ -27,6 +28,13 @@ namespace PSXPackagerGUI
                 MessageBox.Show(this, "No se pudo abrir el navegador: " + ex.Message,
                                 "Enlace", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+        }
+
+        private void CompressionTechnical_OnRequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            e.Handled = true;
+            // Link to the dedicated appendix within the LNR fork section.
+            OpenProject("https://github.com/PaPer-DJ/PSXPackagerLNR/blob/lnr/windows-chd-build/README.md#anexo-tecnico-lnr-nivel-3");
         }
 
         private void Close_OnClick(object sender, RoutedEventArgs e) => Close();
