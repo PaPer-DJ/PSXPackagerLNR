@@ -192,14 +192,27 @@ namespace PSXPackagerGUI
                 throw new DirectoryNotFoundException("No existe la carpeta: " + folder);
 
             _jobs.Clear();
+            var outputFolder = Path.Combine(folder, "PBP");
+            var existing = 0;
             foreach (var job in Plan(folder, IsMerged))
+            {
+                if (File.Exists(Path.Combine(outputFolder, job.Name + ".pbp")))
+                {
+                    job.Status = "Saltado / Ya existe";
+                    existing++;
+                }
                 _jobs.Add(job);
+            }
 
             _planFolder = folder;
             _planMode = ModeCombo.SelectedIndex;
-            CountLabel.Text = _jobs.Count + " PBP previstos";
-            SummaryLabel.Text = "Salida: " + Path.Combine(folder, "PBP") + " · originales intactos.";
+            CountLabel.Text = existing == 0
+                ? $"{_jobs.Count} PBP previstos"
+                : $"{_jobs.Count} PBP previstos · {existing} ya existen";
+            SummaryLabel.Text = "Salida: " + outputFolder + " · originales intactos.";
             Append($"Plan preparado: {_jobs.Count} PBP / modo {(IsMerged ? "UNIDOS" : "SEPARADOS")}, compresión {SelectedLevel}.");
+            if (existing > 0)
+                Append($"AVISO: {existing} archivos ya están en PBP y serán saltados sin sobrescribir.");
         }
 
         private IEnumerable<LnrConversionJob> Plan(string folder, bool merge)
@@ -354,7 +367,9 @@ namespace PSXPackagerGUI
                 foreach (var job in _jobs)
                 {
                     job.ProgressPercent = 0;
-                    job.Status = "Pendiente";
+                    job.CurrentPhase = "Iniciando";
+                    job.Status = File.Exists(Path.Combine(folder, "PBP", job.Name + ".pbp"))
+                        ? "Saltado / Ya existe" : "Pendiente";
                 }
                 await ConvertAllAsync(cli, folder, SelectedLevel, _cancel.Token);
             }
@@ -565,14 +580,25 @@ namespace PSXPackagerGUI
                     continue;
                 }
 
-                if (CliPhase.IsMatch(line))
+                var phase = CliPhase.Match(line);
+                if (phase.Success)
                 {
-                    // This is *phase* progress, not overall-file progress.
-                    // Reset between phases and do not show an invented overall percentage.
+                    // Per-phase progress is not the same as completed-file percentage.
                     lastLoggedQuarter = -1;
                     job.ProgressPercent = 0;
+                    var phaseName = phase.Groups[1].Value;
+                    job.CurrentPhase = phaseName.ToLowerInvariant() switch
+                    {
+                        "converting disc" => "Convirtiendo disco",
+                        "writing disc" => "Escribiendo PBP",
+                        "extracting disc" => "Extrayendo disco",
+                        "decompressing file" => "Descomprimiendo",
+                        _ => "Procesando"
+                    };
+                    Append("FASE: " + job.CurrentPhase + " · " + job.Name);
+                    continue;
                 }
-                Append("CLI: " + line);
+                Append("Motor: " + line);
             }
             return captured.ToString();
         }
@@ -627,6 +653,7 @@ namespace PSXPackagerGUI
             public event PropertyChangedEventHandler PropertyChanged;
             private string _status = "Pendiente";
             private int _progressPercent;
+            private string _currentPhase = "Iniciando";
 
             public LnrConversionJob(string name, List<string> discs, string origin)
             {
@@ -665,10 +692,22 @@ namespace PSXPackagerGUI
                 }
             }
 
+            public string CurrentPhase
+            {
+                get => _currentPhase;
+                set
+                {
+                    if (_currentPhase == value) return;
+                    _currentPhase = value;
+                    Notify(nameof(CurrentPhase));
+                    Notify(nameof(DisplayStatus));
+                }
+            }
+
             public string ProgressLabel => ProgressPercent + "%";
             // The CLI publishes the progress of each processing phase.
             public string DisplayStatus => Status == "Convirtiendo"
-                ? $"Convirtiendo · {ProgressPercent}%" : Status;
+                ? $"{CurrentPhase} · {ProgressPercent}%" : Status;
 
             private void Notify(string property)
             {
