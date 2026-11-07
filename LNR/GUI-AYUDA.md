@@ -202,45 +202,103 @@ defecto.
 
 ## 6. Eliminar CHD convertidos — función avanzada
 
-**Desactivada en cada inicio y en cada lote; nunca se recuerda activada.**
+### ¿Para qué existe esta opción?
 
-Al activarla se muestra una **confirmación adicional** de borrado
-irreversible. Si la aceptas, tras **cada conversión nueva** que haya
-terminado correctamente, la aplicación:
+Esta función está pensada especialmente para quien necesita **convertir
+colecciones muy grandes de juegos PS1 de CHD a PBP en el mismo disco
+duro, sin tener espacio libre para conservar simultáneamente los dos
+catálogos completos**.
 
-1. Comprueba que se generó un único PBP, que tenga longitud mínima y
-   que empiece por la firma reconocible `00 50 42 50`.
-2. Mueve el PBP temporal a su ubicación final en la misma unidad y
-   comprueba su tamaño y firma una vez colocado.
-3. Conserva los archivos auxiliares M3U y SBI. Si falla la copia de
-   algún SBI que corresponde al juego, no elimina sus CHD.
-4. Comprueba que el CHD original no ha cambiado desde el análisis y
-   que no es un enlace simbólico, y **solo entonces intenta borrarlo**.
+En una conversión normal, los CHD originales siguen ocupando espacio
+y se van acumulando los PBP creados. Al finalizar, quedan **ambas
+colecciones** en el disco: si los PBP tienen un tamaño parecido al de
+sus CHD de origen, la ocupación puede acercarse al doble; incluso
+puede superarlo cuando los PBP son mayores que los CHD.
 
-**No** borra CHD de PBP que ya existían, conversiones fallidas o
-canceladas. El borrado usa eliminación directa de archivos: **no pasa
-por la Papelera de Windows**. Si no puedes permitirte perder los
-originales, haz copia de seguridad y deja la casilla desactivada.
+Activando **Eliminar .CHD convertidos**, tras **cada conversión nueva
+terminada correctamente y con las comprobaciones básicas superadas**,
+la aplicación elimina los CHD que se hayan convertido, **liberando su
+espacio antes de comenzar a acumular el resto del lote**. De este
+modo no es necesario reservar espacio para mantener *toda* la colección
+en CHD **y** *toda* la colección en PBP al mismo tiempo.
 
-**Limitación:** comprobar tamaño y cabecera del PBP no equivale a probar
-todos sus sectores ni a verificar que la consola/emulador reproduce
-correctamente el juego. La compatibilidad y el audio deben comprobarse
-de forma práctica. En juegos multidisco se podrían borrar varios CHD
-solo después de crear un PBP unido nuevo; asegúrate de que tu emulador
-admite el cambio de disco antes de activar el borrado.
+**Ejemplo orientativo:** si una colección CHD ocupa 100 GB y los PBP
+generados terminan ocupando 110 GB, **sin borrar** se necesitarían
+aproximadamente **210 GB** para conservar ambas colecciones. Con
+la eliminación activada, los CHD de los trabajos correctos se van
+sustituyendo progresivamente por sus PBP; no se acumulan las dos
+colecciones completas. El espacio máximo necesario dependerá de los
+tamaños reales y del orden de procesamiento.
 
-### Espacio en disco: lo que sí y lo que no evita
+**Si quieres conservar tus CHD originales, NO actives esta casilla.**
+Es una opción voluntaria para ahorrar espacio, **desactivada en cada
+inicio y en cada lote; nunca se recuerda activada**. Su uso requiere
+otra confirmación porque el borrado es irreversible.
 
-La conversión CHD→PBP **no** crea imágenes BIN/CUE intermedias, pero
-debe escribir el **PBP completo** antes de poder borrar el CHD de ese
-juego. Por ello el espacio libre debe bastar, al menos, para el siguiente
-PBP. Para reducir la ocupación máxima, el PBP provisional se escribe en
-una carpeta temporal **dentro de `PBP` en el mismo volumen** y luego se
-renombra a su ubicación definitiva sin copiarlo íntegramente de nuevo.
-Tras borrar cada CHD exitoso, el espacio se va liberando para el siguiente.
+### ¿Y si después necesito volver a tener mis juegos en CHD?
 
-No garantiza poder convertir un CHD si el disco está completamente lleno
-o no queda suficiente espacio para producir su PBP.
+La propia **Suite CD / CHD / ISO** de PSXPackagerLNR incluye el modo
+**PBP → CHD (PS1)**, que permite procesar lotes y reconstruir
+un CHD por disco, incluso a partir de PBP multidisco. Este modo
+necesita CHDMAN y utiliza BIN/CUE temporales.
+
+Esto ofrece una **vía práctica de vuelta a CHD** si en el futuro
+cambias de consola o de emulador. **Sin embargo, no equivale a
+restaurar exactamente el CHD original ni garantiza una conversión
+reversible sin pérdidas en todos los casos**: un PBP puede no conservar
+ciertos datos de subcanal, información de protección, metadatos o
+detalles de la imagen original. Lo que no haya quedado almacenado
+en el PBP no puede recuperarse recreando un CHD. Los archivos SBI
+que se hayan conservado deben guardarse también si son necesarios.
+
+**Para una copia de preservación fiel del disco original, guarda
+los CHD aparte**. La conversión inversa sirve para obtener un CHD
+utilizable a partir del contenido disponible en el PBP, no para
+garantizar una imagen idéntica bit a bit.
+
+### Cómo funciona el borrado y qué comprueba
+
+Al activarla, la aplicación solicita una **confirmación adicional**
+de borrado definitivo. Tras una conversión nueva, el programa:
+
+1. Comprueba que se generó un único PBP, que tiene una longitud mínima
+   y que empieza por la firma reconocible `00 50 42 50`.
+2. Mueve el PBP provisional a su ubicación final en la misma unidad
+   y vuelve a comprobar su tamaño y firma.
+3. Conserva los archivos auxiliares M3U y SBI. Si falla la copia
+   de algún SBI correspondiente al juego, no elimina sus CHD.
+4. Comprueba que el CHD de origen no ha cambiado desde el análisis
+   y que no es un enlace simbólico; **solo entonces intenta borrarlo**.
+
+**Nunca elimina** los CHD de trabajos saltados porque el PBP ya
+existía, ni de conversiones fallidas o canceladas. Los archivos
+borrados **no pasan por la Papelera de Windows**.
+
+**Límite de seguridad:** verificar el tamaño y la cabecera del PBP
+**no garantiza** que todos los sectores se lean correctamente ni
+que el juego funcione en tu PSP u otro emulador. Si pretendes borrar
+los originales, prueba antes varios juegos representativos, incluyendo
+multidisco, pistas CD-Audio y juegos que utilicen SBI.
+
+### ¿Cuánto espacio libre necesito al convertir?
+
+La conversión principal CHD → PBP **no crea archivos BIN/CUE
+intermedios**, pero **sí necesita escribir por completo el PBP
+del juego actual antes de eliminar sus CHD de origen**. Por ello,
+el disco necesita espacio libre para ese PBP, y especialmente
+para el PBP de mayor tamaño que tenga que generar (por ejemplo,
+un juego multidisco unido).
+
+El PBP provisional se crea dentro de una carpeta temporal de
+`PBP`, en el **mismo volumen de destino**, y después se mueve a
+su nombre definitivo sin copiar íntegramente el archivo de nuevo.
+Tras cada borrado correcto se libera espacio que podrá utilizarse
+en las siguientes conversiones.
+
+**Esta función reduce la acumulación de espacio, pero no permite
+convertir sin espacio libre inicial**. Tampoco garantiza que la
+ocupación final sea menor que la inicial: dependerá de si tus PBP
+son más pequeños o grandes que sus CHD correspondientes.
 
 ## 7. Conversión inversa y formatos de disco: alcance de la suite
 
