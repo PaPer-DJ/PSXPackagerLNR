@@ -119,18 +119,75 @@ namespace PSXPackagerGUI
         private int SelectedLevel => int.Parse(((ComboBoxItem)LevelCombo.SelectedItem).Tag.ToString(),
                                                CultureInfo.InvariantCulture);
 
+        private bool _firstLoadScanned;
+
+        private void Window_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            if (_firstLoadScanned) return;
+            _firstLoadScanned = true;
+            TryAutoScan(force: true);
+        }
+
         private void Browse_OnClick(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFolderDialog { Title = "Selecciona la carpeta de CHD" };
-            if (Directory.Exists(SourceBox.Text))
-                dialog.InitialDirectory = SourceBox.Text;
-
-            if (dialog.ShowDialog(this) == true)
+            // The default Windows folder dialog hides files. Our picker
+            // previews all CHD games before the folder is selected.
+            var dialog = new LnrFolderPickerWindow(SourceBox.Text) { Owner = this };
+            if (dialog.ShowDialog() == true)
             {
-                SourceBox.Text = dialog.FolderName;
+                SourceBox.Text = dialog.SelectedFolder;
+                TryAutoScan(force: true);
+            }
+        }
+
+        private void SourceBox_OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key != System.Windows.Input.Key.Enter) return;
+            TryAutoScan(force: true);
+            e.Handled = true;
+        }
+
+        private void SourceBox_OnLostKeyboardFocus(object sender,
+            System.Windows.Input.KeyboardFocusChangedEventArgs e)
+        {
+            // A pasted path should populate the table without an extra click.
+            if (IsLoaded) TryAutoScan(force: false);
+        }
+
+        private void ModeCombo_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Rebuild grouping immediately when changing separated/merged mode.
+            // IsLoaded prevents re-entrancy during InitializeComponent.
+            if (IsLoaded && !_running) TryAutoScan(force: true);
+        }
+
+        private void TryAutoScan(bool force)
+        {
+            if (_running || !IsLoaded) return;
+            var folder = SourceBox.Text.Trim().Trim('"');
+            if (!Directory.Exists(folder))
+            {
                 _jobs.Clear();
                 _planFolder = null;
-                CountLabel.Text = "Pendiente de analizar";
+                CountLabel.Text = "Carpeta no disponible";
+                return;
+            }
+            if (!force && _planFolder != null
+                && string.Equals(Path.GetFullPath(folder), _planFolder, StringComparison.OrdinalIgnoreCase)
+                && _planMode == ModeCombo.SelectedIndex)
+                return;
+            try
+            {
+                Scan();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or InvalidOperationException or ArgumentException)
+            {
+                _jobs.Clear();
+                _planFolder = null;
+                CountLabel.Text = "0 juegos CHD";
+                SummaryLabel.Text = "Selecciona una carpeta con archivos CHD.";
+                Append("AVISO: No se pudieron cargar los juegos de la carpeta: " + ex.Message);
             }
         }
 
