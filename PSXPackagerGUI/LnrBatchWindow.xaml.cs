@@ -255,8 +255,10 @@ namespace PSXPackagerGUI
             var existing = 0;
             foreach (var job in Plan(folder, IsMerged))
             {
-                if (File.Exists(Path.Combine(outputFolder, job.Name + ".pbp")))
+                var foundPbp = Path.Combine(outputFolder, job.Name + ".pbp");
+                if (File.Exists(foundPbp))
                 {
+                    job.ReadExistingPbp(foundPbp);
                     job.Status = "Saltado / Ya existe";
                     existing++;
                 }
@@ -428,8 +430,18 @@ namespace PSXPackagerGUI
                 {
                     job.ProgressPercent = 0;
                     job.CurrentPhase = "Iniciando";
-                    job.Status = File.Exists(Path.Combine(folder, "PBP", job.Name + ".pbp"))
-                        ? "Saltado / Ya existe" : "Pendiente";
+                    job.Elapsed = null;
+                    var target = Path.Combine(folder, "PBP", job.Name + ".pbp");
+                    if (File.Exists(target))
+                    {
+                        job.ReadExistingPbp(target);
+                        job.Status = "Saltado / Ya existe";
+                    }
+                    else
+                    {
+                        job.OutputBytes = null;
+                        job.Status = "Pendiente";
+                    }
                 }
                 await ConvertAllAsync(cli, folder, SelectedLevel, _cancel.Token);
             }
@@ -477,16 +489,19 @@ namespace PSXPackagerGUI
                 var finalPath = Path.Combine(dest, job.Name + ".pbp");
                 var stage = Path.Combine(Path.GetTempPath(), "PSXPackagerLNR",
                                          Guid.NewGuid().ToString("N"));
+                Stopwatch timer = null;
                 try
                 {
                     if (File.Exists(finalPath))
                     {
+                        job.ReadExistingPbp(finalPath);
                         job.Status = "Saltado / Ya existe";
                         _skipped++;
                         Append("SALTADO: " + job.Name + ".pbp ya existe en la carpeta PBP; no se sobrescribe.");
                         continue;
                     }
 
+                    timer = Stopwatch.StartNew();
                     Directory.CreateDirectory(stage);
                     var input = job.Discs[0];
                     if (job.Discs.Count > 1)
@@ -555,14 +570,17 @@ namespace PSXPackagerGUI
                     if (File.Exists(finalPath))
                         throw new IOException("El PBP de destino apareció durante la conversión.");
                     File.Move(pbp, finalPath);
-                    var sourceBytes = job.Discs.Sum(path => new FileInfo(path).Length);
+                    var sourceBytes = job.SourceBytes ?? job.Discs.Sum(path => new FileInfo(path).Length);
                     var newBytes = new FileInfo(finalPath).Length;
+                    job.OutputBytes = newBytes;
+                    timer.Stop();
+                    job.Elapsed = timer.Elapsed;
                     _sumOriginal += sourceBytes;
                     _sumConverted += newBytes;
                     _succeeded++;
                     job.ProgressPercent = 100;
                     job.Status = "Completado";
-                    Append($"OK: {Size(sourceBytes)} CHD → {Size(newBytes)} PBP; variación {Size(sourceBytes - newBytes)}.");
+                    Append($"OK: {Size(sourceBytes)} CHD → {Size(newBytes)} PBP; variación PBP vs CHD {job.VariationText}; tiempo {job.ElapsedText}.");
 
                     foreach (var disc in job.Discs)
                     {
@@ -587,6 +605,11 @@ namespace PSXPackagerGUI
                 }
                 finally
                 {
+                    if (timer != null)
+                    {
+                        timer.Stop();
+                        job.Elapsed ??= timer.Elapsed;
+                    }
                     if (Directory.Exists(stage))
                     {
                         try { Directory.Delete(stage, recursive: true); }
@@ -601,9 +624,14 @@ namespace PSXPackagerGUI
 
             Append($"FIN. Correctos: {_succeeded}, omitidos: {_skipped}, errores: {_failed}.");
             if (_sumOriginal > 0)
-                Append($"Total convertido: {Size(_sumOriginal)} CHD → {Size(_sumConverted)} PBP. " +
-                       $"Diferencia: {Size(_sumOriginal - _sumConverted)} " +
-                       $"({(100.0 * (_sumOriginal - _sumConverted) / _sumOriginal).ToString("N2", Es)} %).");
+            {
+                var difference = _sumConverted - _sumOriginal;
+                var sign = difference > 0 ? "+" : "";
+                var percent = 100.0 * difference / _sumOriginal;
+                Append($"Total convertido: {Size(_sumOriginal)} CHD → {Size(_sumConverted)} PBP.");
+                Append($"Variación total PBP respecto a CHD: {sign}{Size(difference)} " +
+                       $"({(percent > 0 ? "+" : "")}{percent.ToString("N2", Es)} %).");
+            }
         }
 
         private async Task<string> ReadCliStreamAsync(StreamReader reader, LnrConversionJob job, bool isError)
