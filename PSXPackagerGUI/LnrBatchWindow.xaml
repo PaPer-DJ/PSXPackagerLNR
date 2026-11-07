@@ -184,6 +184,7 @@
                             ToolTip="Explicación de todas las opciones, seguridad y objetivos del fork LNR"/>
                     <CheckBox DockPanel.Dock="Left" x:Name="DeleteChdCheck"
                               IsChecked="False" VerticalAlignment="Center"
+                              Checked="DeleteChd_OnChanged" Unchecked="DeleteChd_OnChanged"
                               FontWeight="SemiBold"
                               Content="Eliminar .CHD convertidos (irreversible)"
                               ToolTip="DESACTIVADO por defecto. Solo borra los CHD de conversiones nuevas terminadas y verificadas básicamente; nunca los de PBP existentes, errores ni cancelaciones."/>
