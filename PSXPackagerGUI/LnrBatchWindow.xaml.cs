@@ -543,6 +543,7 @@ namespace PSXPackagerGUI
 
             bool shutdownRequested = false;
             bool completedNormally = false;
+            bool started = false;
             try
             {
                 var folder = Path.GetFullPath(SourceBox.Text.Trim().Trim('"'));
@@ -621,6 +622,7 @@ namespace PSXPackagerGUI
                 _batchTotalClock = Stopwatch.StartNew();
                 _batchFinishedNormally = false;
                 _running = true;
+                started = true;
                 _cancel = new CancellationTokenSource();
                 SetControls(false);
                 _sumOriginal = _sumConverted = 0;
@@ -667,9 +669,13 @@ namespace PSXPackagerGUI
             }
             finally
             {
-                _batchClock.Stop();
-                _activeJobClock = null;
-                _batchTotalClock?.Stop();
+                // Declining a confirmation never mutates the previous
+                // batch results or triggers shutdown-related postprocessing.
+                if (started)
+                {
+                    _batchClock.Stop();
+                    _activeJobClock = null;
+                    _batchTotalClock?.Stop();
                 _batchFinishedNormally = completedNormally;
                 _running = false;
                 UpdateBatchProgress();
@@ -700,6 +706,7 @@ namespace PSXPackagerGUI
                                "advertencias de borrado, o sin juegos convertidos.");
                         SaveLog();
                     }
+                }
                 }
             }
         }
