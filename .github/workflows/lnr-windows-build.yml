@@ -60,6 +60,22 @@ jobs:
             -p:PublishReadyToRun=false
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Provide direct LNR GUI launcher alongside classic GUI
+        shell: pwsh
+        run: |
+          # PublishSingleFile embeds the apphost and managed assemblies.
+          # A second executable name selects the LNR batch window in App.OnStartup.
+          # It is a copy of the SAME signed/packaged binary, not another engine.
+          Copy-Item "./out/GUI/PSXPackagerGUI.exe" "./out/GUI/PSXPackagerLNR.exe" -Force
+          if (-not (Test-Path "./out/GUI/PSXPackagerLNR.exe")) {
+            throw "Direct LNR GUI executable missing"
+          }
+          $originalHash = (Get-FileHash "./out/GUI/PSXPackagerGUI.exe" -Algorithm SHA256).Hash
+          $lnrHash = (Get-FileHash "./out/GUI/PSXPackagerLNR.exe" -Algorithm SHA256).Hash
+          if ($originalHash -ne $lnrHash) {
+            throw "Direct launcher and classic GUI must carry identical bundled code"
+          }
+
       - name: Copy required database, license and documentation
         shell: pwsh
         run: |
@@ -87,6 +103,15 @@ jobs:
         run: |
           if (-not (Test-Path "./out/CLI/psxpackager.exe")) { throw "CLI EXE missing" }
           if (-not (Test-Path "./out/GUI/PSXPackagerGUI.exe")) { throw "GUI EXE missing" }
+          if (-not (Test-Path "./out/GUI/PSXPackagerLNR.exe")) { throw "Direct batch launcher EXE missing" }
+          $startupXaml = Get-Content "./PSXPackagerGUI/App.xaml" -Raw
+          $startupCs = Get-Content "./PSXPackagerGUI/App.xaml.cs" -Raw
+          if ($startupXaml -match 'StartupUri=') { throw "StartupUri bypasses dual executable-name routing" }
+          if ($startupCs -notmatch 'Environment\.ProcessPath' -or
+              $startupCs -notmatch 'PSXPackagerLNR\.exe' -or
+              $startupCs -notmatch 'new LnrBatchWindow\(\)') {
+            throw "Dual launcher selection is not configured"
+          }
           if (-not (Test-Path "./out/GUI/psxpackager.exe")) { throw "GUI batch converter missing" }
           foreach ($edition in @("CLI", "GUI")) {
             $actual = (Get-Content -LiteralPath "./out/$edition/LNR-VERSION.txt" -Raw).Trim()
@@ -250,6 +275,14 @@ jobs:
             (Resolve-Path "./out/Toolkit").Path,
             (Join-Path (Resolve-Path "./dist").Path "$prefix-Toolkit-win-x64.zip")
           )
+          $guiZip = "./dist/$prefix-GUI-win-x64.zip"
+          $guiArchive = [System.IO.Compression.ZipFile]::OpenRead($guiZip)
+          try {
+            $guiNames = @($guiArchive.Entries | ForEach-Object { $_.FullName })
+            if (-not ($guiNames -contains "PSXPackagerLNR.exe")) { throw "GUI ZIP lacks direct LNR launcher" }
+            if (-not ($guiNames -contains "PSXPackagerGUI.exe")) { throw "GUI ZIP lacks classic GUI" }
+            if (-not ($guiNames -contains "psxpackager.exe")) { throw "GUI ZIP lacks conversion motor" }
+          } finally { $guiArchive.Dispose() }
           $archive = [System.IO.Compression.ZipFile]::OpenRead($toolkitZip)
           try {
             $names = @($archive.Entries | ForEach-Object { $_.FullName })
