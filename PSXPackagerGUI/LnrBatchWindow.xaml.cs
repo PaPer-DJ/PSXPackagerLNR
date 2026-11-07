@@ -682,10 +682,10 @@ namespace PSXPackagerGUI
         private void UpdateBatchProgress()
         {
             var total = _jobs.Count;
-            var completed = _jobs.Count(j =>
-                j.Status == "Completado" ||
-                j.Status == "Saltado / Ya existe" ||
-                j.Status == "ERROR");
+            // Count files actually processed by this run. Files already
+            // present are premarked during scan but not yet counted until
+            // the batch loop skips them.
+            var completed = _succeeded + _skipped + _failed;
 
             // Only finished games count. Never misuse the CLI's per-phase
             // percentage as a percentage of the whole batch.
