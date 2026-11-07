@@ -23,21 +23,24 @@ namespace PSXPackagerGUI
         }
 
         /// <summary>
-        /// The GUI distribution includes two entry-point names using the
-        /// same self-contained application bundle. PSXPackagerLNR.exe goes
-        /// straight to the LNR batch workflow; PSXPackagerGUI.exe preserves
-        /// the original multi-page application for advanced users.
+        /// PSXPackagerLNR.exe is a tiny native launcher. It runs the existing
+        /// full PSXPackagerGUI.exe with --lnr-batch, so the GUI/.NET runtime
+        /// is shipped only once. Direct calls to PSXPackagerGUI.exe retain
+        /// the original classic interface.
         /// </summary>
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
+            var directLnr = e.Args.Any(argument =>
+                string.Equals(argument, "--lnr-batch", StringComparison.OrdinalIgnoreCase));
+
+            // Also support the full executable-name copy shipped in beta.16.
+            // Existing users can continue launching that older variant.
             var executableName = Path.GetFileName(Environment.ProcessPath ?? "");
-            var directLnr = string.Equals(
+            directLnr |= string.Equals(
                 executableName, "PSXPackagerLNR.exe", StringComparison.OrdinalIgnoreCase);
 
-            // Both are ordinary main windows. Closing the LNR launcher
-            // exits the app instead of exposing/starting the classic GUI.
             ShutdownMode = ShutdownMode.OnMainWindowClose;
             Window window = directLnr ? new LnrBatchWindow() : new MainWindow();
             MainWindow = window;
