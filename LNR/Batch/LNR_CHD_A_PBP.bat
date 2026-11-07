@@ -48,12 +48,16 @@ echo   3 - EQUILIBRADA (RECOMENDADA LNR)
 echo   5 - ESTANDAR ORIGINAL DE PSXPackager
 echo   9 - MAXIMA
 echo.
-choice /C 1359 /N /M "Elige 1, 3, 5 o 9 (LNR recomienda 3): "
-if errorlevel 4 goto LEVEL9
-if errorlevel 3 goto LEVEL5
-if errorlevel 2 goto LEVEL3
-if errorlevel 1 goto LEVEL1
-goto FIN
+:ASKLEVEL
+set "ANSWER="
+set /p "ANSWER=Nivel de compresion [3]: "
+if not defined ANSWER goto LEVEL3
+if "%ANSWER%"=="1" goto LEVEL1
+if "%ANSWER%"=="3" goto LEVEL3
+if "%ANSWER%"=="5" goto LEVEL5
+if "%ANSWER%"=="9" goto LEVEL9
+echo [AVISO] Nivel no valido. Selecciona 1, 3, 5 o 9.
+goto ASKLEVEL
 
 :LEVEL1
 set "LEVEL=1"
