@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using Microsoft.Win32;
 
 namespace PSXPackagerGUI
@@ -42,12 +43,21 @@ namespace PSXPackagerGUI
         private int _skipped;
         private int _failed;
         private readonly LnrGuiPreferences _preferences;
+        private readonly DispatcherTimer _batchClock = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        private Stopwatch _activeJobClock;
+        private long _calibratedBytes;
+        private double _calibratedSeconds;
+        private bool _batchCanceled;
 
         public LnrBatchWindow()
         {
             InitializeComponent();
             Title = "PSXPackagerLNR · " + LnrVersionInfo.Display + " | CHD a PBP";
             JobList.ItemsSource = _jobs;
+            _batchClock.Tick += (sender, e) => UpdateBatchProgress();
             _preferences = LnrGuiPreferences.Load();
 
             var current = new DirectoryInfo(AppContext.BaseDirectory);
@@ -275,6 +285,7 @@ namespace PSXPackagerGUI
             Append($"Plan preparado: {_jobs.Count} PBP / modo {(IsMerged ? "UNIDOS" : "SEPARADOS")}, compresión {SelectedLevel}.");
             if (existing > 0)
                 Append($"AVISO: {existing} archivos ya están en PBP y serán saltados sin sobrescribir.");
+            UpdateBatchProgress();
         }
 
         private IEnumerable<LnrConversionJob> Plan(string folder, bool merge)
@@ -425,6 +436,10 @@ namespace PSXPackagerGUI
                 SetControls(false);
                 _sumOriginal = _sumConverted = 0;
                 _succeeded = _skipped = _failed = 0;
+                _calibratedBytes = 0;
+                _calibratedSeconds = 0;
+                _batchCanceled = false;
+                _activeJobClock = null;
                 WorkProgress.Value = 0;
                 foreach (var job in _jobs)
                 {
@@ -443,10 +458,13 @@ namespace PSXPackagerGUI
                         job.Status = "Pendiente";
                     }
                 }
+                UpdateBatchProgress();
+                _batchClock.Start();
                 await ConvertAllAsync(cli, folder, SelectedLevel, _cancel.Token);
             }
             catch (OperationCanceledException)
             {
+                _batchCanceled = true;
                 Append("Conversión cancelada a petición del usuario.");
             }
             catch (Exception ex)
@@ -456,7 +474,10 @@ namespace PSXPackagerGUI
             }
             finally
             {
+                _batchClock.Stop();
+                _activeJobClock = null;
                 _running = false;
+                UpdateBatchProgress();
                 _activeProcess = null;
                 _cancel?.Dispose();
                 _cancel = null;
@@ -502,6 +523,7 @@ namespace PSXPackagerGUI
                     }
 
                     timer = Stopwatch.StartNew();
+                    _activeJobClock = timer;
                     Directory.CreateDirectory(stage);
                     var input = job.Discs[0];
                     if (job.Discs.Count > 1)
@@ -575,6 +597,8 @@ namespace PSXPackagerGUI
                     job.OutputBytes = newBytes;
                     timer.Stop();
                     job.Elapsed = timer.Elapsed;
+                    _calibratedBytes += sourceBytes;
+                    _calibratedSeconds += Math.Max(0.1, timer.Elapsed.TotalSeconds);
                     _sumOriginal += sourceBytes;
                     _sumConverted += newBytes;
                     _succeeded++;
@@ -618,6 +642,7 @@ namespace PSXPackagerGUI
                     {
                         timer.Stop();
                         job.Elapsed ??= timer.Elapsed;
+                        _activeJobClock = null;
                     }
                     if (Directory.Exists(stage))
                     {
@@ -625,9 +650,7 @@ namespace PSXPackagerGUI
                         catch (Exception ex) { Append("AVISO: no se pudo borrar el temporal: " + ex.Message); }
                     }
                     processed++;
-                    WorkProgress.Value = 100.0 * processed / total;
-                    SummaryLabel.Text = $"Correctos: {_succeeded} · Omitidos: {_skipped} · Errores: {_failed} " +
-                                        $"· {processed}/{total}";
+                    UpdateBatchProgress();
                 }
             }
 
@@ -641,6 +664,90 @@ namespace PSXPackagerGUI
                 Append($"Variación total PBP respecto a CHD: {sign}{Size(difference)} " +
                        $"({(percent > 0 ? "+" : "")}{percent.ToString("N2", Es)} %).");
             }
+        }
+
+        private static string ReadableTime(TimeSpan span)
+        {
+            if (span.TotalSeconds < 1) return "menos de 1 s";
+            return span.TotalHours >= 1
+                ? span.ToString(@"h\:mm\:ss")
+                : span.ToString(@"mm\:ss");
+        }
+
+        private void UpdateBatchProgress()
+        {
+            var total = _jobs.Count;
+            var completed = _jobs.Count(j =>
+                j.Status == "Completado" ||
+                j.Status == "Saltado / Ya existe" ||
+                j.Status == "ERROR");
+
+            // Only finished games count. Never misuse the CLI's per-phase
+            // percentage as a percentage of the whole batch.
+            var overall = total == 0 ? 0.0 : 100.0 * completed / total;
+            WorkProgress.Value = overall;
+            BatchPercentLabel.Text = $"Avance del lote: {overall.ToString("N0", Es)} % ({completed}/{total})";
+
+            if (_running || completed > 0)
+                SummaryLabel.Text = $"Correctos: {_succeeded} · Saltados: {_skipped} · Errores: {_failed}";
+            if (!_running)
+            {
+                EtaLabel.Text = _batchCanceled ? "Lote cancelado"
+                    : total > 0 && completed >= total ? "Lote finalizado" : "Tiempo restante: sin calcular";
+                return;
+            }
+
+            if (completed >= total)
+            {
+                EtaLabel.Text = "Lote finalizado";
+                return;
+            }
+            if (_calibratedBytes <= 0 || _calibratedSeconds <= 0)
+            {
+                EtaLabel.Text = "Tiempo restante: calculando tras el primer juego…";
+                return;
+            }
+
+            // Calibrate from actual completed conversions. Input CHD sizes
+            // account for very unequal games better than game-count average.
+            var secondsPerByte = _calibratedSeconds / _calibratedBytes;
+            double remaining = 0;
+            foreach (var job in _jobs)
+            {
+                if (job.Status != "Pendiente" && job.Status != "Convirtiendo")
+                    continue;
+
+                if (!job.SourceBytes.HasValue || job.SourceBytes.Value <= 0)
+                {
+                    remaining += _calibratedSeconds / Math.Max(1, _succeeded);
+                    continue;
+                }
+
+                var expectedSeconds = job.SourceBytes.Value * secondsPerByte;
+                if (job.Status == "Convirtiendo" && _activeJobClock != null)
+                {
+                    var left = expectedSeconds - _activeJobClock.Elapsed.TotalSeconds;
+                    // When a game runs substantially slower than previous ones,
+                    // avoid falsely promising zero seconds remaining.
+                    if (left <= 0)
+                    {
+                        EtaLabel.Text = "Tiempo restante: recalculando (juego más lento)…";
+                        return;
+                    }
+                    remaining += left;
+                }
+                else
+                    remaining += expectedSeconds;
+            }
+
+            if (double.IsNaN(remaining) || double.IsInfinity(remaining))
+            {
+                EtaLabel.Text = "Tiempo restante: calculando…";
+                return;
+            }
+
+            EtaLabel.Text = "Tiempo restante estimado: ~" +
+                            ReadableTime(TimeSpan.FromSeconds(Math.Min(remaining, TimeSpan.FromDays(99).TotalSeconds)));
         }
 
         private async Task<string> ReadCliStreamAsync(StreamReader reader, LnrConversionJob job, bool isError)
