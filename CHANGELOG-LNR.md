@@ -4,6 +4,18 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.11 — 7 noviembre 2026 (limpiar registro de actividad)
+
+- Añadido botón **Limpiar registro** inmediatamente a la derecha de
+  **Copiar registro**, con el mismo espaciado y tamaño de la botonera.
+- Limpia la zona visible **Actividad y resultados** y los mensajes
+  acumulados en memoria desde la última limpieza. **Copiar registro**
+  solo copia los mensajes posteriores a la limpieza.
+- No interrumpe conversiones: los nuevos mensajes continúan apareciendo.
+  No altera las estadísticas, CHD/PBP, archivos generados, ni informes
+  TXT guardados previamente en disco.
+- Ayuda integrada y manual en castellano actualizados.
+
 ## v0.1.0-beta.10 — 7 noviembre 2026 (mejor reparto del espacio y controles del lote)
 
 - **Barra de progreso individual ampliada** hasta el porcentaje, usando todo
