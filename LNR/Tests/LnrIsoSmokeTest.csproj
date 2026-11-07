@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../PSXPackagerGUI/LnrDataTrackIsoExporter.cs" Link="LnrDataTrackIsoExporter.cs" />
+    <Compile Include="../../PSXPackagerGUI/LnrShutdownPolicy.cs" Link="LnrShutdownPolicy.cs" />
   </ItemGroup>
 </Project>
