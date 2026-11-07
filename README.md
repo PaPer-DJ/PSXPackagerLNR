@@ -287,7 +287,7 @@ distribuyen** con el proyecto.
 ### Por qué LaNaveRETRO ha elegido este nivel
 
 **El nivel 3 es la opción predeterminada de PSXPackagerLNR**, especialmente
-pensando en juegos de PS1 convertidos a \`.PBP\` para **PSP originales** y
+pensando en juegos de PS1 convertidos a `.PBP` para **PSP originales** y
 otros dispositivos con recursos limitados. No se eligió solo porque
 la compresión tarde menos en el PC: es el resultado de **pruebas
 prácticas de LaNaveRETRO sobre una PSP real**.
@@ -316,7 +316,7 @@ tiempo de lectura, datos comprimidos, caché y actividad de CPU.
 ### Cómo funciona realmente DEFLATE dentro de PSXPackagerLNR
 
 El motor del fork emplea **SharpZipLib 1.4.2**. Para comprimir utiliza
-\`new Deflater(level, true)\`, es decir, **DEFLATE sin cabecera zlib**,
+`new Deflater(level, true)`, es decir, **DEFLATE sin cabecera zlib**,
 aplicado a los bloques que almacena el formato PBP.
 
 **DEFLATE combina LZ77 y codificación Huffman**:
@@ -342,11 +342,11 @@ aplicado a los bloques que almacena el formato PBP.
 
 ### Parámetros exactos del algoritmo que utiliza esta versión
 
-Estos valores proceden de **\`DeflaterConstants.cs\` de SharpZipLib
-1.4.2**, la versión referenciada por \`Popstation.csproj\`.
+Estos valores proceden de **`DeflaterConstants.cs` de SharpZipLib
+1.4.2**, la versión referenciada por `Popstation.csproj`.
 No son estimaciones: son los parámetros del **compresor**.
 
-| Nivel | Estrategia | \`GOOD_LENGTH\` | \`MAX_LAZY\` | \`NICE_LENGTH\` | \`MAX_CHAIN\` |
+| Nivel | Estrategia | `GOOD_LENGTH` | `MAX_LAZY` | `NICE_LENGTH` | `MAX_CHAIN` |
 |:---:|:---|---:|---:|---:|---:|
 | **1** | FAST | 4 | 4 | 8 | 4 |
 | **2** | FAST | 4 | 5 | 16 | 8 |
@@ -360,16 +360,16 @@ No son estimaciones: son los parámetros del **compresor**.
 
 **Cómo leerlos:**
 
-- \`GOOD_LENGTH\` y \`NICE_LENGTH\` son umbrales que influyen en
+- `GOOD_LENGTH` y `NICE_LENGTH` son umbrales que influyen en
   cuándo reducir o detener la búsqueda de mejores coincidencias.
-- \`MAX_LAZY\` regula la búsqueda diferida de coincidencias, sobre todo
+- `MAX_LAZY` regula la búsqueda diferida de coincidencias, sobre todo
   en el camino de compresión exhaustivo.
-- \`MAX_CHAIN\` limita el número de candidatos de la cadena hash que
+- `MAX_CHAIN` limita el número de candidatos de la cadena hash que
   se inspeccionan **al comprimir**.
 
 Una peculiaridad interesante es que el **nivel 4 sigue siendo FAST**,
 pero algunos de sus límites son inferiores a los del **3**
-(\`MAX_CHAIN\`: **16 frente a 32** y \`NICE_LENGTH\`: **16 frente a 32**).
+(`MAX_CHAIN`: **16 frente a 32** y `NICE_LENGTH`: **16 frente a 32**).
 Por tanto, no tiene por qué producir un archivo más pequeño. El salto
 real de **FAST a SLOW ocurre entre los niveles 4 y 5** en SharpZipLib
 1.4.2, no entre 3 y 4 como ocurre en determinadas implementaciones de
@@ -379,7 +379,7 @@ candidatos durante la compresión: **1024 y 4096**, respectivamente.
 ### ¿Trabaja mucho más la CPU de la PSP al descomprimir un nivel 9?
 
 **No se puede concluir eso solo con la tabla anterior.**
-\`MAX_CHAIN\`, \`MAX_LAZY\` y las búsquedas greedy/lazy se utilizan
+`MAX_CHAIN`, `MAX_LAZY` y las búsquedas greedy/lazy se utilizan
 **en el PC que crea el archivo**; no se ejecutan de nuevo en la PSP.
 
 Durante la reproducción, el descompresor interpreta los códigos
@@ -436,8 +436,8 @@ el catálogo de PlayStation.
 
 - [Compresión usada en nuestro fork](Popstation/Compression.cs)
   y [referencia a SharpZipLib 1.4.2](Popstation/Popstation.csproj).
-- [\`DeflaterConstants.cs\` de SharpZipLib 1.4.2](https://github.com/icsharpcode/SharpZipLib/blob/v1.4.2/src/ICSharpCode.SharpZipLib/Zip/Compression/DeflaterConstants.cs)
-  y [\`DeflaterEngine.cs\`](https://github.com/icsharpcode/SharpZipLib/blob/v1.4.2/src/ICSharpCode.SharpZipLib/Zip/Compression/DeflaterEngine.cs).
+- [`DeflaterConstants.cs` de SharpZipLib 1.4.2](https://github.com/icsharpcode/SharpZipLib/blob/v1.4.2/src/ICSharpCode.SharpZipLib/Zip/Compression/DeflaterConstants.cs)
+  y [`DeflaterEngine.cs`](https://github.com/icsharpcode/SharpZipLib/blob/v1.4.2/src/ICSharpCode.SharpZipLib/Zip/Compression/DeflaterEngine.cs).
 - [RFC 1951: DEFLATE, LZ77, Huffman y búsqueda de coincidencias](https://www.rfc-editor.org/rfc/rfc1951).
 - [Documentación de zlib](https://zlib.net/manual.html):
   los parámetros del compresor y los del descompresor no son
