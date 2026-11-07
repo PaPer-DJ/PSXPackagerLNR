@@ -127,7 +127,7 @@ namespace PSXPackagerGUI
 
         private void Cancel_OnClick(object sender, RoutedEventArgs e) => DialogResult = false;
 
-        private sealed class FolderPreview
+        public sealed class FolderPreview
         {
             public FolderPreview(string path)
             {
@@ -138,7 +138,7 @@ namespace PSXPackagerGUI
             public string Name { get; }
         }
 
-        private sealed class GamePreview
+        public sealed class GamePreview
         {
             public GamePreview(string path)
             {
