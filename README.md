@@ -7,12 +7,12 @@ la licencia MIT y los creditos del software original.
 
 ## Versionado y descargas identificables
 
-La version de desarrollo actual es **v0.1.0-beta.13** (fundamento técnico de la compresión nivel 3).
+La version de desarrollo actual es **v0.1.0-beta.14** (nivel 3 predeterminado en todas las interfaces LNR, con pruebas reales de carga en PSP).
 La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
 se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 **Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.13-bNN-GUI-win-x64.zip`.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.14-bNN-GUI-win-x64.zip`.
 Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
 y `Toolkit-win-x64.zip`.
 
@@ -36,12 +36,25 @@ emplea `DEFLATE_FAST` en los **niveles 1–4** y `DEFLATE_SLOW`
 en los **niveles 5–9**.
 
 En esta versión LNR se preselecciona **3 — Equilibrada (LNR)**
-como compromiso práctico de **velocidad de conversión y tamaño**.
-No es una promesa de mejores FPS en consolas modestas: las
-búsquedas greedy/lazy y las cadenas de hashes corresponden al
-**compresor que crea el archivo**, no al emulador que lo descomprime.
-El rendimiento al reproducir depende del emulador, CPU, microSD
-y patrón de acceso a los bloques.
+en **la GUI clásica, la GUI por lotes y la CLI**.
+Hay dos motivos diferentes para esta decisión:
+
+1. **Pruebas prácticas en PSP original por LaNaveRETRO:** en ciertos
+   momentos de carga de algunos juegos PS1, los archivos PBP creados
+   con niveles **1–3 cargaron antes** que los creados con 4 o 5.
+   En los juegos probados, 4–5 ahorraron solo unos pocos MB adicionales
+   y 5–9 produjeron diferencias muy pequeñas de tamaño.
+   Estos son resultados de pruebas propias, **no una media validada
+   de todo el catálogo ni una garantía para cualquier PSP o emulador**.
+2. **Velocidad de generación en PC:** el nivel 3 utiliza la búsqueda
+   rápida de SharpZipLib y ofrece un compromiso de tamaño/tiempo
+   de creación. Los parámetros greedy/lazy y las cadenas hash
+   afectan al **compresor que crea el PBP**: el emulador no repite
+   esas búsquedas al descomprimirlo.
+
+La diferencia de tiempo de carga real debe medirse en el dispositivo;
+puede depender también del emulador, su caché y la tarjeta de memoria.
+**No se promete un aumento automático de FPS.**
 
 **Dato importante:** zlib clásico pasa de compresión rápida a
 búsqueda más intensiva en el **nivel 4**, pero SharpZipLib 1.4.2
@@ -52,9 +65,12 @@ técnica LNR**, no un óptimo universal de velocidad de descompresión
 demostrado. Se conservan las opciones 1, 5 y 9, así como la
 preferencia previamente guardada por cada usuario.
 
-La explicación, el cuadro comparativo y las fuentes están en
+La explicación, las pruebas y las fuentes están en
 [la guía de compresión PBP](LNR/GUI-AYUDA.md#4-compresión-pbp-y-justificación-técnica-del-nivel-3).
-No hemos modificado el valor por defecto de la CLI original (5).
+**En el fork LNR se utiliza 3 por defecto en todas las interfaces**.
+El PSXPackager original de RupertAvery no se modifica y sigue
+teniendo nivel 5 como opción predeterminada en su propio código.
+Las preferencias previamente guardadas por el usuario se respetan.
 
 ### Importar CHDMAN: tres fuentes accesibles desde el programa
 
@@ -345,7 +361,7 @@ If the input is a file and the output is also a file, the output will be renamed
 
   -o, --output               The output path where the converted file(s) will be written.
 
-  -l, --level                (Default: 5) Set compression level 0-9, default 5.
+  -l, --level                (Default: 3) Set compression level 0-9, default 3 in PSXPackagerLNR.
 
   -r, --recursive            Recurse subdirectories
 
@@ -394,7 +410,7 @@ The output path is optional. If not specified, the path of the input file will b
 
 PSXPackager will prompt if a file exists before overwriting it. Use the `-x` argument to overwrite all files in the output directory.
 
-Set the compression level to a value from 0 to 9, with 0 being no compression and 9 being the highest compression level. If not specified, it will default to 5.
+Set the compression level to a value from 0 to 9, with 0 being no compression and 9 being the highest compression level. **This PSXPackagerLNR fork defaults to 3** (the original upstream PSXPackager defaults to 5).
 
 PSXPackager can automatically extract files from compressed files (archives) and convert the contents into a PBP. The following formats are supported:
 
