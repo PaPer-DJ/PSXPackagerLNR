@@ -4,6 +4,40 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.16 — 7 noviembre 2026 (arranque directo y ahorro de espacio)
+
+- Nuevo **`PSXPackagerLNR.exe`** en el paquete GUI Windows x64:
+  **abre directamente el conversor LNR CHD→PBP por lotes**, sin
+  pasar por la pantalla inicial de PSXPackager.
+- Se conserva también **`PSXPackagerGUI.exe`** para quien quiera
+  utilizar las funciones de la GUI clásica. Ambos ejecutables
+  gráficos comparten exactamente el mismo código y el motor CLI.
+- El paquete GUI sigue incluyendo **`psxpackager.exe`**, necesario
+  para la conversión directa sin CHDMAN; no debe eliminarse.
+- Selección de interfaz mediante el nombre del ejecutable dentro del
+  arranque WPF; `PSXPackagerLNR.exe` y `PSXPackagerGUI.exe`
+  son copias del mismo ejecutable autocontenido, sin duplicar
+  ni modificar los motores internos.
+- GitHub Actions comprueba la presencia de los dos EXE y del
+  motor CLI **dentro del ZIP**, además de verificar la selección
+  de la ventana principal.
+- La sección **Eliminar CHD convertidos** comienza ahora
+  explicando la razón de su existencia: convertir colecciones
+  grandes sin conservar simultáneamente todos los CHD y sus PBP,
+  liberando espacio después de cada conversión verificada.
+- Aclarado que es necesario espacio libre al menos para el PBP
+  del trabajo actual; **si quieres conservar los CHD originales
+  debes dejar la casilla desmarcada**.
+- Documentada la posibilidad de **PBP→CHD** posterior con CHDMAN
+  y su limitación: **no garantiza recuperar todos los datos
+  perdidos ni una imagen idéntica al CHD original**.
+- Manual castellano, ayuda integrada, README, tooltip y
+  confirmación de borrado actualizados. No cambian las
+  operaciones sobre disco ni los criterios de borrado.
+
+**Estado:** rama de desarrollo; verificar el doble acceso gráfico
+en Windows antes de publicar una versión estable.
+
 ## v0.1.0-beta.15 — 7 noviembre 2026 (anexo técnico para usuarios avanzados)
 
 - Incorporado un **anexo técnico extenso al final de la información LNR
