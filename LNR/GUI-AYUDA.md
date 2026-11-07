@@ -53,9 +53,10 @@ no se ha demostrado que sea siempre el nivel más rápido al reproducir.
 
 - **1 — Ligera (rápida)**: minimiza el esfuerzo al comprimir, pero a
   menudo produce archivos mayores; útil si prima el tiempo de conversión.
-- **3 — Equilibrada (LNR, predeterminada)**: último nivel con búsqueda rápida
-  antes de que SharpZipLib 1.4.2 aumente la intensidad de búsqueda en
-  el nivel 5; preferido en esta edición por su equilibrio de creación/tamaño.
+- **3 — Equilibrada (LNR, predeterminada)**: pertenece al grupo de
+  búsqueda rápida 1–4 de SharpZipLib 1.4.2; preferido en esta edición
+  por su equilibrio práctico de tiempo de creación y tamaño. El 4
+  también usa búsqueda rápida, pero no garantiza comprimir mejor que 3.
 - **5 — Estándar original**: nivel predeterminado del motor PSXPackager,
   emplea búsqueda más exhaustiva durante la compresión.
 - **9 — Máxima**: búsqueda de coincidencias más costosa al comprimir;
