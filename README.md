@@ -7,12 +7,12 @@ la licencia MIT y los creditos del software original.
 
 ## Versionado y descargas identificables
 
-La version de pruebas actual es **v0.1.0-beta.2** (la anterior fue beta.1).
+La version de pruebas actual es **v0.1.0-beta.3** (iteracion sobre beta.2).
 La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
 se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 **Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.2-bNN-GUI-win-x64.zip`.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.3-bNN-GUI-win-x64.zip`.
 Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
 y `Toolkit-win-x64.zip`.
 
@@ -74,6 +74,16 @@ Los estados de cada fila llevan indicadores diferentes:
 En el registro, cada mensaje informativo se muestra en una linea
 independiente. El aviso de confirmacion separa carpeta de destino,
 modo, compresion y avisos de seguridad.
+
+**Novedades de beta.3**: la tabla contiene **CHD (origen), PBP
+(destino), variacion con signo y tiempo de conversion** por juego. El
+porcentaje de progreso solo aparece al lado de la barra, no duplicado
+en el nombre de fase. Los PBP existentes muestran su tamaño al
+analizar. En caso multidisco el tamaño CHD es la suma de discos.
+La variacion indica **PBP - CHD**: positiva si crece y negativa si
+disminuye; no es una estimacion de compresion. Los tamaños se muestran
+en MiB como «MB» segun Windows (1 MB = 1 048 576 bytes). Pasando el
+raton por la variacion se ve el porcentaje relativo.
 
 **Novedades de beta.2**: botones **Copiar registro** y **Abrir carpeta PBP**,
 casilla **Seguir actividad** (puedes desmarcarla para revisar el registro
