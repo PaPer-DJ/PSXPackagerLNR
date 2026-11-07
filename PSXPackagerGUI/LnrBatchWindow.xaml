@@ -143,6 +143,10 @@
         <Border Grid.Row="2" Background="#FFF2F4F7" BorderBrush="#FFDCE2E9"
                 BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,12">
             <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="185"/>
@@ -160,16 +164,30 @@
                     <ComboBoxItem Content="Unidos (M3U)"/>
                 </ComboBox>
                 <TextBlock Grid.Column="3" Text="Compresión" VerticalAlignment="Center" Margin="0,0,9,0"/>
-                <ComboBox Grid.Column="4" x:Name="LevelCombo" SelectedIndex="1" ToolTip="5 es el nivel de compresión recomendado: equilibrio entre velocidad y tamaño"
+                <ComboBox Grid.Column="4" x:Name="LevelCombo" SelectedIndex="1"
+                          ToolTip="El nivel 3 es la opción inicial de LNR para consolas modestas. La ventaja real depende del emulador; el PSXPackager original usa 5."
                           VerticalAlignment="Center" MinHeight="30">
-                    <ComboBoxItem Content="1 - Mínima" Tag="1"/>
-                    <ComboBoxItem Content="5 - Normal" Tag="5"/>
+                    <ComboBoxItem Content="1 - Ligera" Tag="1"/>
+                    <ComboBoxItem Content="3 - Equilibrada (LNR)" Tag="3"/>
+                    <ComboBoxItem Content="5 - Estándar original" Tag="5"/>
                     <ComboBoxItem Content="9 - Máxima" Tag="9"/>
                 </ComboBox>
                 <Button Grid.Column="6" x:Name="ScanButton" Content="Analizar"
                         Click="Scan_OnClick" Margin="0,0,6,0" MinHeight="31"/>
                 <Button Grid.Column="7" x:Name="RunButton" Content="Convertir"
                         Click="Run_OnClick" MinHeight="31"/>
+                <DockPanel Grid.Row="1" Grid.ColumnSpan="8" Margin="0,11,0,0"
+                           LastChildFill="False">
+                    <Button DockPanel.Dock="Right" x:Name="HelpButton"
+                            Content="Ayuda y opciones" Padding="10,5"
+                            Click="Help_OnClick"
+                            ToolTip="Explicación de todas las opciones, seguridad y objetivos del fork LNR"/>
+                    <CheckBox DockPanel.Dock="Left" x:Name="DeleteChdCheck"
+                              IsChecked="False" VerticalAlignment="Center"
+                              FontWeight="SemiBold"
+                              Content="Eliminar .CHD convertidos (irreversible)"
+                              ToolTip="DESACTIVADO por defecto. Solo borra los CHD de conversiones nuevas terminadas y verificadas básicamente; nunca los de PBP existentes, errores ni cancelaciones."/>
+                </DockPanel>
             </Grid>
         </Border>
 
