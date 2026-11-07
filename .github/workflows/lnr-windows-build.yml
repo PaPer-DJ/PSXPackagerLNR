@@ -106,8 +106,28 @@ jobs:
         shell: pwsh
         run: |
           # The CLI's compiled option parser should report level 3.
-          $helpText = (& "./out/CLI/psxpackager.exe" --help | Out-String)
-          if ($LASTEXITCODE -ne 0) { throw "CLI help failed during compression test" }
+          # CommandLineParser writes help on the error stream, not only stdout.
+          # Capture both with redirected pipes to test the actual published exe.
+          $info = [System.Diagnostics.ProcessStartInfo]::new()
+          $info.FileName = (Resolve-Path "./out/CLI/psxpackager.exe").Path
+          $info.ArgumentList.Add("--help")
+          $info.UseShellExecute = $false
+          $info.CreateNoWindow = $true
+          $info.RedirectStandardOutput = $true
+          $info.RedirectStandardError = $true
+          $process = [System.Diagnostics.Process]::new()
+          $process.StartInfo = $info
+          try {
+            if (-not $process.Start()) { throw "Cannot launch published CLI" }
+            $outTask = $process.StandardOutput.ReadToEndAsync()
+            $errTask = $process.StandardError.ReadToEndAsync()
+            if (-not $process.WaitForExit(30000)) {
+              $process.Kill()
+              throw "CLI help timed out"
+            }
+            $helpText = $outTask.GetAwaiter().GetResult() + "`n" + $errTask.GetAwaiter().GetResult()
+            if ($process.ExitCode -ne 0) { throw "CLI help failed with exit code $($process.ExitCode)" }
+          } finally { $process.Dispose() }
           if ($helpText -notmatch '(?m)^\s*-l,\s*--level[^\r\n]*Default:\s*3') {
             throw "LNR CLI --level is not reported as default 3: $helpText"
           }
