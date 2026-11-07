@@ -7,12 +7,12 @@ la licencia MIT y los creditos del software original.
 
 ## Versionado y descargas identificables
 
-La version de desarrollo actual es **v0.1.0-beta.11** (nuevo botón para limpiar el registro de actividad).
+La version de desarrollo actual es **v0.1.0-beta.12** (enlaces clicables de CHDMAN y orden de botones del registro).
 La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
 se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 **Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.11-bNN-GUI-win-x64.zip`.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.12-bNN-GUI-win-x64.zip`.
 Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
 y `Toolkit-win-x64.zip`.
 
@@ -27,11 +27,22 @@ compilacion que se esta ejecutando. No hay que renombrar manualmente ZIPs.
 - De momento la rama `master` se mantiene independiente del trabajo en
   `lnr/windows-chd-build`. No hay release estable de LNR.
 
+### Importar CHDMAN: tres fuentes accesibles desde el programa
+
+Al pulsar **Importar ZIP...** aparece una ventana con enlaces
+clicables a [Recalbox](https://wiki.recalbox.com/es/tutorials/utilities/rom-conversion/chdman),
+[OnionUI](https://onionui.github.io/docs/advanced/chdman) y
+[MAME oficial](https://www.mamedev.org/release.html).
+Abren el navegador **sin cerrar la confirmación**, de modo que puedes
+descargar primero el paquete y después elegir **Sí, importar ZIP**
+para seleccionar el archivo local, o **No** para cancelar. Abrir
+una de esas páginas no inicia ninguna importación ni ejecuta archivos.
+
 ### Limpiar y copiar registro
 
 En **Actividad y resultados**, el nuevo botón **Limpiar registro**
 vacía solo el panel y los mensajes de esta sesión acumulados desde la
-última limpieza. Se sitúa entre **Copiar registro** y **Abrir carpeta PBP**.
+última limpieza. Se sitúa antes de **Copiar registro**, seguido de **Abrir carpeta PBP**.
 No elimina los informes TXT ya guardados, no afecta a archivos de juegos
 y no cancela las conversiones: los nuevos mensajes siguen apareciendo.
 Tras limpiar, **Copiar registro** recoge únicamente los mensajes nuevos.
