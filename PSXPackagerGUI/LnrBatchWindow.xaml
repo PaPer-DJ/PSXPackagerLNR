@@ -198,7 +198,7 @@
                      VerticalScrollBarVisibility="Auto"
                      HorizontalScrollBarVisibility="Auto"
                      Background="#FF192431" Foreground="#FFF2F7FD" BorderThickness="0"
-                     Padding="12" VerticalContentAlignment="Top" LineHeight="20"
+                     Padding="12" VerticalContentAlignment="Top"
                      ToolTip="Registro de la sesión. Puedes ampliar este panel arrastrando el separador superior."/>
         </Grid>
 
