@@ -102,6 +102,25 @@ jobs:
           & "./out/CLI/psxpackager.exe" --help
           if ($LASTEXITCODE -ne 0) { throw "CLI --help failed ($LASTEXITCODE)" }
 
+      - name: Regression test - LNR default compression is level 3
+        shell: pwsh
+        run: |
+          # The CLI's compiled option parser should report level 3.
+          $helpText = (& "./out/CLI/psxpackager.exe" --help | Out-String)
+          if ($LASTEXITCODE -ne 0) { throw "CLI help failed during compression test" }
+          if ($helpText -notmatch '(?m)^\s*-l,\s*--level[^\r\n]*Default:\s*3') {
+            throw "LNR CLI --level is not reported as default 3: $helpText"
+          }
+          # Both WPF GUI defaults must be 3. Existing user choices persist.
+          $settings = Get-Content "./PSXPackagerGUI/Pages/SettingsPage.xaml.cs" -Raw
+          if ($settings -notmatch 'CompressionLevel\s*=\s*3\s*,') {
+            throw "Classic GUI fresh-install compression default must be 3"
+          }
+          $batch = Get-Content "./PSXPackagerGUI/LnrGuiPreferences.cs" -Raw
+          if ($batch -notmatch '_\s*=>\s*3') {
+            throw "LNR batch GUI fallback compression default must be 3"
+          }
+
       - name: Test data-only PBP to ISO safety (synthetic CD sectors)
         shell: pwsh
         run: |
