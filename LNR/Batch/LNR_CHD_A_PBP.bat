@@ -43,18 +43,23 @@ if errorlevel 2 (set "MODE=Unidos") else (set "MODE=Separados")
 
 echo.
 echo NIVEL DE COMPRESION:
-echo   1 - MINIMA
-echo   5 - NORMAL (predeterminado en PSXPackager)
+echo   1 - LIGERA
+echo   3 - EQUILIBRADA (RECOMENDADA LNR)
+echo   5 - ESTANDAR ORIGINAL DE PSXPackager
 echo   9 - MAXIMA
 echo.
-choice /C 159 /N /M "Elige 1, 5 o 9: "
-if errorlevel 3 goto LEVEL9
-if errorlevel 2 goto LEVEL5
+choice /C 1359 /N /M "Elige 1, 3, 5 o 9 (LNR recomienda 3): "
+if errorlevel 4 goto LEVEL9
+if errorlevel 3 goto LEVEL5
+if errorlevel 2 goto LEVEL3
 if errorlevel 1 goto LEVEL1
 goto FIN
 
 :LEVEL1
 set "LEVEL=1"
+goto CONFIRM
+:LEVEL3
+set "LEVEL=3"
 goto CONFIRM
 :LEVEL5
 set "LEVEL=5"
