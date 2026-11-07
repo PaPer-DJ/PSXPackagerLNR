@@ -138,6 +138,11 @@ namespace PSXPackagerGUI
             TryAutoScan(force: true);
         }
 
+        private void LnrAbout_OnClick(object sender, RoutedEventArgs e)
+        {
+            new LnrAboutWindow { Owner = this }.ShowDialog();
+        }
+
         private void Browse_OnClick(object sender, RoutedEventArgs e)
         {
             // The default Windows folder dialog hides files. Our picker
