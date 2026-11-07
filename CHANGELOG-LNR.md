@@ -4,6 +4,29 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.7 — 7 noviembre 2026 (importación de CHDMAN desde ZIP)
+
+- Nuevo botón **Importar ZIP...** en la suite de discos. Permite elegir
+  un paquete CHDMAN de Recalbox, OnionUI u otra fuente confiable sin
+  descomprimirlo ni colocar manualmente el ejecutable.
+- La GUI busca `chdman.exe` dentro del ZIP (incluidas subcarpetas),
+  extrae únicamente ese ejecutable a la carpeta local
+  `%LOCALAPPDATA%\\PSXPackagerLNR\\Tools` y recuerda su presencia.
+- Al abrir la suite, detecta automáticamente un CHDMAN ubicado junto a
+  la aplicación o el importado previamente. Se mantiene
+  **Localizar...** para seleccionar un ejecutable ya instalado.
+- La importación exige confirmación, verifica una firma básica de
+  ejecutable PE y registra su huella SHA-256.
+  **Esta comprobación no certifica que el binario sea seguro u oficial**.
+- El fork **no redistribuye CHDMAN**: el usuario obtiene su propia copia
+  de terceros. Se recomienda preferentemente la distribución oficial
+  de MAME; Recalbox/OnionUI se documentan como alternativas ZIP.
+- Se mantienen todas las funciones y créditos del software original;
+  la conversión CHD→PBP sigue sin necesitar CHDMAN.
+
+**Pendiente**: validar en Windows importando un ZIP real y comprobar
+las tres rutas de conversión inversa. No publicar versión estable.
+
 ## v0.1.0-beta.6 — 7 noviembre 2026 (suite de discos: versión experimental)
 
 - Nuevo módulo gráfico **Suite de discos** desde el menú principal y
