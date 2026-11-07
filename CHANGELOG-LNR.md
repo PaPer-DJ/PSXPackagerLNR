@@ -4,6 +4,35 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.10 — 7 noviembre 2026 (mejor reparto del espacio y controles del lote)
+
+- **Barra de progreso individual ampliada** hasta el porcentaje, usando todo
+  el ancho sobrante de Estado/Progreso en lugar de encogerla.
+- **Centrado** de cabeceras y valores en Discos, Origen, CHD, PBP,
+  Variación, Tiempo y Estado/Progreso. Nombre PBP mantiene alineación
+  a la izquierda. Las columnas numéricas adaptan su anchura según
+  el contenido real, reservando el espacio restante al estado.
+- **Tiempo total del lote:** al finalizar aparece «Lote Finalizado ·
+  Tiempo total: mm:ss» (o hh:mm:ss); se distingue error y cancelación.
+- Nuevo check **Apagar equipo al finalizar el lote**, siempre
+  desactivado por defecto y con confirmación expresa adicional.
+  Solo es elegible si se ha convertido al menos un juego y el lote
+  no tiene errores, cancelaciones ni advertencias de eliminación.
+- **Apagado seguro:** la aplicación muestra 60 segundos de cuenta atrás
+  con botón para cancelarlo; cerrarla cancela el apagado. Después se
+  solicita a Windows un apagado normal (sin forzar aplicaciones).
+  Una tarea con documentos sin guardar puede bloquearlo o retrasarlo.
+  Añadidas pruebas automáticas de la política de elegibilidad.
+- **Mayor espacio inicial para la lista de CHD**: Actividad y resultados
+  pasa de 300 a **200 píxeles** de alto, dejando más espacio para los
+  juegos detectados. Sigue pudiendo redimensionarse arrastrando el
+  separador. Se migra automáticamente el valor antiguo de 300 px
+  cuando procede, sin sobrescribir otros tamaños personalizados.
+
+**Pendiente de prueba visual y de flujo real en Windows.** No
+se ha solicitado ninguna acción de apagado a un equipo durante
+las pruebas de compilación.
+
 ## v0.1.0-beta.9 — 7 noviembre 2026 (pulido de botones y espaciado)
 
 - Iconos vectoriales pequeños y nítidos en **Analizar** (lupa azul),
