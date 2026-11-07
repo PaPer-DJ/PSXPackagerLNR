@@ -6,7 +6,7 @@ param(
     [Parameter(Mandatory=$true)][string]$SourceDir,
     [Parameter(Mandatory=$true)][string]$ToolsDir,
     [ValidateSet('Separados','Unidos')][string]$MultiMode='Separados',
-    [ValidateSet(1,5,9)][int]$Level=5,
+    [ValidateSet(1,3,5,9)][int]$Level=3,
     [switch]$PlanOnly,
     [string]$PlanJson
 )
