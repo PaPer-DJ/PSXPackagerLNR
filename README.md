@@ -7,12 +7,12 @@ la licencia MIT y los creditos del software original.
 
 ## Versionado y descargas identificables
 
-La version de desarrollo actual es **v0.1.0-beta.9** (pulido visual de botones, iconos y espaciado en GUI).
+La version de desarrollo actual es **v0.1.0-beta.10** (columnas autoajustables, progreso ampliado, tiempo total, apagado optativo y panel de actividad más compacto).
 La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
 se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 **Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.9-bNN-GUI-win-x64.zip`.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.10-bNN-GUI-win-x64.zip`.
 Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
 y `Toolkit-win-x64.zip`.
 
@@ -26,6 +26,28 @@ compilacion que se esta ejecutando. No hay que renombrar manualmente ZIPs.
   para versiones publicadas y archivadas permanentemente tras validacion.
 - De momento la rama `master` se mantiene independiente del trabajo en
   `lnr/windows-chd-build`. No hay release estable de LNR.
+
+### Interfaz del lote: nuevo reparto y apagado opcional
+
+La lista de juegos CHD tiene más espacio al iniciar el programa:
+el panel **Actividad y resultados** empieza a **200 px de altura**,
+frente a los 300 px de betas anteriores. La posición del separador
+sigue siendo redimensionable y personalizable; se adapta una sola vez
+el antiguo tamaño predeterminado.
+
+La tabla centra sus columnas numéricas, las autoajusta y deja
+la mayor parte del espacio restante a **Estado/Progreso**. Al acabar
+se indica **Lote Finalizado · Tiempo total**.
+
+La casilla **Apagar equipo al finalizar el lote** está siempre desactivada
+por defecto y exige confirmación. Solo se activa si se ha completado
+al menos una conversión sin errores, cancelación ni problemas de
+eliminación. Se inicia una cuenta atrás local de **60 segundos**
+con botón Cancelar. El cierre de la GUI durante ese tiempo también
+cancela la petición. Después se solicita un apagado normal de Windows
+(`shutdown.exe /s /t 0`), sin forzar el cierre de programas. **Guarda
+antes tus trabajos abiertos**: Windows puede impedir el apagado si hay
+archivos sin guardar.
 
 ### Identidad visual y barra de progreso del lote
 
