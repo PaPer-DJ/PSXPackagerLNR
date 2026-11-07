@@ -4,6 +4,36 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.14 — 7 noviembre 2026 (nivel 3 por defecto en toda la suite y pruebas en PSP)
+
+- **Nivel 3 predeterminado en todas las interfaces del fork**: GUI
+  clásica de PSXPackager (pantalla Ajustes/Compression), GUI LNR por
+  lotes, CLI `psxpackager.exe` y toolkit BAT/PowerShell.
+  Anteriormente, la GUI clásica y la CLI todavía partían de 5.
+- Se mantienen los valores configurados previamente por el usuario:
+  el cambio de nivel inicial solo se aplica a nuevas instalaciones o
+  instalaciones sin preferencias guardadas. Los niveles 1–9 siguen
+  accesibles donde corresponde; no se elimina ningún nivel disponible.
+- Se documentan pruebas prácticas de LaNaveRETRO con una **PSP
+  original**: determinados juegos de PS1 convertidos con compresión
+  1–3 tuvieron pausas de carga menores que con 4 o 5. En esas
+  comparaciones, pasar del nivel 4 al 5 ahorró solo unos pocos MB,
+  y del 5 al 9 aportó una reducción de tamaño muy pequeña.
+  **Son observaciones de juegos concretos**, no una media estadística
+  de todo el catálogo ni garantía universal.
+- Separación explícita entre la estrategia greedy/lazy usada al
+  **comprimir en PC** y el proceso de **descomprimir en PSP**;
+  SharpZipLib 1.4.2 usa `DEFLATE_FAST` en niveles 1–4 y
+  `DEFLATE_SLOW` en niveles 5–9. La experiencia en PSP es evidencia
+  práctica independiente de la estrategia de creación del archivo.
+- Página de compresión en GUI clásica, ayuda integrada, tooltips,
+  README y manual del toolkit actualizados en castellano o inglés
+  según la interfaz.
+- Añadida comprobación de regresión en GitHub Actions para verificar
+  el nivel predeterminado 3 en la CLI compilada y en las dos GUI.
+- **No se modifica el repositorio original de RupertAvery** ni se
+  atribuye a LaNaveRETRO la creación del motor PSXPackager.
+
 ## v0.1.0-beta.13 — 7 noviembre 2026 (explicación técnica de compresión nivel 3)
 
 - Se mantiene el **nivel 3 predeterminado en la GUI LNR**; se mejora
