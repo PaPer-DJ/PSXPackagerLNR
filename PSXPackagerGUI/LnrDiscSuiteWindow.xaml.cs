@@ -5,6 +5,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -40,7 +42,9 @@ namespace PSXPackagerGUI
                 ? prefs.LastSourceFolder
                 : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             var localChdman = Path.Combine(AppContext.BaseDirectory, "chdman.exe");
-            ChdmanBox.Text = File.Exists(localChdman) ? localChdman : "";
+            var importedChdman = ImportedChdmanPath;
+            ChdmanBox.Text = File.Exists(localChdman) ? localChdman
+                           : File.Exists(importedChdman) ? importedChdman : "";
             Log("Este módulo utiliza CHDMAN de MAME. No cambia ni elimina imágenes originales.");
             Log("Los PBP multidisco se extraerán y convertirán a un CHD independiente por disco.");
             Scan();
@@ -92,6 +96,110 @@ namespace PSXPackagerGUI
             if (picker.ShowDialog(this) != true) return;
             SourceBox.Text = picker.FolderName;
             Scan();
+        }
+
+        private static string ImportedChdmanPath => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "PSXPackagerLNR", "Tools", "chdman.exe");
+
+        private void ImportChdman_OnClick(object sender, RoutedEventArgs e)
+        {
+            var choice = MessageBox.Show(this,
+                "Selecciona un ZIP de CHDMAN descargado de una fuente de confianza.\n\n" +
+                "Recalbox y OnionUI ofrecen paquetes ZIP, pero CHDMAN pertenece al " +
+                "proyecto MAME y tiene su propia licencia.\n" +
+                "La importación extraerá únicamente chdman.exe a tu carpeta de usuario.\n" +
+                "No se ejecutará todavía. Al convertir, se utilizará el programa que hayas importado.\n\n" +
+                "Para mayor garantía, recomendamos la distribución oficial de MAME.\n\n" +
+                "¿Seleccionar un archivo ZIP?",
+                "Importación de CHDMAN de terceros",
+                MessageBoxButton.YesNo, MessageBoxImage.Information);
+            if (choice != MessageBoxResult.Yes) return;
+
+            var picker = new OpenFileDialog
+            {
+                Title = "Selecciona el paquete ZIP que contiene chdman.exe",
+                Filter = "Archivos ZIP (*.zip)|*.zip",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+            if (picker.ShowDialog(this) != true) return;
+
+            var target = ImportedChdmanPath;
+            var temporary = target + ".tmp";
+            try
+            {
+                using var zipFile = File.OpenRead(picker.FileName);
+                using var zip = new ZipArchive(zipFile, ZipArchiveMode.Read, leaveOpen: false);
+                var candidates = zip.Entries
+                    .Where(entry => string.Equals(Path.GetFileName(entry.FullName),
+                        "chdman.exe", StringComparison.OrdinalIgnoreCase) &&
+                        !entry.FullName.Contains("..", StringComparison.Ordinal) &&
+                        entry.Length >= 100000 && entry.Length <= 50L * 1024 * 1024)
+                    .ToList();
+
+                if (candidates.Count != 1)
+                    throw new InvalidDataException(
+                        "El ZIP debe contener exactamente un chdman.exe de Windows " +
+                        "(y no varios ejecutables con el mismo nombre).");
+
+                var entry = candidates[0];
+                var folder = Path.GetDirectoryName(target)!;
+                Directory.CreateDirectory(folder);
+                if (File.Exists(target))
+                {
+                    if (MessageBox.Show(this,
+                        "Ya hay un CHDMAN importado. ¿Quieres sustituirlo por el del nuevo ZIP?",
+                        "Sustituir CHDMAN", MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                        return;
+                }
+
+                using (var input = entry.Open())
+                using (var output = new FileStream(temporary, FileMode.Create, FileAccess.Write,
+                                                    FileShare.None))
+                {
+                    input.CopyTo(output);
+                }
+
+                using (var check = File.OpenRead(temporary))
+                {
+                    var signature = new byte[2];
+                    if (check.Length != entry.Length ||
+                        check.Read(signature, 0, 2) != 2 ||
+                        signature[0] != 0x4D || signature[1] != 0x5A)
+                        throw new InvalidDataException(
+                            "El archivo extraído no parece un ejecutable Windows válido.");
+                }
+
+                var checksum = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(temporary)));
+                File.Move(temporary, target, overwrite: true);
+                ChdmanBox.Text = target;
+                Log("CHDMAN importado desde ZIP: " + Path.GetFileName(picker.FileName));
+                Log("SHA-256 del ejecutable importado: " + checksum);
+                Log("Se usará en la suite; no se ha ejecutado durante la importación.");
+                MessageBox.Show(this,
+                    "CHDMAN ya está preparado en tu carpeta de usuario.\n\n" +
+                    "No tendrás que copiarlo junto a la aplicación.\n" +
+                    "El archivo procede del ZIP que has seleccionado; " +
+                    "la comprobación de formato y SHA-256 no certifica su autoría.",
+                    "Importación completada", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or InvalidDataException or ArgumentException
+                                       or NotSupportedException)
+            {
+                Log("ERROR al importar CHDMAN: " + ex.Message);
+                MessageBox.Show(this, "No se pudo importar CHDMAN:\n" + ex.Message,
+                    "Paquete no válido", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            finally
+            {
+                try { if (File.Exists(temporary)) File.Delete(temporary); }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+            }
         }
 
         private void FindChdman_OnClick(object sender, RoutedEventArgs e)
@@ -158,6 +266,7 @@ namespace PSXPackagerGUI
             _running = running;
             BrowseButton.IsEnabled = !running;
             FindChdmanButton.IsEnabled = !running;
+            ImportChdmanButton.IsEnabled = !running;
             AnalyzeButton.IsEnabled = !running;
             ModeBox.IsEnabled = !running;
             SourceBox.IsEnabled = !running;
