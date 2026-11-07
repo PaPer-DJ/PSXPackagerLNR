@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -118,10 +117,13 @@ namespace PSXPackagerGUI
                 if (raw)
                 {
                     // 12-byte sync header must be intact.
-                    if (sector[0] != 0 || sector[11] != 0 ||
-                        sector.Skip(1).Take(10).Any(b => b != 0xFF))
+                    if (sector[0] != 0 || sector[11] != 0)
                         throw new InvalidDataException(
                             $"Sector {i}: cabecera de CD no válida. No se generará un ISO incompleto.");
+                    for (int marker = 1; marker <= 10; marker++)
+                        if (sector[marker] != 0xFF)
+                            throw new InvalidDataException(
+                                $"Sector {i}: sincronización de CD dañada. Usa BIN/CUE.");
 
                     var sectorMode = sector[15];
                     if (mode == "MODE1/2352" && sectorMode == 1)
