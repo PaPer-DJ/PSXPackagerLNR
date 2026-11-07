@@ -121,21 +121,33 @@ o no queda suficiente espacio para producir su PBP.
 
 ## 7. Conversión inversa y formatos de disco: alcance de la suite
 
-La edición beta.6 incorpora un botón **Suite CD / CHD / ISO** en el
-conversor y una entrada independiente en el menú principal. Es una
-ventana por lotes con tres modos:
+La suite se amplía en beta.8 y aparece mediante **Suite CD / CHD / ISO**
+en el conversor y como entrada independiente en el menú principal.
+Dispone de **cinco modos**:
 
 | Dirección | Salida | Limitaciones |
 |---|---|---|
 | PBP → CHD | `CHD/Nombre.chd`, uno por disco PS1 | PSXPackager extrae temporalmente BIN/CUE y CHDMAN genera el CHD; no se recuperan subcanales ya perdidos |
+| PBP → BIN/CUE | `BIN_CUE/Juego/` con CUE/BIN de cada disco | PS1, sin CHDMAN; recupera pistas disponibles, pero no datos que ya se perdieron al crear el PBP |
+| PBP → ISO de datos | `ISO/Juego.iso` | Solo 1 disco y 1 pista MODE1/2048, MODE1/2352 o MODE2 Form1/2352; rechaza CD-Audio, XA Form2 y multidisco |
 | CHD de CD → BIN/CUE | `BIN_CUE/Juego/Juego.cue` y `.bin` | PS1, Saturn y PS2 en CD; conserva las pistas de audio disponibles en el CHD |
 | CHD de DVD → ISO | `ISO/Juego.iso` | PS2 en DVD, no CD; usa `chdman extractdvd` |
+
+**PBP → ISO** NO es una reconstrucción fiel de un CD para grabar.
+Únicamente extrae los 2048 bytes útiles por sector cuando todo el disco
+es una sola pista de datos compatible. No conserva pistas CD-Audio,
+sectores Mode2 Form2/XA, subcanales ni protección; esos casos generan
+un error explícito para evitar ISOs engañosamente incompletos. Para
+juegos de PS1 que quieras conservar o grabar, utiliza **PBP → BIN/CUE**
+y comprueba las pistas. No hace falta instalar CHDMAN para ninguna
+de estas dos conversiones de PBP (BIN/CUE, ISO limitado).
 
 **Funcionamiento de la suite (beta experimental):**
 
 1. Selecciona una de las tres conversiones en la lista desplegable.
 2. Indica la carpeta de origen. Pulsa **Analizar** y revisa los archivos.
-3. Consigue una copia legítima de **CHDMAN**. La fuente preferida es
+3. Para **PBP→CHD y CHD→BIN/CUE o ISO** consigue una copia legítima de **CHDMAN**.
+   **PBP→BIN/CUE y PBP→ISO de datos no la necesitan.** La fuente preferida es
    [MAME oficial](https://www.mamedev.org/release.html).
    También hay ZIP prácticos en
    [Recalbox](https://wiki.recalbox.com/es/tutorials/utilities/rom-conversion/chdman)
