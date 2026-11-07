@@ -10,10 +10,12 @@ la licencia MIT y los creditos del software original.
 El ZIP **GUI-win-x64** incorpora **dos formas de abrir la aplicación**,
 sin instalar herramientas adicionales para la conversión CHD → PBP:
 
-- **`PSXPackagerLNR.exe` — recomendado**: abre **directamente el
-  conversor LNR CHD → PBP por lotes**, con su selector de carpeta,
-  compresión, progreso y acceso a **Suite CD / CHD / ISO**.
-  No muestra la pantalla inicial del programa original.
+- **`PSXPackagerLNR.exe` — recomendado**: **lanzador diminuto y nativo**
+  (sin motor ni runtime .NET incrustados). Al ejecutarlo abre
+  `PSXPackagerGUI.exe` con la opción interna `--lnr-batch`,
+  que muestra **directamente el conversor LNR CHD → PBP por lotes**,
+  con selector de carpeta, compresión, progreso y acceso a
+  **Suite CD / CHD / ISO**. No aparece la pantalla clásica.
 - **`PSXPackagerGUI.exe` — interfaz clásica**: conserva la ventana
   original de PSXPackager, sus funciones y los accesos a las herramientas
   LNR para quien las necesite.
@@ -21,21 +23,27 @@ sin instalar herramientas adicionales para la conversión CHD → PBP:
   pueda realizar la conversión directa, sin CHDMAN ni BIN/CUE
   intermedios. No es necesario ejecutarlo manualmente.
 
-**No son dos motores diferentes:** los dos ejecutables gráficos utilizan
-el mismo código y las mismas funciones; solo cambia la pantalla que
-se muestra al abrirlos. **No borres `psxpackager.exe` ni los demás
-archivos del paquete.** Para usar la GUI, extrae el ZIP completo y
-ejecuta **`PSXPackagerLNR.exe`**. La GUI clásica sigue siendo opcional.
+**No se duplica la GUI:** `PSXPackagerLNR.exe` es solo un pequeño
+acceso directo compilado como programa Win32. La aplicación completa
+y el runtime .NET autocontenido permanecen una única vez en
+`PSXPackagerGUI.exe`. También se conserva `psxpackager.exe`,
+que realiza las conversiones en segundo plano.
+
+**Extrae el ZIP completo y conserva los tres EXE en la misma carpeta**,
+junto con los recursos. No funcionaría copiando únicamente el pequeño
+lanzador a otro lugar (para crear un acceso directo en el escritorio,
+usa la opción de Windows «Crear acceso directo» en su lugar).
+El lanzador no abre consola y no requiere instalar software adicional.
 
 
 ## Versionado y descargas identificables
 
-La version de desarrollo actual es **v0.1.0-beta.16** (nuevo ejecutable directo de la GUI LNR y explicación mejorada del ahorro de espacio al convertir colecciones grandes).
+La version de desarrollo actual es **v0.1.0-beta.17** (lanzador nativo ultraligero sin duplicar la GUI completa).
 La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
 se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 **Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.16-bNN-GUI-win-x64.zip`.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.17-bNN-GUI-win-x64.zip`.
 Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
 y `Toolkit-win-x64.zip`.
 
