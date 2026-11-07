@@ -60,42 +60,6 @@ jobs:
             -p:PublishReadyToRun=false
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Build tiny native LNR launcher (no duplicated .NET runtime)
-        shell: pwsh
-        run: |
-          # PSXPackagerLNR.exe is a minimal Win32 stub. Unlike beta.16,
-          # it is NOT a 150+ MB duplicate of PSXPackagerGUI.exe.
-          # Visual Studio/MSVC and the Windows SDK are preinstalled on windows-latest.
-          $vswhere = Join-Path "${env:ProgramFiles(x86)}" "Microsoft Visual Studio/Installer/vswhere.exe"
-          if (-not (Test-Path $vswhere)) { throw "Visual Studio discovery tool not installed" }
-          $vsRoot = (& $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath | Select-Object -First 1)
-          if (-not $vsRoot) { throw "C/C++ build tools are unavailable on Windows runner" }
-          $vsDev = Join-Path $vsRoot "Common7/Tools/VsDevCmd.bat"
-          if (-not (Test-Path $vsDev)) { throw "Missing Visual Studio developer command prompt" }
-          New-Item -ItemType Directory -Path "./out/Launcher" -Force | Out-Null
-          $batchFile = Join-Path $env:RUNNER_TEMP "build-lnr-launcher.cmd"
-          $script = @"
-          @echo off
-          call "$vsDev" -no_logo -arch=amd64 -host_arch=amd64
-          if errorlevel 1 exit /b 1
-          rc.exe /nologo /i "." /fo "out\Launcher\PSXPackagerLNR.res" "LNR\Launcher\PSXPackagerLNR.rc"
-          if errorlevel 1 exit /b 1
-          cl.exe /nologo /O2 /MT /W4 /WX /Fo"out\Launcher\PSXPackagerLNR.obj" /Fe"out\GUI\PSXPackagerLNR.exe" "LNR\Launcher\PSXPackagerLNR.c" "out\Launcher\PSXPackagerLNR.res" /link /SUBSYSTEM:WINDOWS shell32.lib user32.lib
-          if errorlevel 1 exit /b 1
-          "@
-          Set-Content -LiteralPath $batchFile -Value $script -Encoding ASCII
-          & cmd.exe /d /c $batchFile
-          if ($LASTEXITCODE -ne 0) { throw "Native LNR launcher compilation failed ($LASTEXITCODE)" }
-          $launcher = Get-Item "./out/GUI/PSXPackagerLNR.exe"
-          if ($launcher.Length -ge 1MB) {
-            throw "Launcher must be small: $($launcher.Length) bytes"
-          }
-          $fullGui = Get-Item "./out/GUI/PSXPackagerGUI.exe"
-          if ($launcher.Length -ge $fullGui.Length) {
-            throw "Launcher must not contain the full self-contained GUI"
-          }
-          Write-Host "LNR native launcher: $($launcher.Length) bytes, classic GUI: $($fullGui.Length) bytes"
-
       - name: Copy required database, license and documentation
         shell: pwsh
         run: |
@@ -118,24 +82,42 @@ jobs:
           Copy-Item "./out/CLI/psxpackager.exe" "./out/GUI/psxpackager.exe" -Force
           if (-not (Test-Path "./out/GUI/psxpackager.exe")) { throw "GUI package lacks LNR batch CLI" }
 
+      - name: Create LNR batch shortcut (same GUI, no launcher EXE)
+        shell: pwsh
+        run: |
+          $guiDir = (Resolve-Path "./out/GUI").Path
+          $guiExe = Join-Path $guiDir "PSXPackagerGUI.exe"
+          $shortcutPath = Join-Path $guiDir "PSXPackagerLNR - Conversion por lotes.lnk"
+          $shell = New-Object -ComObject WScript.Shell
+          $shortcut = $shell.CreateShortcut($shortcutPath)
+          $shortcut.TargetPath = $guiExe
+          $shortcut.Arguments = "--lnr-batch"
+          $shortcut.WorkingDirectory = $guiDir
+          $shortcut.IconLocation = "$guiExe,0"
+          $shortcut.Description = "PSXPackagerLNR - conversion CHD a PBP por lotes"
+          $shortcut.Save()
+          if (-not (Test-Path -LiteralPath $shortcutPath)) { throw "LNR shortcut was not created" }
+          $check = $shell.CreateShortcut($shortcutPath)
+          if ($check.Arguments -ne "--lnr-batch") { throw "Shortcut is missing --lnr-batch" }
+          if ([IO.Path]::GetFileName($check.TargetPath) -ne "PSXPackagerGUI.exe") { throw "Shortcut targets wrong executable" }
+          Write-Host "Shortcut generated: $shortcutPath"
+
       - name: Verify Windows binaries
         shell: pwsh
         run: |
           if (-not (Test-Path "./out/CLI/psxpackager.exe")) { throw "CLI EXE missing" }
           if (-not (Test-Path "./out/GUI/PSXPackagerGUI.exe")) { throw "GUI EXE missing" }
-          if (-not (Test-Path "./out/GUI/PSXPackagerLNR.exe")) { throw "Tiny LNR launcher EXE missing" }
+          if (-not (Test-Path "./out/GUI/PSXPackagerLNR - Conversion por lotes.lnk")) { throw "LNR batch shortcut missing" }
+          if (Test-Path "./out/GUI/PSXPackagerLNR.exe") { throw "Obsolete native LNR launcher must not be shipped" }
           $startupXaml = Get-Content "./PSXPackagerGUI/App.xaml" -Raw
           $startupCs = Get-Content "./PSXPackagerGUI/App.xaml.cs" -Raw
-          $launcherSrc = Get-Content "./LNR/Launcher/PSXPackagerLNR.c" -Raw
           if ($startupXaml -match 'StartupUri=') { throw "StartupUri bypasses custom startup routing" }
           if ($startupCs -notmatch '\-\-lnr-batch' -or
               $startupCs -notmatch 'new LnrBatchWindow\(\)' -or
               $launcherSrc -notmatch 'ShellExecuteW' -or
               $launcherSrc -notmatch 'PSXPackagerGUI\.exe') {
-            throw "Native launcher and --lnr-batch GUI routing are not configured"
+            throw "--lnr-batch GUI routing is not configured"
           }
-          $launcherBytes = (Get-Item "./out/GUI/PSXPackagerLNR.exe").Length
-          if ($launcherBytes -ge 1MB) { throw "Launcher exceeds 1 MB: $launcherBytes" }
           if (-not (Test-Path "./out/GUI/psxpackager.exe")) { throw "GUI batch converter missing" }
           foreach ($edition in @("CLI", "GUI")) {
             $actual = (Get-Content -LiteralPath "./out/$edition/LNR-VERSION.txt" -Raw).Trim()
@@ -303,11 +285,10 @@ jobs:
           $guiArchive = [System.IO.Compression.ZipFile]::OpenRead($guiZip)
           try {
             $guiNames = @($guiArchive.Entries | ForEach-Object { $_.FullName })
-            if (-not ($guiNames -contains "PSXPackagerLNR.exe")) { throw "GUI ZIP lacks tiny LNR launcher" }
+            if (-not ($guiNames -contains "PSXPackagerLNR - Conversion por lotes.lnk")) { throw "GUI ZIP lacks batch shortcut" }
+            if ($guiNames -contains "PSXPackagerLNR.exe") { throw "GUI ZIP must not contain native launcher" }
             if (-not ($guiNames -contains "PSXPackagerGUI.exe")) { throw "GUI ZIP lacks classic GUI" }
             if (-not ($guiNames -contains "psxpackager.exe")) { throw "GUI ZIP lacks conversion motor" }
-            $launcherArchiveEntry = $guiArchive.Entries | Where-Object FullName -eq 'PSXPackagerLNR.exe' | Select-Object -First 1
-            if ($launcherArchiveEntry.Length -ge 1MB) { throw "ZIP contains a duplicated full GUI instead of the small launcher" }
           } finally { $guiArchive.Dispose() }
           $archive = [System.IO.Compression.ZipFile]::OpenRead($toolkitZip)
           try {
