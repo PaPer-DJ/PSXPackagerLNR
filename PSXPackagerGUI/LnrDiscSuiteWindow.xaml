@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PSXPackagerLNR · Suite de discos"
-        Width="970" Height="750" MinWidth="780" MinHeight="600"
+        Width="1020" Height="770" MinWidth="800" MinHeight="610"
         WindowStartupLocation="CenterOwner" Closing="Window_OnClosing">
     <Grid Margin="17">
         <Grid.RowDefinitions>
@@ -16,9 +16,9 @@
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Margin="0,0,0,14">
             <TextBlock Text="Suite de discos · Conversiones adicionales" FontSize="21" FontWeight="SemiBold"/>
-            <TextBlock Text="PBP → CHD para PS1  ·  CHD → BIN/CUE para CD  ·  CHD → ISO para DVD"
+            <TextBlock Text="PS1: PBP → CHD / BIN+CUE / ISO limitado  ·  CHD → BIN+CUE (CD) / ISO (DVD)"
                        Foreground="#FF526278" Margin="0,4,0,0"/>
-            <TextBlock Text="Conserva los originales. No requiere ejecutar comandos. Para estos modos sí se necesita CHDMAN (MAME)."
+            <TextBlock Text="Los originales se conservan. Solo las conversiones que crean o extraen CHD necesitan CHDMAN (MAME)."
                        Foreground="#FF526278" FontSize="11" Margin="0,4,0,0"/>
         </StackPanel>
 
@@ -31,7 +31,9 @@
             <TextBlock Text="Conversión" VerticalAlignment="Center"/>
             <ComboBox Grid.Column="1" x:Name="ModeBox" MinHeight="31"
                       SelectionChanged="Mode_OnChanged">
-                <ComboBoxItem Content="PBP → CHD (PS1, discos separados)" Tag="PBP2CHD"/>
+                <ComboBoxItem Content="PBP → CHD (PS1, un CHD por disco)" Tag="PBP2CHD"/>
+                <ComboBoxItem Content="PBP → BIN/CUE (PS1, conserva pistas)" Tag="PBP2CUE"/>
+                <ComboBoxItem Content="PBP → ISO (PS1, SOLO CD de datos MODE1)" Tag="PBP2ISO"/>
                 <ComboBoxItem Content="CHD → BIN/CUE (CD: PS1, Saturn y PS2 CD)" Tag="CHD2CUE"/>
                 <ComboBoxItem Content="CHD → ISO (DVD: PS2 DVD)" Tag="CHD2ISO"/>
             </ComboBox>
@@ -61,7 +63,7 @@
                 <ColumnDefinition Width="112"/>
             </Grid.ColumnDefinitions>
             <TextBlock Text="CHDMAN" VerticalAlignment="Center"
-                       ToolTip="Utilidad de MAME: herramienta independiente, con sus propias licencias"/>
+                       ToolTip="Solo se necesita para PBP→CHD y CHD→BIN/CUE/ISO. PBP→BIN/CUE e ISO simple usan el motor original."/>
             <TextBox Grid.Column="1" x:Name="ChdmanBox" MinHeight="31"
                      VerticalContentAlignment="Center"
                      ToolTip="Ruta de chdman.exe. Puedes importarlo desde un ZIP o localizar el que ya tengas."/>
