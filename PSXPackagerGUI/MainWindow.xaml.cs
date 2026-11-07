@@ -100,6 +100,11 @@ namespace PSXPackagerGUI
             _singlePage.SavePSP();
         }
 
+        private void LnrAbout_OnClick(object sender, RoutedEventArgs e)
+        {
+            new LnrAboutWindow { Owner = this }.ShowDialog();
+        }
+
         private void LnrBatch_OnClick(object sender, RoutedEventArgs e)
         {
             var window = new LnrBatchWindow { Owner = this };
