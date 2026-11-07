@@ -4,6 +4,30 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.2 — 7 noviembre 2026 (interfaz pulida)
+
+- La ventana CHD → PBP recuerda **última carpeta, modo multidisco,
+  nivel de compresión, tamaño de ventana, altura del registro y autoscroll**.
+  Preferencias locales en `%LOCALAPPDATA%\\PSXPackagerLNR\\gui-preferencias.json`,
+  sin modificar la configuración del PSXPackager original.
+- Botones **Abrir carpeta PBP** y **Copiar registro**; seguimiento
+  automático del registro activable/desactivable para poder leer mensajes
+  anteriores durante conversiones largas.
+- Avance de cada juego etiquetado por **fase real** que notifica la CLI
+  (conversión, escritura, extracción o descompresión). **No confundir el
+  porcentaje de cada fase con el progreso global del juego**.
+- Al analizar, identifica de antemano los PBP existentes y los marca como
+  **Saltado / Ya existe**; nunca sobrescribe el archivo existente.
+- Revisión de textos de confirmación, ayudas contextuales y atajos de la
+  barra original en castellano, sin alterar las funciones de base.
+- Mantiene el registro redimensionable, los indicadores por archivo, el
+  destino independiente PBP y la conservación de los CHD.
+
+**Pruebas requeridas:** comprobar en Windows la persistencia de preferencias,
+el botón de abrir carpeta, el estado de archivos preexistentes, la cancelación
+y el indicador de fase mientras convierte CHD reales. La conversión multidisco
+unida y los ficheros SBI siguen pendientes de pruebas de compatibilidad.
+
 ## v0.1.0-beta.1 — 6 noviembre 2026 (version de pruebas)
 
 Primera version numerada del fork LNR. No es una release estable.
