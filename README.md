@@ -7,12 +7,12 @@ la licencia MIT y los creditos del software original.
 
 ## Versionado y descargas identificables
 
-La version de pruebas actual es **v0.1.0-beta.3** (iteracion sobre beta.2).
+La version de pruebas actual es **v0.1.0-beta.4** (logo LNR y estimación del lote).
 La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
 se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 **Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.3-bNN-GUI-win-x64.zip`.
+Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.4-bNN-GUI-win-x64.zip`.
 Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
 y `Toolkit-win-x64.zip`.
 
@@ -26,6 +26,25 @@ compilacion que se esta ejecutando. No hay que renombrar manualmente ZIPs.
   para versiones publicadas y archivadas permanentemente tras validacion.
 - De momento la rama `master` se mantiene independiente del trabajo en
   `lnr/windows-chd-build`. No hay release estable de LNR.
+
+### Identidad visual y barra de progreso del lote
+
+El logotipo original aportado **LNR MOD** se usa como sello pequeño y
+discreto de la edición LNR, no como sustitución del programa original.
+Pulsando sobre el sello en la ventana de conversión, o desde el menú
+**Acerca de LNR...**, se abren los créditos originales, la licencia MIT
+y enlaces al proyecto original y al fork.
+
+La **barra inferior** expresa el porcentaje de juegos terminados
+(correctos, saltados o errores) del lote. Es un porcentaje **exacto por
+número de juegos**, no la media de fases ni el avance en bytes de un
+PBP en curso.
+
+Tras completar al menos una conversión, se muestra la **estimación
+aproximada del tiempo restante** basada en el tamaño de los CHD pendientes
+y los segundos por MB observados en conversiones correctas del lote.
+Al principio aparece «calculando»; el tiempo puede variar mucho según
+el juego y el dispositivo. No se promete una hora de finalización exacta.
 
 ## Estado de desarrollo
 
