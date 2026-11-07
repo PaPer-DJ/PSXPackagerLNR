@@ -45,11 +45,16 @@ alternativo basado en BAT/PowerShell.
    de Windows (no ejecutes el programa directamente dentro del ZIP).
 3. Inicia `PSXPackagerGUI.exe` y pulsa el nuevo menu
    **CHD a PBP - LNR**.
-4. Selecciona la carpeta que contiene los CHD. Elige **separados** o
-   **unidos** y nivel **1, 5 o 9** (5 es el predeterminado).
-5. Pulsa **Analizar**, revisa el plan (los PBP existentes se marcan como
-   **Saltado / Ya existe**) y despues **Convertir**. Los PBP apareceran
-   en la subcarpeta `PBP`. Los CHD originales no se modifican.
+4. Pulsa **Ver carpetas...**. El explorador LNR muestra **subcarpetas
+   a la izquierda y los CHD con su tamaño a la derecha**, para comprobar
+   su contenido antes de pulsar **Usar esta carpeta**. También puedes
+   pegar una ruta y pulsar Intro.
+5. La tabla se **carga automaticamente** tras seleccionar la carpeta
+   (tambien al recuperar la ultima carpeta o cambiar de modo). El botón
+   **Analizar** queda disponible para forzar una nueva lectura.
+6. Elige discos **separados** o **unidos** y nivel **1, 5 o 9** (5 es
+   el predeterminado). Revisa los PBP marcados **Saltado / Ya existe**
+   y pulsa **Convertir**. Los CHD originales no se modifican.
 
 La distribucion GUI incluye tambien `psxpackager.exe`, necesario para
 la conversion directa. No requiere PowerShell ni CHDMAN; el Toolkit BAT
