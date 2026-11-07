@@ -79,6 +79,13 @@ arrastrando el separador y desmarcar **Seguir actividad** para consultarlo.
 
 ### Columnas, progreso de fase y duración total (beta.10)
 
+El reparto de espacio inicial también se ha mejorado: **Actividad y
+resultados** empieza a **200 px** en lugar de 300, por lo que
+**Juegos CHD detectados** ocupa una superficie mayor, similar al diseño
+de referencia. El separador sigue siendo arrastrable. La primera
+apertura de beta.10 migra el antiguo valor guardado de 300 px; si habías
+elegido otro tamaño, se conserva.
+
 En la tabla, **Nombre PBP** permanece alineado a la izquierda; las columnas
 **Discos, Origen, CHD, PBP, Variación, Tiempo y Estado/Progreso** se centran.
 Los anchos de las columnas de datos se calculan con el texto visible y
