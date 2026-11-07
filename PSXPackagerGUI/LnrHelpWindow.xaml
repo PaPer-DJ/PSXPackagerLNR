@@ -49,10 +49,11 @@
                 <TextBlock Text="Nivel de compresión"
                            FontWeight="Bold" FontSize="15" Margin="0,16,0,7"/>
                 <TextBlock TextWrapping="Wrap">
-                    1: compresión ligera y rápida. 3: recomendación LNR como compromiso
-                    práctico entre tamaño y velocidad de creación; es la selección inicial.
-                    5: nivel estándar del PSXPackager original. 9: compresión exhaustiva,
-                    generalmente más lenta al crear el archivo.
+                    1: compresión ligera. 3: recomendado por LNR para PSP original
+                    y otros dispositivos modestos; se utiliza por defecto en la GUI
+                    clásica, la GUI por lotes y la CLI de este fork.
+                    5: valor predeterminado del proyecto original sin modificar.
+                    9: compresión exhaustiva, normalmente más lenta al crear el PBP.
                 </TextBlock>
                 <TextBlock TextWrapping="Wrap" Margin="0,8,0,0">
                     Base técnica: nuestro motor usa SharpZipLib 1.4.2. Sus niveles 1 a 4
@@ -61,8 +62,14 @@
                     CREAR el PBP, no al DESCOMPRIMIRLO en la consola. Todos utilizan
                     el formato DEFLATE; las diferencias reales de FPS, tiempos de
                     carga y microtirones dependen también del emulador y el hardware.
-                    Por eso 3 es la preferencia LNR, no una garantía de mayor fluidez
-                    frente a 5 ni el nivel óptimo demostrado en todas las consolas.
+                    LaNaveRETRO ha comprobado en una PSP original que, en algunos
+                    juegos de PS1, los niveles 1 a 3 acortan las esperas de carga
+                    frente a los niveles 4 o 5. En sus pruebas, el ahorro adicional
+                    de 4/5 fue de pocos MB y el de 5/9 resultó muy pequeño.
+                    Es una observación práctica de determinados juegos, no una
+                    garantía universal ni una consecuencia necesaria del algoritmo.
+                    Por eso 3 es la preferencia LNR: el rendimiento real depende
+                    del juego, el emulador, la tarjeta y el hardware.
                 </TextBlock>
 
                 <Border Background="#FFFFF5E8" Padding="12" Margin="0,18,0,0"
