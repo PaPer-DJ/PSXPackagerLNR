@@ -5,6 +5,29 @@ Esta es una **adaptacion y automatizacion comunitaria** del proyecto original
 **No es un programa creado originalmente por LaNaveRETRO**. Se conservan
 la licencia MIT y los creditos del software original.
 
+## Inicio rápido en Windows
+
+El ZIP **GUI-win-x64** incorpora **dos formas de abrir la aplicación**,
+sin instalar herramientas adicionales para la conversión CHD → PBP:
+
+- **`PSXPackagerLNR.exe` — recomendado**: abre **directamente el
+  conversor LNR CHD → PBP por lotes**, con su selector de carpeta,
+  compresión, progreso y acceso a **Suite CD / CHD / ISO**.
+  No muestra la pantalla inicial del programa original.
+- **`PSXPackagerGUI.exe` — interfaz clásica**: conserva la ventana
+  original de PSXPackager, sus funciones y los accesos a las herramientas
+  LNR para quien las necesite.
+- **`psxpackager.exe` — motor CLI**: se incluye para que la GUI LNR
+  pueda realizar la conversión directa, sin CHDMAN ni BIN/CUE
+  intermedios. No es necesario ejecutarlo manualmente.
+
+**No son dos motores diferentes:** los dos ejecutables gráficos utilizan
+el mismo código y las mismas funciones; solo cambia la pantalla que
+se muestra al abrirlos. **No borres `psxpackager.exe` ni los demás
+archivos del paquete.** Para usar la GUI, extrae el ZIP completo y
+ejecuta **`PSXPackagerLNR.exe`**. La GUI clásica sigue siendo opcional.
+
+
 ## Versionado y descargas identificables
 
 La version de desarrollo actual es **v0.1.0-beta.15** (anexo técnico completo sobre el nivel 3 y acceso desde los créditos del fork).
@@ -142,14 +165,33 @@ La finalidad de **PSXPackagerLNR** es facilitar convertir **colecciones
 de PlayStation 1 en CHD directamente a PBP**, en lotes y con una GUI,
 sin comandos, CHDMAN ni conversión intermedia a BIN/CUE.
 
-La función principal no ha cambiado. Solo si habilitas expresamente
-**Eliminar CHD convertidos** se intentan borrar los CHD al terminar
-correctamente un PBP nuevo. Esa opción siempre está desactivada
-al abrir la ventana o iniciar un lote, exige otra confirmación y
-**el borrado es irreversible**. No es una verificación de compatibilidad
-de emulador. Al menos debe haber espacio libre para generar el PBP
-antes de borrar el CHD. Los PBP provisionales se escriben en el mismo
-volumen de destino para evitar copias completas innecesarias.
+La opción **Eliminar CHD convertidos** sirve principalmente para
+**convertir colecciones grandes sin necesitar espacio para almacenar
+todos los CHD originales y todos los PBP nuevos a la vez**. Sin ella
+se conservan ambas colecciones: si sus tamaños son similares, la
+ocupación puede aproximarse al doble o incluso superarlo cuando los
+PBP generados son mayores que los CHD.
+
+Si la activas, **después de cada conversión nueva terminada y validada
+de forma básica**, la aplicación elimina los CHD de origen de ese
+juego para recuperar espacio antes de seguir con el lote. Sigue
+siendo necesario tener espacio libre para crear el PBP completo del
+juego actual. Los PBP provisionales se crean en el mismo volumen de
+destino y se renombran sin realizar una segunda copia íntegra.
+
+**Si quieres conservar tus CHD originales, no marques esta opción.**
+Por seguridad empieza desactivada, exige confirmación adicional y
+**el borrado es irreversible**. No elimina los CHD de conversiones
+saltadas, fallidas o canceladas. Comprobar tamaño y cabecera del PBP
+no equivale a verificar su compatibilidad en una consola.
+
+**¿Y si quieres volver a CHD?** La suite incluye **PBP → CHD por
+lotes** para juegos de PS1 (con CHDMAN, extrayendo BIN/CUE temporales).
+Es una vía práctica para recuperar un CHD a partir del contenido
+del PBP, pero **no garantiza una copia idéntica del CHD original**:
+puede haberse perdido información de subcanales, protecciones o
+metadatos durante la conversión a PBP. Para preservación fiel,
+conserva una copia de los CHD por separado.
 
 [Manual completo en castellano y explicación de todas las opciones](LNR/GUI-AYUDA.md).
 
