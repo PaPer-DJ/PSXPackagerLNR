@@ -98,6 +98,17 @@ jobs:
             $link.IconLocation="$env:WINDIR\System32\shell32.dll,179"
             $link.Save()
           }
+          foreach($kind in @('system-cmd-no-workingdir','system-cmd-dot-workingdir','system-cmd-slash-workingdir','system-cmd-shortcut-dir-variable')) {
+            $lnkPath=Join-Path $d ($kind+'.lnk')
+            $link=$sh.CreateShortcut($lnkPath)
+            $link.TargetPath=Join-Path $env:WINDIR 'System32/cmd.exe'
+            $link.Arguments='/d /c start "" ".\PSXPackagerGUI.exe" --lnr-batch'
+            if($kind -eq 'system-cmd-dot-workingdir'){$link.WorkingDirectory='.'}
+            if($kind -eq 'system-cmd-slash-workingdir'){$link.WorkingDirectory='.\'}
+            if($kind -eq 'system-cmd-shortcut-dir-variable'){$link.WorkingDirectory='%~dp0'}
+            $link.IconLocation="$env:WINDIR\System32\shell32.dll,179"
+            $link.Save()
+          }
           Rename-Item (Join-Path $d 'PSXPackagerGUI.exe') 'PSXPackagerGUI.exe.hidden'
           foreach($file in (Get-ChildItem $d -Filter '*.lnk')) {
             $name=$file.BaseName
@@ -119,7 +130,19 @@ jobs:
               try {
                 Start-Sleep -Milliseconds 250
                 $path=$p.MainModule.FileName
-                if(-not [string]::Equals($path,(Join-Path $c 'PSXPackagerGUI.exe'),[StringComparison]::OrdinalIgnoreCase)) {
+                if($name -like 'system-cmd-*') {
+                Start-Sleep -Milliseconds 550
+                $spawned = @(Get-CimInstance Win32_Process | Where-Object {
+                  $_.ExecutablePath -eq (Join-Path $c 'PSXPackagerGUI.exe')
+                })
+                if($spawned.Count -gt 0) {
+                  Write-Host "  PASS: cmd shortcut launched moved GUI $($spawned.Count) time(s)"
+                } else {
+                  Write-Host "  FAIL: cmd shortcut did not launch moved GUI"
+                }
+                foreach($sp in $spawned) { Stop-Process -Id $sp.ProcessId -Force -ErrorAction SilentlyContinue }
+              }
+              elseif(-not [string]::Equals($path,(Join-Path $c 'PSXPackagerGUI.exe'),[StringComparison]::OrdinalIgnoreCase)) {
                   Write-Host "  FAIL: unexpected exe $path"
                 } else {
                   Write-Host "  PASS: double-click executed $path"
