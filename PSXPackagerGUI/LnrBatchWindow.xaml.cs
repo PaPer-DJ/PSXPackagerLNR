@@ -32,6 +32,10 @@ namespace PSXPackagerGUI
             RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
         private readonly ObservableCollection<LnrConversionJob> _jobs = new();
         private readonly List<string> _messages = new();
+        // Automatic widths are only a starting point. GridViewColumn.Width changes
+        // made by dragging headers must survive Analyze and later progress updates.
+        private readonly HashSet<int> _manuallySizedColumns = new();
+        private bool _settingColumnWidths;
         private CancellationTokenSource _cancel;
         private Process _activeProcess;
         private bool _running;
@@ -70,6 +74,7 @@ namespace PSXPackagerGUI
             InitializeComponent();
             Title = "PSXPackagerLNR · " + LnrVersionInfo.Display + " | CHD a PBP";
             JobList.ItemsSource = _jobs;
+            TrackManualColumnResizing();
             _batchClock.Tick += (sender, e) => UpdateBatchProgress();
             _shutdownCountdown.Tick += ShutdownCountdown_OnTick;
             ShutdownCheck.IsChecked = false; // Opt-in never persisted.
@@ -139,7 +144,9 @@ namespace PSXPackagerGUI
                 if (string.IsNullOrWhiteSpace(part)) continue;
                 var entry = $"[{DateTime.Now:HH:mm:ss}] {part.TrimEnd()}";
                 _messages.Add(entry);
-                OutputBox.AppendText(entry + Environment.NewLine);
+                // Do not append a trailing newline: it creates an apparently
+                // empty final log entry when ScrollToEnd is enabled.
+                OutputBox.AppendText((OutputBox.Text.Length == 0 ? "" : Environment.NewLine) + entry);
             }
             if (OutputBox.Text.Length > 160000)
                 OutputBox.Text = OutputBox.Text.Substring(OutputBox.Text.Length - 120000);
@@ -265,23 +272,45 @@ namespace PSXPackagerGUI
             if (e.WidthChanged) ResizeJobColumns();
         }
 
+        private void TrackManualColumnResizing()
+        {
+            if (JobList.View is not GridView view)
+                return;
+            var changed = DependencyPropertyDescriptor.FromProperty(
+                GridViewColumn.WidthProperty, typeof(GridViewColumn));
+            if (changed == null)
+                return;
+
+            for (var i = 0; i < view.Columns.Count; i++)
+            {
+                var columnIndex = i;
+                changed.AddValueChanged(view.Columns[i], (_, _) =>
+                {
+                    if (IsLoaded && !_settingColumnWidths)
+                        _manuallySizedColumns.Add(columnIndex);
+                });
+            }
+        }
+
         /// <summary>
-        /// GridView has no star-sized columns. We measure the header and the
-        /// actual displayed values, center the data columns, and assign the
-        /// remaining width to Status so its progress bar gets full space.
-        /// The first (game-name) column deliberately remains left-aligned.
+        /// Size the first column to the longest detected PBP name (and use any
+        /// spare width for names), while keeping the status column only as wide
+        /// as its longest label and its progress bar require. The user can drag
+        /// any separator: manual widths are never overwritten by Analyze,
+        /// progress updates or resizing the application window.
         /// </summary>
         private void ResizeJobColumns()
         {
             if (JobList == null || JobList.ActualWidth < 450 ||
-                JobList.View is not GridView columns || columns.Columns.Count < 8)
+                JobList.View is not GridView view || view.Columns.Count < 8 ||
+                _settingColumnWidths)
                 return;
 
             double WidthOf(string value, bool header = false)
             {
                 var measure = new TextBlock
                 {
-                    Text = value,
+                    Text = value ?? "—",
                     FontFamily = JobList.FontFamily,
                     FontSize = JobList.FontSize,
                     FontWeight = header ? FontWeights.SemiBold : FontWeights.Normal
@@ -296,30 +325,55 @@ namespace PSXPackagerGUI
                 var widest = WidthOf(header, true);
                 foreach (var job in _jobs)
                     widest = Math.Max(widest, WidthOf(value(job) ?? "—"));
-                // Extra horizontal padding allows for the GridView cell and header chrome.
                 return Math.Clamp(Math.Ceiling(widest + 24), minimum, maximum);
             }
 
-            var available = JobList.ActualWidth - SystemParameters.VerticalScrollBarWidth - 8;
-            var nameWidth = 232.0;
-            var widths = new[]
+            var preferred = new double[8];
+            preferred[1] = AutoWidth("Discos", j => j.DiscCount.ToString(Es), 56, 70);
+            preferred[2] = AutoWidth("Origen", j => j.Origin, 74, 130);
+            preferred[3] = AutoWidth("CHD", j => j.SourceSizeText, 90, 140);
+            preferred[4] = AutoWidth("PBP", j => j.OutputSizeText, 90, 140);
+            preferred[5] = AutoWidth("Variación", j => j.VariationText, 106, 150);
+            preferred[6] = AutoWidth("Tiempo", j => j.ElapsedText, 66, 110);
+
+            // "Saltado / Ya existe" is currently the longest regular state.
+            // Include all visible statuses too, in case the wording changes.
+            var widestStatus = new[]
             {
-                AutoWidth("Discos", j => j.DiscCount.ToString(Es), 56, 70),
-                AutoWidth("Origen", j => j.Origin, 74, 110),
-                AutoWidth("CHD", j => j.SourceSizeText, 90, 120),
-                AutoWidth("PBP", j => j.OutputSizeText, 90, 120),
-                AutoWidth("Variación", j => j.VariationText, 106, 145),
-                AutoWidth("Tiempo", j => j.ElapsedText, 66, 96)
-            };
+                "Pendiente", "Saltado / Ya existe", "Convirtiendo",
+                "Completado", "Cancelado", "ERROR"
+            }.Max(status => WidthOf(status));
+            foreach (var job in _jobs)
+                widestStatus = Math.Max(widestStatus, WidthOf(job.DisplayStatus));
+            preferred[7] = Math.Max(170, Math.Ceiling(Math.Max(
+                WidthOf("Estado / Progreso", true) + 22, widestStatus + 23 + 22)));
 
-            columns.Columns[0].Width = nameWidth;
-            for (var i = 0; i < widths.Length; i++)
-                columns.Columns[i + 1].Width = widths[i];
+            // Respect every column the user manually adjusted, including Status.
+            for (var i = 1; i < preferred.Length; i++)
+                if (_manuallySizedColumns.Contains(i))
+                    preferred[i] = view.Columns[i].Width;
 
-            // On narrower windows keep a horizontal scrollbar rather than
-            // squeezing values or reducing the real progress bar to a few px.
-            columns.Columns[7].Width = Math.Max(240,
-                Math.Floor(available - nameWidth - widths.Sum()));
+            var available = JobList.ActualWidth - SystemParameters.VerticalScrollBarWidth - 8;
+            var longestName = AutoWidth("Nombre PBP", j => j.Name, 160, 1800);
+            preferred[0] = _manuallySizedColumns.Contains(0)
+                ? view.Columns[0].Width
+                : Math.Max(longestName, Math.Floor(available - preferred.Skip(1).Sum()));
+
+            _settingColumnWidths = true;
+            try
+            {
+                for (var i = 0; i < preferred.Length; i++)
+                {
+                    if (_manuallySizedColumns.Contains(i))
+                        continue;
+                    if (Math.Abs(view.Columns[i].Width - preferred[i]) > 0.5)
+                        view.Columns[i].Width = preferred[i];
+                }
+            }
+            finally
+            {
+                _settingColumnWidths = false;
+            }
         }
 
         private void CopyLog_OnClick(object sender, RoutedEventArgs e)
