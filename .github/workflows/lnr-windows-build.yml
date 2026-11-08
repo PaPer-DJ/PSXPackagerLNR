@@ -103,8 +103,8 @@ jobs:
           $shortcut.TargetPath = $guiExe
           $shortcut.Arguments = "--lnr-batch"
           $shortcut.WorkingDirectory = $guiDir
-          # Keep this relative to the shortcut for portable extraction.
-          $shortcut.IconLocation = "PSXPackagerLNR.ico,0"
+          # WScript.Shell requires a resolved icon path; validate the generated ICO separately.
+          $shortcut.IconLocation = (Join-Path $guiDir "PSXPackagerLNR.ico") + ",0"
           $shortcut.Description = "PSXPackagerLNR - conversion CHD a PBP por lotes"
           $shortcut.Save()
           if (-not (Test-Path -LiteralPath $shortcutPath)) { throw "LNR shortcut was not created" }
