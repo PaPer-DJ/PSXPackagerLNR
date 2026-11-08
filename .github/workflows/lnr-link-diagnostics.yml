@@ -68,7 +68,7 @@ jobs:
                   $unicode=[Text.Encoding]::Unicode.GetBytes($envValue)
                   if($ansi.Length -ge 260 -or $unicode.Length -ge 520){throw 'Env path too large'}
                   $bw.Write([uint32]0x314)
-                  $bw.Write([uint32]0xA0000001)
+                  $bw.Write([uint32]2684354561)
                   $bw.Write([byte[]]$ansi)
                   $bw.Write((New-Object byte[] (260-$ansi.Length)))
                   $bw.Write([byte[]]$unicode)
