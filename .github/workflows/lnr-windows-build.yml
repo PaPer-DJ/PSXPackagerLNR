@@ -82,6 +82,16 @@ jobs:
           Copy-Item "./out/CLI/psxpackager.exe" "./out/GUI/psxpackager.exe" -Force
           if (-not (Test-Path "./out/GUI/psxpackager.exe")) { throw "GUI package lacks LNR batch CLI" }
 
+      - name: Generate LNR Windows icon from existing app logo
+        shell: pwsh
+        run: |
+          ./LNR/Branding/New-LnrShortcutIcon.ps1 -SourceLogo "./PSXPackagerGUI/Branding/lnr-mod-logo.png" -OutputIcon "./out/GUI/PSXPackagerLNR.ico"
+          if (-not (Test-Path "./out/GUI/PSXPackagerLNR.ico")) { throw "LNR icon missing" }
+          $iconHeader = [System.IO.File]::ReadAllBytes((Resolve-Path "./out/GUI/PSXPackagerLNR.ico").Path)
+          if ($iconHeader.Length -lt 1024 -or $iconHeader[2] -ne 1 -or $iconHeader[4] -ne 7) {
+            throw "LNR icon is not a valid multi-resolution ICO"
+          }
+
       - name: Create LNR batch shortcut (same GUI, no launcher EXE)
         shell: pwsh
         run: |
@@ -93,12 +103,14 @@ jobs:
           $shortcut.TargetPath = $guiExe
           $shortcut.Arguments = "--lnr-batch"
           $shortcut.WorkingDirectory = $guiDir
-          $shortcut.IconLocation = "$guiExe,0"
+          # Keep this relative to the shortcut for portable extraction.
+          $shortcut.IconLocation = "PSXPackagerLNR.ico,0"
           $shortcut.Description = "PSXPackagerLNR - conversion CHD a PBP por lotes"
           $shortcut.Save()
           if (-not (Test-Path -LiteralPath $shortcutPath)) { throw "LNR shortcut was not created" }
           $check = $shell.CreateShortcut($shortcutPath)
           if ($check.Arguments -ne "--lnr-batch") { throw "Shortcut is missing --lnr-batch" }
+          if ($check.IconLocation -notmatch "PSXPackagerLNR\\.ico") { throw "Shortcut does not use the LNR icon" }
           if ([IO.Path]::GetFileName($check.TargetPath) -ne "PSXPackagerGUI.exe") { throw "Shortcut targets wrong executable" }
           Write-Host "Shortcut generated: $shortcutPath"
 
@@ -107,6 +119,7 @@ jobs:
         run: |
           if (-not (Test-Path "./out/CLI/psxpackager.exe")) { throw "CLI EXE missing" }
           if (-not (Test-Path "./out/GUI/PSXPackagerGUI.exe")) { throw "GUI EXE missing" }
+          if (-not (Test-Path "./out/GUI/PSXPackagerLNR.ico")) { throw "LNR branded icon missing" }
           if (-not (Test-Path "./out/GUI/PSXPackagerLNR - Conversion por lotes.lnk")) { throw "LNR batch shortcut missing" }
           if (Test-Path "./out/GUI/PSXPackagerLNR.exe") { throw "Obsolete native LNR launcher must not be shipped" }
           $startupXaml = Get-Content "./PSXPackagerGUI/App.xaml" -Raw
@@ -284,6 +297,7 @@ jobs:
           try {
             $guiNames = @($guiArchive.Entries | ForEach-Object { $_.FullName })
             if (-not ($guiNames -contains "PSXPackagerLNR - Conversion por lotes.lnk")) { throw "GUI ZIP lacks batch shortcut" }
+            if (-not ($guiNames -contains "PSXPackagerLNR.ico")) { throw "GUI ZIP lacks LNR icon" }
             if ($guiNames -contains "PSXPackagerLNR.exe") { throw "GUI ZIP must not contain native launcher" }
             if (-not ($guiNames -contains "PSXPackagerGUI.exe")) { throw "GUI ZIP lacks classic GUI" }
             if (-not ($guiNames -contains "psxpackager.exe")) { throw "GUI ZIP lacks conversion motor" }
