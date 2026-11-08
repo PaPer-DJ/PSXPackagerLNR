@@ -18,8 +18,23 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 
-[ComImport, Guid("00021401-0000-0000-C000-000000000046")]
-public class LnrShellLinkClass : ILnrShellLinkW {}
+public static class LnrComFactory {
+  [DllImport("ole32.dll", ExactSpelling=true)]
+  private static extern int CoCreateInstance(ref Guid clsid, IntPtr outer, uint context, ref Guid iid, out IntPtr ppv);
+
+  public static ILnrShellLinkW Create() {
+    Guid clsid = new Guid("00021401-0000-0000-C000-000000000046");
+    Guid iid = typeof(ILnrShellLinkW).GUID;
+    IntPtr ptr;
+    int result = CoCreateInstance(ref clsid, IntPtr.Zero, 1, ref iid, out ptr);
+    Marshal.ThrowExceptionForHR(result);
+    try {
+      return (ILnrShellLinkW)Marshal.GetObjectForIUnknown(ptr);
+    } finally {
+      Marshal.Release(ptr);
+    }
+  }
+}
 
 [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("000214F9-0000-0000-C000-000000000046")]
 public interface ILnrShellLinkW {
@@ -44,7 +59,7 @@ public interface ILnrShellLinkW {
 }
 '@ -ErrorAction Stop
 
-$link = [ILnrShellLinkW]([LnrShellLinkClass]::new())
+$link = [LnrComFactory]::Create()
 try {
   $link.SetPath($exePath)
   $link.SetRelativePath("PSXPackagerGUI.exe", [uint32]0)
@@ -59,7 +74,7 @@ try {
 if (-not (Test-Path -LiteralPath $shortcutPath)) { throw "Portable .lnk not created" }
 
 function Assert-LnrLink([string]$path,[string]$expectedDirectory,[bool]$resolve) {
-  $object = [ILnrShellLinkW]([LnrShellLinkClass]::new())
+  $object = [LnrComFactory]::Create()
   try {
     $reader = [System.Runtime.InteropServices.ComTypes.IPersistFile]$object
     $reader.Load($path, [int]0)
