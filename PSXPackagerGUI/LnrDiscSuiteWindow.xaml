@@ -35,6 +35,35 @@
                 <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
             </StackPanel>
         </DataTemplate>
+        <Style x:Key="LnrSuiteCenteredHeader" TargetType="{x:Type GridViewColumnHeader}">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="LnrSuiteLeftHeader" TargetType="{x:Type GridViewColumnHeader}">
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        </Style>
+        <DataTemplate x:Key="LnrSuiteNameCell">
+            <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}" TextTrimming="CharacterEllipsis"
+                       HorizontalAlignment="Left" TextAlignment="Left" VerticalAlignment="Center"/>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrSuiteSizeCell">
+            <Grid HorizontalAlignment="Stretch">
+                <TextBlock Text="{Binding SizeText}" HorizontalAlignment="Stretch"
+                           TextAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrSuiteStatusCell">
+            <Grid HorizontalAlignment="Stretch">
+                <TextBlock Text="{Binding Status}" HorizontalAlignment="Stretch"
+                           TextAlignment="Center" VerticalAlignment="Center"
+                           ToolTip="{Binding Status}"/>
+            </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrSuiteOutputCell">
+            <Grid HorizontalAlignment="Stretch">
+                <TextBlock Text="{Binding OutputCount}" HorizontalAlignment="Stretch"
+                           TextAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+        </DataTemplate>
     </Window.Resources>
     <Grid Margin="17">
         <Grid.RowDefinitions>
@@ -43,6 +72,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*" MinHeight="140"/>
+            <RowDefinition Height="8" MinHeight="8"/>
             <RowDefinition Height="185" MinHeight="100"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -125,37 +155,82 @@
                         ContentTemplate="{StaticResource LnrAnalyzeButtonTemplate}"
                         Click="Analyze_OnClick" DockPanel.Dock="Right" Padding="12,6"/>
             </DockPanel>
-            <ListView Grid.Row="1" x:Name="JobsList">
+            <ListView Grid.Row="1" x:Name="JobsList"
+                      SnapsToDevicePixels="True" HorizontalContentAlignment="Stretch"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      SizeChanged="JobsList_OnSizeChanged" Loaded="JobsList_OnLoaded">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="Archivo origen" DisplayMemberBinding="{Binding Name}" Width="395"/>
-                        <GridViewColumn Header="Tamaño" DisplayMemberBinding="{Binding SizeText}" Width="110"/>
-                        <GridViewColumn Header="Estado" DisplayMemberBinding="{Binding Status}" Width="185"/>
-                        <GridViewColumn Header="Archivos producidos" DisplayMemberBinding="{Binding OutputCount}" Width="130"/>
+                        <GridViewColumn Header="Archivo origen" CellTemplate="{StaticResource LnrSuiteNameCell}"
+                                        HeaderContainerStyle="{StaticResource LnrSuiteLeftHeader}" Width="395"/>
+                        <GridViewColumn Header="Tamaño" CellTemplate="{StaticResource LnrSuiteSizeCell}"
+                                        HeaderContainerStyle="{StaticResource LnrSuiteCenteredHeader}" Width="110"/>
+                        <GridViewColumn Header="Estado" CellTemplate="{StaticResource LnrSuiteStatusCell}"
+                                        HeaderContainerStyle="{StaticResource LnrSuiteCenteredHeader}" Width="185"/>
+                        <GridViewColumn Header="Archivos producidos" CellTemplate="{StaticResource LnrSuiteOutputCell}"
+                                        HeaderContainerStyle="{StaticResource LnrSuiteCenteredHeader}" Width="130"/>
                     </GridView>
                 </ListView.View>
             </ListView>
         </Grid>
 
-        <Grid Grid.Row="5" Margin="0,12,0,0">
+        <GridSplitter Grid.Row="5" Margin="0,3,0,0" Height="7"
+                      VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                      ResizeBehavior="PreviousAndNext" ResizeDirection="Rows"
+                      Background="#FFDCE5EF" Cursor="SizeNS"
+                      ToolTip="Arrastra para cambiar el tamaño del registro"/>
+
+        <Grid Grid.Row="6" Margin="0,9,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <TextBlock Text="Actividad y resultados" FontWeight="SemiBold" Margin="0,0,0,7"/>
+            <Grid Grid.Row="0" Margin="0,0,0,7">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Actividad y resultados" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+                <CheckBox Grid.Column="1" x:Name="AutoScrollCheck" Content="Seguir actividad"
+                          IsChecked="True" Margin="0,0,14,0" VerticalAlignment="Center"
+                          ToolTip="Desmarca para revisar mensajes anteriores sin saltar al final"/>
+                <Button Grid.Column="2" Content="Limpiar registro" Click="ClearLog_OnClick"
+                        Padding="9,4" Margin="0,0,7,0"
+                        ToolTip="Vacía el registro visible de esta sesión; no borra archivos ni conversiones"/>
+                <Button Grid.Column="3" Content="Copiar registro" Click="CopyLog_OnClick"
+                        Padding="9,4" Margin="0,0,7,0"
+                        ToolTip="Copia el registro de actividad al portapapeles"/>
+                <Button Grid.Column="4" Content="Abrir salida" Click="OpenOutput_OnClick"
+                        Padding="9,4" ToolTip="Abre la carpeta de salida del formato seleccionado"/>
+            </Grid>
             <TextBox Grid.Row="1" x:Name="LogBox" FontFamily="Consolas" FontSize="12"
                      Background="#FF172434" Foreground="White" BorderThickness="0"
                      Padding="10" IsReadOnly="True" TextWrapping="NoWrap"
+                     VerticalContentAlignment="Top"
                      VerticalScrollBarVisibility="Auto"
-                     HorizontalScrollBarVisibility="Auto"/>
+                     HorizontalScrollBarVisibility="Auto"
+                     ToolTip="Registro de la sesión. Puedes ampliar este panel arrastrando el separador superior."/>
         </Grid>
 
-        <Grid Grid.Row="6" Margin="0,12,0,0">
+        <Grid Grid.Row="7" Margin="0,12,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="122"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
+            <StackPanel Grid.Row="0" Grid.Column="0">
                 <ProgressBar x:Name="BatchProgress" Height="12" Maximum="100"
                              Foreground="#FF168944"/>
                 <TextBlock x:Name="ProgressLabel" Text="0/0 · sin iniciar" Margin="0,6,0,0"/>
@@ -164,7 +239,17 @@
                            Foreground="#FF64748B" FontSize="11" Margin="0,3,0,0"/>
             </StackPanel>
             <Button x:Name="CancelButton" Content="Cancelar" IsEnabled="False"
-                    Click="Cancel_OnClick" Grid.Column="1" Margin="12,0,0,0"/>
+                    Click="Cancel_OnClick" Grid.Row="0" Grid.Column="1" Margin="12,0,0,0"/>
+            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal"
+                        HorizontalAlignment="Right" Margin="0,9,0,0">
+                <Button x:Name="CancelScheduledShutdownButton"
+                        Content="Cancelar apagado programado" Visibility="Collapsed"
+                        Click="CancelScheduledShutdown_OnClick" Margin="0,0,12,0" Padding="9,5"
+                        ToolTip="Cancela la cuenta atrás local antes de solicitar el apagado normal de Windows"/>
+                <CheckBox x:Name="ShutdownCheck" Content="Apagar equipo al finalizar el lote"
+                          IsChecked="False" VerticalAlignment="Center"
+                          ToolTip="Opcional y con confirmación. Solo tras conversiones correctas, sin fallos ni cancelación. Tienes 60 segundos para cancelar el apagado normal de Windows."/>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>

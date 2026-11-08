@@ -4,6 +4,15 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.25 — 8 noviembre 2026 (Suite de discos: columnas, registro y controles)
+
+- La ventana `Suite de discos · Conversiones adicionales` recibe el mismo pulido de tabla que el conversor principal: `Archivo origen` permanece a la izquierda, mientras `Tamaño`, `Estado` y `Archivos producidos` muestran cabeceras y celdas centradas.
+- Al analizar, `Archivo origen` se amplía hasta el nombre más largo y usa el ancho libre; las demás columnas ocupan lo que necesitan. Las anchuras modificadas a mano se respetan en análisis posteriores, al actualizar estados y al cambiar el tamaño de ventana.
+- Se elimina el salto de línea que dejaba una fila vacía al final de `Actividad y resultados`. Nuevos controles: `Seguir actividad`, `Limpiar registro`, `Copiar registro` y `Abrir salida`. El registro se puede ampliar arrastrando su separador; se guarda un informe de cada lote en `LOGS` (o en la carpeta de perfil si no hay permisos de escritura).
+- La Suite incorpora apagado de Windows **opcional y desactivado inicialmente**: doble confirmación al iniciar, solo tras al menos una conversión correcta y un lote sin errores/cancelaciones, cuenta atrás local de 60 segundos con botón para cancelarla. No solicita apagado forzado.
+- Se conservan los originales y las protecciones existentes: archivos de destino ya presentes nunca se sobrescriben. Las cinco rutas de conversión de Suite, la interfaz clásica y el motor CLI mantienen su funcionamiento.
+- Se añaden comprobaciones en GitHub Actions sobre controles, persistencia de anchuras manuales, manejo del registro y salvaguardas del apagado. La inspección visual y funcional final se realiza en Windows.
+
 ## v0.1.0-beta.24 — 8 noviembre 2026 (logo LNR MOD renovado para la cabecera)
 
 - Se integra la composición horizontal LNR MOD aprobada por el usuario, con separación equilibrada entre L, N y R y espaciado más compacto entre las letras MOD.

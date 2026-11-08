@@ -159,6 +159,49 @@ jobs:
             throw "LNR log must prepend, not append, a line separator"
           }
 
+      - name: Regression test - LNR Suite table, activity log and safe shutdown
+        shell: pwsh
+        run: |
+          $xaml = Get-Content "./PSXPackagerGUI/LnrDiscSuiteWindow.xaml" -Raw
+          $cs = Get-Content "./PSXPackagerGUI/LnrDiscSuiteWindow.xaml.cs" -Raw
+          foreach ($marker in @(
+            'LnrSuiteCenteredHeader', 'LnrSuiteLeftHeader',
+            'CellTemplate="{StaticResource LnrSuiteNameCell}"',
+            'CellTemplate="{StaticResource LnrSuiteSizeCell}"',
+            'CellTemplate="{StaticResource LnrSuiteStatusCell}"',
+            'CellTemplate="{StaticResource LnrSuiteOutputCell}"',
+            'SizeChanged="JobsList_OnSizeChanged"',
+            'ResizeBehavior="PreviousAndNext"',
+            'x:Name="AutoScrollCheck"',
+            'Click="ClearLog_OnClick"', 'Click="CopyLog_OnClick"',
+            'Click="OpenOutput_OnClick"', 'x:Name="ShutdownCheck"',
+            'Click="CancelScheduledShutdown_OnClick"'
+          )) {
+            if (-not $xaml.Contains($marker)) { throw "Suite XAML missing: $marker" }
+          }
+          foreach ($marker in @(
+            'TrackManualColumnResizing(', '_manuallySizedColumns', 'ResizeSuiteColumns(',
+            'longestName', 'Saltado / Ya existe', 'LogBox.Text.Length == 0',
+            'AutoScrollCheck.IsChecked == true', 'SaveLog()',
+            'completedNormally', '_cancelRequested', 'success > 0',
+            'errors == 0', '_shutdownSecondsRemaining = 60',
+            'CancelShutdownCountdown(', 'ShutdownCountdown_OnTick',
+            'CancelScheduledShutdownButton.Visibility = Visibility.Visible',
+            'info.ArgumentList.Add("0")'
+          )) {
+            if (-not $cs.Contains($marker)) { throw "Suite code missing: $marker" }
+          }
+          if ($cs -match 'LogBox.AppendText\([^\r\n]*Environment.NewLine\);' -and
+              $cs -notmatch 'LogBox.Text.Length == 0') {
+            throw "Suite log has a trailing empty line"
+          }
+          if ($cs.Contains('info.ArgumentList.Add("/f")')) {
+            throw "Suite must not force-close Windows applications"
+          }
+          if ($xaml -notmatch 'IsChecked="False"') {
+            throw "Suite shutdown must be opt-in"
+          }
+
       - name: Regression test - LNR default compression is level 3
         shell: pwsh
         run: |

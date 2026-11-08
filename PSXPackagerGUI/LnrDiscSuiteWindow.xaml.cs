@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Microsoft.Win32;
 
 namespace PSXPackagerGUI
@@ -26,6 +27,17 @@ namespace PSXPackagerGUI
     public partial class LnrDiscSuiteWindow : Window
     {
         private readonly ObservableCollection<DiscJob> _jobs = new();
+        private readonly List<string> _messages = new();
+        private readonly HashSet<int> _manuallySizedColumns = new();
+        private bool _settingColumnWidths;
+        private bool _cancelRequested;
+        // Countdown is local to this window; Windows gets no scheduled command.
+        private readonly DispatcherTimer _shutdownCountdown = new()
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        private bool _shutdownPending;
+        private int _shutdownSecondsRemaining;
         private CancellationTokenSource _cancel;
         private Process _activeProcess;
         private bool _running;
@@ -36,6 +48,9 @@ namespace PSXPackagerGUI
             InitializeComponent();
             Title = "PSXPackagerLNR · " + LnrVersionInfo.Display + " | Suite de discos";
             JobsList.ItemsSource = _jobs;
+            TrackManualColumnResizing();
+            _shutdownCountdown.Tick += ShutdownCountdown_OnTick;
+            ShutdownCheck.IsChecked = false; // Never restored from preferences.
             ModeBox.SelectedIndex = 0;
             var prefs = LnrGuiPreferences.Load();
             SourceBox.Text = Directory.Exists(prefs.LastSourceFolder)
@@ -66,15 +81,176 @@ namespace PSXPackagerGUI
 
         private void Log(string message)
         {
-            foreach (var line in (message ?? "").Replace("\r\n", "\n").Split('\n'))
+            foreach (var line in (message ?? "").Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
-                LogBox.AppendText("[" + DateTime.Now.ToString("HH:mm:ss") + "] " +
-                                  line.TrimEnd() + Environment.NewLine);
+                var entry = "[" + DateTime.Now.ToString("HH:mm:ss") + "] " + line.TrimEnd();
+                _messages.Add(entry);
+                // Add a separator before the next entry, not a blank line after the last one.
+                LogBox.AppendText((LogBox.Text.Length == 0 ? "" : Environment.NewLine) + entry);
             }
             if (LogBox.Text.Length > 120000)
                 LogBox.Text = LogBox.Text.Substring(LogBox.Text.Length - 80000);
-            LogBox.ScrollToEnd();
+            if (AutoScrollCheck.IsChecked == true)
+                LogBox.ScrollToEnd();
+        }
+
+        private void ClearLog_OnClick(object sender, RoutedEventArgs e)
+        {
+            // Clear only the visible/session log; leave all source and output files intact.
+            _messages.Clear();
+            LogBox.Clear();
+        }
+
+        private void CopyLog_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (_messages.Count == 0) return;
+            try
+            {
+                Clipboard.SetText(string.Join(Environment.NewLine, _messages));
+            }
+            catch (System.Runtime.InteropServices.ExternalException ex)
+            {
+                MessageBox.Show(this, "No se pudo copiar el registro: " + ex.Message,
+                                "Portapapeles ocupado", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void OpenOutput_OnClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var source = Path.GetFullPath(SourceBox.Text.Trim().Trim('"'));
+                var output = Path.Combine(source, OutputSubdirectory);
+                if (!Directory.Exists(output))
+                {
+                    MessageBox.Show(this,
+                        "La carpeta de salida todavía no existe:\n\n" + output +
+                        "\n\nSe creará al procesar los archivos.",
+                        "Carpeta de salida", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+                Process.Start(new ProcessStartInfo(output) { UseShellExecute = true });
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or InvalidOperationException or ArgumentException
+                                       or Win32Exception)
+            {
+                MessageBox.Show(this, "No se pudo abrir la carpeta: " + ex.Message,
+                                "Carpeta de salida", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void SaveLog()
+        {
+            if (_messages.Count == 0) return;
+            try
+            {
+                var folder = Path.Combine(AppContext.BaseDirectory, "LOGS");
+                try { Directory.CreateDirectory(folder); }
+                catch
+                {
+                    folder = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "PSXPackagerLNR", "Logs");
+                    Directory.CreateDirectory(folder);
+                }
+                var file = Path.Combine(folder, "LNR_SUITE_" +
+                    DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt");
+                File.WriteAllLines(file, _messages, new UTF8Encoding(true));
+                Log("Informe guardado: " + file);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or ArgumentException)
+            {
+                Log("AVISO: no se pudo guardar el registro: " + ex.Message);
+            }
+        }
+
+        private void JobsList_OnLoaded(object sender, RoutedEventArgs e) => ResizeSuiteColumns();
+
+        private void JobsList_OnSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (e.WidthChanged) ResizeSuiteColumns();
+        }
+
+        private void TrackManualColumnResizing()
+        {
+            if (JobsList.View is not GridView view) return;
+            var descriptor = DependencyPropertyDescriptor.FromProperty(
+                GridViewColumn.WidthProperty, typeof(GridViewColumn));
+            if (descriptor == null) return;
+            for (var i = 0; i < view.Columns.Count; i++)
+            {
+                var index = i;
+                descriptor.AddValueChanged(view.Columns[i], (_, _) =>
+                {
+                    if (IsLoaded && !_settingColumnWidths)
+                        _manuallySizedColumns.Add(index);
+                });
+            }
+        }
+
+        /// <summary>
+        /// First column uses the longest visible filename and any free width.
+        /// Other columns are centred and measured by values/headings, and manual
+        /// widths are preserved on Analyze, window resize and job status changes.
+        /// </summary>
+        private void ResizeSuiteColumns()
+        {
+            if (JobsList == null || JobsList.ActualWidth < 420 ||
+                JobsList.View is not GridView view || view.Columns.Count != 4 ||
+                _settingColumnWidths)
+                return;
+
+            double TextWidth(string text, bool heading = false)
+            {
+                var label = new TextBlock
+                {
+                    Text = text ?? "—",
+                    FontFamily = JobsList.FontFamily,
+                    FontSize = JobsList.FontSize,
+                    FontWeight = heading ? FontWeights.SemiBold : FontWeights.Normal
+                };
+                label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                return label.DesiredSize.Width;
+            }
+            double Measured(string heading, Func<DiscJob, string> content, double minimum)
+            {
+                var longest = TextWidth(heading, true);
+                foreach (var job in _jobs)
+                    longest = Math.Max(longest, TextWidth(content(job)));
+                return Math.Max(minimum, Math.Ceiling(longest + 24));
+            }
+
+            var ideal = new double[4];
+            ideal[1] = Measured("Tamaño", j => j.SizeText, 95);
+            ideal[2] = Math.Max(165, Measured("Estado", j => j.Status, 0));
+            // Include the longest status even before any job reaches that state.
+            ideal[2] = Math.Max(ideal[2], Math.Ceiling(TextWidth("Saltado / Ya existe") + 26));
+            ideal[3] = Measured("Archivos producidos", j => j.OutputCount, 138);
+
+            for (var index = 1; index < ideal.Length; index++)
+                if (_manuallySizedColumns.Contains(index))
+                    ideal[index] = view.Columns[index].Width;
+
+            var available = JobsList.ActualWidth - SystemParameters.VerticalScrollBarWidth - 8;
+            var longestName = Measured("Archivo origen", j => j.Name, 180);
+            ideal[0] = _manuallySizedColumns.Contains(0)
+                ? view.Columns[0].Width
+                : Math.Max(longestName, Math.Floor(available - ideal.Skip(1).Sum()));
+
+            _settingColumnWidths = true;
+            try
+            {
+                for (var index = 0; index < ideal.Length; index++)
+                {
+                    if (_manuallySizedColumns.Contains(index)) continue;
+                    if (Math.Abs(view.Columns[index].Width - ideal[index]) > 0.5)
+                        view.Columns[index].Width = ideal[index];
+                }
+            }
+            finally { _settingColumnWidths = false; }
         }
 
         private void Mode_OnChanged(object sender, SelectionChangedEventArgs e)
@@ -238,6 +414,8 @@ namespace PSXPackagerGUI
         private void Scan()
         {
             if (_running) return;
+            if (_shutdownPending)
+                CancelShutdownCountdown("Apagado automático cancelado al iniciar otro análisis.");
             _jobs.Clear();
             BatchProgress.Value = 0;
             ProgressLabel.Text = "0/0 · sin iniciar";
@@ -265,6 +443,7 @@ namespace PSXPackagerGUI
                 OutputLabel.Text = "Salida: " + Path.Combine(folder, OutputSubdirectory) +
                                    " · todos los originales se conservarán.";
                 Log($"Analizados {_jobs.Count} archivos {SourceExtension} para {ModeBox.Text}.");
+                ResizeSuiteColumns();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
                                        or ArgumentException or NotSupportedException)
@@ -287,6 +466,7 @@ namespace PSXPackagerGUI
             ChdmanBox.IsEnabled = !running && NeedsChdman;
             ConvertButton.IsEnabled = !running && _jobs.Count > 0;
             CancelButton.IsEnabled = running;
+            ShutdownCheck.IsEnabled = !running && !_shutdownPending;
         }
 
         private async void Convert_OnClick(object sender, RoutedEventArgs e)
@@ -331,9 +511,32 @@ namespace PSXPackagerGUI
                 != MessageBoxResult.Yes)
                 return;
 
+            var shutdownRequested = ShutdownCheck.IsChecked == true;
+            if (shutdownRequested)
+            {
+                var response = MessageBox.Show(this,
+                    "APAGAR EL EQUIPO DESPUÉS DEL LOTE\n\n" +
+                    "Se solicitará únicamente si se convierte al menos un archivo, " +
+                    "sin errores ni cancelaciones.\n\n" +
+                    "Al acabar tendrás una cuenta atrás de 60 segundos para cancelar " +
+                    "desde esta ventana. Si la cierras antes, el apagado se cancela.\n\n" +
+                    "Windows intentará un apagado normal, sin forzar el cierre de otras " +
+                    "aplicaciones. Guarda cualquier documento importante.\n\n" +
+                    "¿Confirmas el apagado automático opcional?",
+                    "Confirmar apagado automático",
+                    MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (response != MessageBoxResult.Yes)
+                {
+                    ShutdownCheck.IsChecked = false;
+                    return;
+                }
+            }
+
+            _cancelRequested = false;
             _cancel = new CancellationTokenSource();
             SetRunning(true);
             int success = 0, skipped = 0, errors = 0, processed = 0;
+            bool completedNormally = false;
             try
             {
                 Directory.CreateDirectory(destination);
@@ -380,8 +583,10 @@ namespace PSXPackagerGUI
                         BatchProgress.Value = 100.0 * processed / _jobs.Count;
                         ProgressLabel.Text = $"{processed}/{_jobs.Count} · Correctos: {success} · " +
                                              $"Saltados: {skipped} · Errores: {errors}";
+                        ResizeSuiteColumns();
                     }
                 }
+                completedNormally = !_cancelRequested;
                 Log($"FIN. Correctos: {success}; saltados: {skipped}; errores: {errors}.");
             }
             catch (OperationCanceledException)
@@ -397,6 +602,18 @@ namespace PSXPackagerGUI
                 SetRunning(false);
                 _cancel?.Dispose();
                 _cancel = null;
+                ShutdownCheck.IsChecked = false; // System control never persists.
+                SaveLog();
+                if (shutdownRequested)
+                {
+                    if (completedNormally && !_cancelRequested && errors == 0 && success > 0)
+                        BeginShutdownCountdown();
+                    else
+                    {
+                        Log("APAGADO OMITIDO: lote cancelado, con errores o sin conversiones nuevas.");
+                        SaveLog();
+                    }
+                }
             }
         }
 
@@ -725,6 +942,7 @@ namespace PSXPackagerGUI
 
         private void Cancel_OnClick(object sender, RoutedEventArgs e)
         {
+            _cancelRequested = true;
             _cancel?.Cancel();
             CancelButton.IsEnabled = false;
             Log("Cancelación solicitada…");
@@ -736,9 +954,100 @@ namespace PSXPackagerGUI
             catch (InvalidOperationException) { }
         }
 
+        private void BeginShutdownCountdown()
+        {
+            if (_shutdownPending) return;
+            _shutdownPending = true;
+            _shutdownSecondsRemaining = 60;
+            ShutdownCheck.IsChecked = true;
+            ShutdownCheck.IsEnabled = false;
+            ShutdownCheck.Content = $"Apagado de Windows en {_shutdownSecondsRemaining} s";
+            CancelScheduledShutdownButton.Visibility = Visibility.Visible;
+            CancelScheduledShutdownButton.IsEnabled = true;
+            Log("APAGADO OPCIONAL: el lote terminó sin errores, con archivos nuevos.");
+            Log("Tienes 60 segundos para cancelar. Windows intentará un apagado normal, sin forzar aplicaciones.");
+            SaveLog();
+            _shutdownCountdown.Start();
+        }
+
+        private void CancelScheduledShutdown_OnClick(object sender, RoutedEventArgs e) =>
+            CancelShutdownCountdown("Apagado cancelado por el usuario.");
+
+        private void CancelShutdownCountdown(string reason)
+        {
+            if (!_shutdownPending) return;
+            _shutdownCountdown.Stop();
+            _shutdownPending = false;
+            _shutdownSecondsRemaining = 0;
+            CancelScheduledShutdownButton.Visibility = Visibility.Collapsed;
+            ShutdownCheck.Content = "Apagar equipo al finalizar el lote";
+            ShutdownCheck.IsChecked = false;
+            ShutdownCheck.IsEnabled = !_running;
+            Log(reason);
+            SaveLog();
+        }
+
+        private void ShutdownCountdown_OnTick(object sender, EventArgs e)
+        {
+            if (!_shutdownPending)
+            {
+                _shutdownCountdown.Stop();
+                return;
+            }
+            _shutdownSecondsRemaining--;
+            if (_shutdownSecondsRemaining > 0)
+            {
+                ShutdownCheck.Content = $"Apagado de Windows en {_shutdownSecondsRemaining} s";
+                return;
+            }
+            _shutdownCountdown.Stop();
+            _shutdownPending = false;
+            CancelScheduledShutdownButton.Visibility = Visibility.Collapsed;
+            ShutdownCheck.IsChecked = false;
+            ShutdownCheck.Content = "Apagar equipo al finalizar el lote";
+            ShutdownCheck.IsEnabled = !_running;
+
+            Log("Cuenta atrás terminada: solicitando apagado normal de Windows.");
+            SaveLog();
+            try
+            {
+                var executable = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.System), "shutdown.exe");
+                var info = new ProcessStartInfo(executable)
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                info.ArgumentList.Add("/s");
+                info.ArgumentList.Add("/t");
+                info.ArgumentList.Add("0"); // Never /f: don't force-close applications.
+                using var process = Process.Start(info);
+                if (process == null)
+                    throw new InvalidOperationException("Windows no pudo iniciar shutdown.exe.");
+                if (process.WaitForExit(3000) && process.ExitCode != 0)
+                    throw new InvalidOperationException(
+                        $"Windows rechazó el apagado. Código: {process.ExitCode}.");
+                Log("Solicitud enviada; Windows puede posponer el apagado si hay documentos sin guardar.");
+                SaveLog();
+            }
+            catch (Exception ex) when (ex is Win32Exception or IOException
+                                       or UnauthorizedAccessException or InvalidOperationException)
+            {
+                Log("ERROR: no se pudo solicitar el apagado: " + ex.Message);
+                SaveLog();
+                MessageBox.Show(this, "No se pudo apagar el equipo automáticamente.\n\n" + ex.Message,
+                                "Apagado no iniciado", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
         private void Window_OnClosing(object sender, CancelEventArgs e)
         {
-            if (!_running) return;
+            if (!_running)
+            {
+                if (_shutdownPending)
+                    CancelShutdownCountdown("Apagado automático cancelado al cerrar la Suite de discos.");
+                return;
+            }
             e.Cancel = true;
             MessageBox.Show(this,
                 "Hay una conversión en curso. Pulsa Cancelar y cierra esta ventana al finalizar.",
