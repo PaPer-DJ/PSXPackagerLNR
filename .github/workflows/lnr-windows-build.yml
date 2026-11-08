@@ -95,8 +95,8 @@ jobs:
           }
           $body = Get-Content -LiteralPath $file -Raw
           if (-not $body.Contains("New-Object -ComObject WScript.Shell") -or
-              -not $body.Contains("$" + "shortcut.WorkingDirectory = ''") -or
-              $body.Contains("SetRelativePath(")) {
+              -not $body.Contains("shortcut.WorkingDirectory = ''") -or
+              $body.Contains('$link.SetRelativePath(')) {
             throw "Shortcut generator no longer reproduces user-approved WScript method"
           }
           Write-Host "User-verified LNR shortcut generator frozen at $sha"
