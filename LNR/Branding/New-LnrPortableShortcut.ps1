@@ -19,7 +19,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 
 [ComImport, Guid("00021401-0000-0000-C000-000000000046")]
-public class LnrShellLinkClass {}
+public class LnrShellLinkClass : ILnrShellLinkW {}
 
 [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("000214F9-0000-0000-C000-000000000046")]
 public interface ILnrShellLinkW {
