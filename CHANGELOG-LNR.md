@@ -4,6 +4,15 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.23 — 8 noviembre 2026 (anchuras respetadas y registro sin línea vacía)
+
+- La tabla `Juegos CHD detectados` calcula el ancho inicial de `Nombre PBP` con el nombre más largo de los trabajos detectados, aprovechando también el espacio horizontal libre. Para nombres excepcionalmente largos mantiene el desplazamiento horizontal.
+- `Estado / Progreso` ya no absorbe todo el espacio restante: se ajusta al encabezado, a la frase de estado más larga y al espacio necesario para indicadores y barra de progreso.
+- Los cambios de anchura hechos manualmente arrastrando las cabeceras se conservan al pulsar `Analizar`, al finalizar trabajos y al redimensionar la ventana.
+- El registro `Actividad y resultados` ya no escribe un salto de línea extra después del último mensaje, evitando la línea vacía que parecía quedar al final.
+- Se conserva el logo LNR MOD actual sin modificaciones: el rediseño con mayor separación entre letras y trazos neón se mostrará primero al usuario, para aprobación antes de integrarlo.
+- Sin cambios en el motor de conversión original, los modos de lote, el borrado de CHD ni la GUI clásica.
+
 ## v0.1.0-beta.22 — 8 noviembre 2026 (nombre del acceso directo y pulido visual de la GUI LNR)
 
 - El acceso directo de la edición GUI pasa a llamarse `#PSXPackagerLNR.lnk`, identificable y normalmente situado al principio al ordenar por nombre. Mantiene su icono estándar de Windows y el argumento `--lnr-batch`.

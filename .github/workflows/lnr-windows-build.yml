@@ -126,6 +126,23 @@ jobs:
           & "./out/CLI/psxpackager.exe" --help
           if ($LASTEXITCODE -ne 0) { throw "CLI --help failed ($LASTEXITCODE)" }
 
+      - name: Regression test - LNR auto-sizing, manual widths and log
+        shell: pwsh
+        run: |
+          $source = Get-Content "./PSXPackagerGUI/LnrBatchWindow.xaml.cs" -Raw
+          if ($source -notmatch 'TrackManualColumnResizing\(' -or
+              $source -notmatch '_manuallySizedColumns' -or
+              $source -notmatch 'longestName' -or
+              $source -notmatch 'widestStatus') {
+            throw "LNR sizing logic is missing"
+          }
+          if ($source -match 'OutputBox\.AppendText\(entry \+ Environment\.NewLine\)') {
+            throw "A trailing newline would create an empty final log line"
+          }
+          if ($source -notmatch 'OutputBox\.Text\.Length == 0') {
+            throw "LNR log must prepend, not append, a line separator"
+          }
+
       - name: Regression test - LNR default compression is level 3
         shell: pwsh
         run: |

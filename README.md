@@ -17,9 +17,9 @@ No se instala nada ni se utiliza un ejecutable lanzador adicional. **Conserva ju
 
 ## Versionado y descargas identificables
 
-La versión de desarrollo actual es **v0.1.0-beta.22**. Su número se define en [LNR/VERSION](LNR/VERSION) y sus novedades se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
+La versión de desarrollo actual es **v0.1.0-beta.23**. Su número se define en [LNR/VERSION](LNR/VERSION) y sus novedades se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
-Cada compilación de GitHub Actions añade un número de ejecución único, por ejemplo `PSXPackagerLNR-v0.1.0-beta.22-bNN-GUI-win-x64.zip`. También se generan los paquetes de CLI y Toolkit.
+Cada compilación de GitHub Actions añade un número de ejecución único, por ejemplo `PSXPackagerLNR-v0.1.0-beta.23-bNN-GUI-win-x64.zip`. También se generan los paquetes de CLI y Toolkit.
 
 - [Descargas de pruebas (Actions)](https://github.com/PaPer-DJ/PSXPackagerLNR/actions).
 - Las compilaciones de Actions son temporales y pueden caducar a los 30 días; conserva las que necesites.
