@@ -165,6 +165,31 @@ if ($VerifyRelocation) {
   Move-Item -LiteralPath $exePath -Destination $hiddenExe
   try {
     Assert-LnrLink $testLink $testDir $true
+
+    # ShellExecute is the closest automated equivalent to double-clicking the
+    # extracted .lnk in Windows Explorer. Test the UNMODIFIED link on disk,
+    # not the in-memory COM object used by Assert-LnrLink.
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new($testLink)
+    $startInfo.UseShellExecute = $true
+    $started = [System.Diagnostics.Process]::Start($startInfo)
+    if ($null -eq $started) { throw 'Windows ShellExecute did not return a process for the shortcut' }
+    try {
+      $actualExe = $started.MainModule.FileName
+      $expectedExe = Join-Path $testDir 'PSXPackagerGUI.exe'
+      if (-not [string]::Equals(
+          [System.IO.Path]::GetFullPath($actualExe),
+          [System.IO.Path]::GetFullPath($expectedExe),
+          [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "ShellExecute opened the wrong executable: $actualExe expected $expectedExe"
+      }
+      Write-Host "Explorer-style activation launched the relocated GUI: $actualExe"
+    } finally {
+      if (-not $started.HasExited) {
+        $started.Kill($true)
+        [void]$started.WaitForExit(5000)
+      }
+      $started.Dispose()
+    }
   } finally {
     Move-Item -LiteralPath $hiddenExe -Destination $exePath
     Remove-Item -LiteralPath $testDir -Recurse -Force -ErrorAction SilentlyContinue
