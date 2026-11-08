@@ -4,6 +4,16 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.20 — 8 noviembre 2026 (icono LNR MOD y acceso directo portátil)
+
+- Nuevo icono cuadrado LNR MOD aprobado para el fork; se convierte a ICO multirresolución desde `LNR/Branding/lnr-mod-square.jpg`.
+- Icono en `Resources/PSXPackagerLNR.ico`, sin duplicación visual en la raíz de la GUI. El ejecutable clásico conserva su icono original.
+- Acceso directo nativo Windows mediante `IShellLinkW`, con destino relativo y ubicación de icono `Resources\\PSXPackagerLNR.ico`.
+- GitHub Actions comprueba automáticamente el enlace después de copiarlo a otra carpeta y ocultar su ejecutable de origen. No requiere scripts ni instalación del usuario final.
+- Se conserva la apertura de lotes mediante `PSXPackagerGUI.exe --lnr-batch`, sin duplicar el ejecutable.
+- Sin alteraciones del motor original, compresión, eliminación de fuentes, interfaz clásica o créditos de autoría.
+- Pendiente de comprobación visual del icono en el Explorador de Windows por el usuario final.
+
 ## v0.1.0-beta.19 — 8 noviembre 2026 (icono LNR para el acceso directo de lotes)
 
 - Nuevo icono `PSXPackagerLNR.ico` en el ZIP de la GUI para diferenciar el acceso directo `PSXPackagerLNR - Conversion por lotes.lnk` del programa clásico.
