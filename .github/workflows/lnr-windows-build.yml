@@ -82,17 +82,23 @@ jobs:
           Copy-Item "./out/CLI/psxpackager.exe" "./out/GUI/psxpackager.exe" -Force
           if (-not (Test-Path "./out/GUI/psxpackager.exe")) { throw "GUI package lacks LNR batch CLI" }
 
+      - name: Protect the beta.23 shortcut generator from regressions
+        shell: pwsh
+        run: |
+          # This is the EXACT Git blob from the working beta.23. Do not alter
+          # the shortcut generator without explicit user approval.
+          $file = "./LNR/Branding/New-LnrPortableShortcut.ps1"
+          $sha = (git hash-object -- $file).Trim()
+          $expected = "b38a519e52ad6d99452d97ddf2c7d38db48c9701"
+          if ($sha -ne $expected) {
+            throw "The beta.23 shortcut generator changed ($sha). Restore Git blob $expected; user requires it frozen."
+          }
+          Write-Host "Protected shortcut generator matches beta.23: $sha"
+
       - name: Generate and relocation-test native LNR shortcut with Windows stock icon
         shell: pwsh
         run: |
           ./LNR/Branding/New-LnrPortableShortcut.ps1 -GuiDirectory "./out/GUI" -ShortcutPath "./out/GUI/#PSXPackagerLNR.lnk" -VerifyRelocation
-          $lnkSource = Get-Content "./LNR/Branding/New-LnrPortableShortcut.ps1" -Raw
-          if ($lnkSource.Contains('$link.SetRelativePath(')) {
-            throw "No manual SetRelativePath when persisting a .lnk on disk"
-          }
-          if (-not $lnkSource.Contains('Testing cross-volume relocation:')) {
-            throw "Shortcut test must verify C: / D: relocation"
-          }
           if (-not (Test-Path "./out/GUI/#PSXPackagerLNR.lnk")) { throw "LNR .lnk missing" }
 
       - name: Verify Windows binaries

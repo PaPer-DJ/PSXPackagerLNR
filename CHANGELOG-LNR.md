@@ -4,6 +4,14 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.27 — 8 noviembre 2026 (restauración EXACTA del acceso directo beta.23)
+
+- **Restaurado byte a byte** el generador `LNR/Branding/New-LnrPortableShortcut.ps1` de la beta.23, identificado por el blob de Git `b38a519e52ad6d99452d97ddf2c7d38db48c9701`. Se revierten todos los experimentos posteriores sobre el lanzador y su comprobación.
+- Se restaura también **exactamente el paso de GitHub Actions de la beta.23** que crea `#PSXPackagerLNR.lnk` con el icono estándar de Windows y el argumento `--lnr-batch`.
+- Se añade una comprobación de integridad previa al empaquetado: **la compilación falla si alguien modifica el generador del acceso directo**, a menos que la protección se cambie expresamente por decisión del usuario.
+- Se mantiene el resto de avances de las betas 24 y 25 (logo actual, columnas, registro, Suite de discos); no se modifican el motor ni la GUI clásica.
+- **Nota:** la beta.23 funcionó en el equipo del usuario, pero las posteriores dejaron de hacerlo. Esta beta recupera ese comportamiento conocido; cualquier afirmación de portabilidad fuera de esa situación requiere comprobación del usuario.
+
 ## v0.1.0-beta.26 — 8 noviembre 2026 (acceso directo portátil corregido)
 
 - Corregido el acceso directo `#PSXPackagerLNR.lnk`: en las beta.24 y beta.25 podía intentar ejecutar la ruta absoluta del servidor de GitHub Actions (`D:\\a\\PSXPackagerLNR\\...`) tras extraer el ZIP en otra unidad.

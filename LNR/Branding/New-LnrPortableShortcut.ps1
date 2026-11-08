@@ -57,6 +57,7 @@ public sealed class LnrPortableLink : IDisposable {
     finally { Marshal.Release(ptr); }
   }
   public void SetPath(string path) { inner.SetPath(path); }
+  public void SetRelativePath(string relative) { inner.SetRelativePath(relative,0); }
   public void SetArguments(string args) { inner.SetArguments(args); }
   public void SetDescription(string description) { inner.SetDescription(description); }
   public void SetIconLocation(string icon,int index) { inner.SetIconLocation(icon,index); }
@@ -103,19 +104,16 @@ try {
   if ($smallIcon -ne [IntPtr]::Zero) { [void][LnrIconProbe]::DestroyIcon($smallIcon) }
 }
 
-# Create a standard Windows Shell Link with native COM APIs. Unlike the
-# previous implementation, do NOT call SetRelativePath when using IPersistFile
-# to save to disk: Windows computes it automatically when saving.
 $link = [LnrPortableLink]::new()
 try {
   $link.SetPath($exePath)
-  $link.SetArguments('--lnr-batch')
-  $link.SetDescription('PSXPackagerLNR - Conversión por lotes')
+  $link.SetRelativePath($shortcutPath) # API expects full path of the .lnk, not the target
+  $link.SetArguments("--lnr-batch")
+  $link.SetDescription("PSXPackagerLNR - Conversion por lotes")
   $link.SetIconLocation($stockIconPath,$stockIconIndex)
   $link.Save($shortcutPath)
 } finally { $link.Dispose() }
-if (-not (Test-Path -LiteralPath $shortcutPath)) { throw 'Shortcut was not created' }
-Write-Host 'Created Shell Link without SetRelativePath calls'
+if (-not (Test-Path -LiteralPath $shortcutPath)) { throw "Portable .lnk not created" }
 
 function Assert-LnrLink([string]$path,[string]$expectedDirectory,[bool]$resolve) {
   $link = [LnrPortableLink]::new()
@@ -128,8 +126,7 @@ function Assert-LnrLink([string]$path,[string]$expectedDirectory,[bool]$resolve)
     Write-Host "Shortcut uses stock icon #$script:stockIconIndex from $iconLocation"
     if ($link.Arguments() -ne "--lnr-batch") { throw "LNR batch arguments missing" }
     if ($resolve) {
-      # IMPORTANT: Do not call SetRelativePath here. Explorer does not call
-      # it either. The CI test must reproduce the real user's double-click.
+      $link.SetRelativePath($path) # Adjust relative base after moving the .lnk
       $link.Resolve()
     }
     $target = $link.TargetPath()
@@ -143,19 +140,7 @@ function Assert-LnrLink([string]$path,[string]$expectedDirectory,[bool]$resolve)
 Assert-LnrLink $shortcutPath $guiDir $false
 
 if ($VerifyRelocation) {
-  # The published ZIP is built on D:, but most users extract it to C:.
-  # A cross-volume relocation test catches absolute cached targets that
-  # same-drive tests can miss.
-  $testBase = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
-  if ([System.IO.Path]::GetPathRoot($testBase) -eq [System.IO.Path]::GetPathRoot($guiDir)) {
-    $testBase = Join-Path $env:SystemDrive "LnrShortcutPortableTests"
-  }
-  New-Item -ItemType Directory -Path $testBase -Force | Out-Null
-  $testDir = Join-Path $testBase ("lnr-portable-" + [guid]::NewGuid().ToString("N"))
-  Write-Host "Testing cross-volume relocation: $guiDir => $testDir"
-  if ([System.IO.Path]::GetPathRoot($testDir) -eq [System.IO.Path]::GetPathRoot($guiDir)) {
-    throw "Relocation test must use a different Windows drive letter"
-  }
+  $testDir = Join-Path $env:RUNNER_TEMP ("lnr-portable-" + [guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path (Join-Path $testDir "Resources") -Force | Out-Null
   Copy-Item -LiteralPath $exePath -Destination (Join-Path $testDir "PSXPackagerGUI.exe")
   # The Windows stock icon comes from the OS and must not be copied.
@@ -165,31 +150,6 @@ if ($VerifyRelocation) {
   Move-Item -LiteralPath $exePath -Destination $hiddenExe
   try {
     Assert-LnrLink $testLink $testDir $true
-
-    # ShellExecute is the closest automated equivalent to double-clicking the
-    # extracted .lnk in Windows Explorer. Test the UNMODIFIED link on disk,
-    # not the in-memory COM object used by Assert-LnrLink.
-    $startInfo = [System.Diagnostics.ProcessStartInfo]::new($testLink)
-    $startInfo.UseShellExecute = $true
-    $started = [System.Diagnostics.Process]::Start($startInfo)
-    if ($null -eq $started) { throw 'Windows ShellExecute did not return a process for the shortcut' }
-    try {
-      $actualExe = $started.MainModule.FileName
-      $expectedExe = Join-Path $testDir 'PSXPackagerGUI.exe'
-      if (-not [string]::Equals(
-          [System.IO.Path]::GetFullPath($actualExe),
-          [System.IO.Path]::GetFullPath($expectedExe),
-          [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "ShellExecute opened the wrong executable: $actualExe expected $expectedExe"
-      }
-      Write-Host "Explorer-style activation launched the relocated GUI: $actualExe"
-    } finally {
-      if (-not $started.HasExited) {
-        $started.Kill($true)
-        [void]$started.WaitForExit(5000)
-      }
-      $started.Dispose()
-    }
   } finally {
     Move-Item -LiteralPath $hiddenExe -Destination $exePath
     Remove-Item -LiteralPath $testDir -Recurse -Force -ErrorAction SilentlyContinue
