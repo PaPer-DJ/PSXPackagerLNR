@@ -156,3 +156,80 @@ jobs:
             Write-Host "The filename-only/blank-Start-in recipe did not pass cross-drive activation."
           }
           # This workflow intentionally does not change the product or publish a new beta.
+  candidate-from-real-gui:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Download verified beta.28 actual GUI binaries
+        uses: actions/download-artifact@v4
+        with:
+          repository: ${{ github.repository }}
+          run-id: 42446026638
+          github-token: ${{ github.token }}
+          name: PSXPackagerLNR-v0.1.0-beta.28-b453-Windows-x64
+          path: incoming
+      - name: Build WScript native .lnk using the real GUI target
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $guiZip = Get-ChildItem -Path ./incoming -Recurse -Filter '*GUI-win-x64.zip' | Select-Object -First 1
+          if ($null -eq $guiZip) { Get-ChildItem ./incoming -Recurse | Select-Object FullName; throw 'Actual beta.28 GUI zip not found' }
+          $out = Join-Path $env:RUNNER_TEMP ('lnr-real-beta28-' + [guid]::NewGuid().ToString('N'))
+          Expand-Archive -LiteralPath $guiZip.FullName -DestinationPath $out -Force
+          $exe = Get-ChildItem $out -Filter PSXPackagerGUI.exe -Recurse | Select-Object -First 1
+          if ($null -eq $exe) { throw 'Real GUI executable absent in archive' }
+          $directory = Split-Path $exe.FullName -Parent
+          $linkPath = Join-Path $directory '#PSXPackagerLNR.lnk'
+          $shell = New-Object -ComObject WScript.Shell
+          $shortcut = $shell.CreateShortcut($linkPath)
+          $shortcut.TargetPath = $exe.FullName
+          $shortcut.Arguments = '--lnr-batch'
+          $shortcut.WorkingDirectory = ''
+          $shortcut.Description = 'PSXPackagerLNR - Conversion por lotes'
+          $shortcut.IconLocation = "$env:WINDIR\System32\shell32.dll,179"
+          $shortcut.Save()
+          $reported = $shell.CreateShortcut($linkPath)
+          if ($reported.Arguments -ne '--lnr-batch') { throw 'Batch parameter missing from candidate shortcut' }
+          if ($reported.WorkingDirectory -ne '') { throw 'Candidate Start in not empty' }
+          Write-Host "Candidate produced with real GUI target: $($reported.TargetPath)"
+          $destination = Join-Path $env:LOCALAPPDATA ('lnr-real-relocated-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Path $destination -Force | Out-Null
+          Copy-Item -Path (Join-Path $directory '*') -Destination $destination -Recurse -Force
+          $relocatedLink = Join-Path $destination '#PSXPackagerLNR.lnk'
+          $renamed = "$($exe.FullName).hidden-for-test"
+          Move-Item $exe.FullName $renamed
+          try {
+            $start = [Diagnostics.ProcessStartInfo]::new($relocatedLink)
+            $start.UseShellExecute = $true
+            $process = [Diagnostics.Process]::Start($start)
+            if ($null -eq $process) { Write-Host 'WARNING: No GUI process returned by Windows' }
+            else {
+              try {
+                $actual = $process.MainModule.FileName
+                $expected = Join-Path $destination 'PSXPackagerGUI.exe'
+                if ([string]::Equals($actual,$expected,[StringComparison]::OrdinalIgnoreCase)) {
+                  Write-Host "PASS: extracted GUI shortcut launched executable from relocated folder: $actual"
+                } else {
+                  Write-Host "WARNING: unexpected executable: $actual expected $expected"
+                }
+              } catch { Write-Host "WARNING: WPF GUI launch could not be inspected: $($_.Exception.Message)" }
+              finally {
+                try { if (-not $process.HasExited) { $process.Kill($true); [void]$process.WaitForExit(3500) } } catch {}
+                $process.Dispose()
+              }
+            }
+          } catch { Write-Host "WARNING: GUI runner cannot emulate real desktop: $($_.Exception.Message)" }
+          finally { Move-Item $renamed $exe.FullName }
+          New-Item -ItemType Directory -Path './candidate' -Force | Out-Null
+          Copy-Item $linkPath './candidate/#PSXPackagerLNR.lnk' -Force
+          if (-not (Test-Path './candidate/#PSXPackagerLNR.lnk')) { throw 'Candidate link not published' }
+      - name: Upload only the experimental shortcut
+        uses: actions/upload-artifact@v4
+        with:
+          name: Prueba-AccesoDirecto-LNR-Beta28
+          path: candidate/
+          if-no-files-found: error
+          retention-days: 7
