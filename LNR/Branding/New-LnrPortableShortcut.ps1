@@ -104,16 +104,55 @@ try {
   if ($smallIcon -ne [IntPtr]::Zero) { [void][LnrIconProbe]::DestroyIcon($smallIcon) }
 }
 
-$link = [LnrPortableLink]::new()
+# Produce a file-location-only Shell Link, following Microsoft's MS-SHLLINK
+# binary specification. Do not serialize the GitHub runner's absolute target
+# path, PIDL, LinkInfo, tracker, working directory or machine-specific data.
+# Unlike IShellLink.SetPath(absolute), a pure RelativePath shortcut cannot
+# accidentally prefer D:\\a\\... on an extracted user's PC.
+$relativeTarget = '.\\PSXPackagerGUI.exe'
+$description = 'PSXPackagerLNR - Conversión por lotes'
+$binary = [System.IO.File]::Create($shortcutPath)
 try {
-  $link.SetPath($exePath)
-  $link.SetRelativePath($shortcutPath) # API expects full path of the .lnk, not the target
-  $link.SetArguments("--lnr-batch")
-  $link.SetDescription("PSXPackagerLNR - Conversion por lotes")
-  $link.SetIconLocation($stockIconPath,$stockIconIndex)
-  $link.Save($shortcutPath)
-} finally { $link.Dispose() }
-if (-not (Test-Path -LiteralPath $shortcutPath)) { throw "Portable .lnk not created" }
+  $writer = [System.IO.BinaryWriter]::new($binary, [System.Text.Encoding]::Unicode, $true)
+  try {
+    $writer.Write([uint32]0x4C) # ShellLinkHeader.HeaderSize
+    $writer.Write(([Guid]'00021401-0000-0000-C000-000000000046').ToByteArray())
+    # HasName | HasRelativePath | HasArguments | HasIconLocation |
+    # IsUnicode | ForceNoLinkInfo (no IDList, no LinkInfo).
+    $writer.Write([uint32]0x1EC)
+    $writer.Write([uint32]0x20) # FILE_ATTRIBUTE_ARCHIVE
+    $fileInfo = [System.IO.FileInfo]::new($exePath)
+    $writer.Write([int64]$fileInfo.CreationTimeUtc.ToFileTimeUtc())
+    $writer.Write([int64]$fileInfo.LastAccessTimeUtc.ToFileTimeUtc())
+    $writer.Write([int64]$fileInfo.LastWriteTimeUtc.ToFileTimeUtc())
+    $writer.Write([uint32]($fileInfo.Length -band 0xFFFFFFFFL))
+    $writer.Write([int32]$stockIconIndex)
+    $writer.Write([uint32]1) # SW_SHOWNORMAL
+    $writer.Write([uint16]0) # Hotkey
+    $writer.Write([uint16]0) # Reserved1
+    $writer.Write([uint32]0) # Reserved2
+    $writer.Write([uint32]0) # Reserved3
+
+    foreach ($value in @($description,$relativeTarget,'--lnr-batch',$stockIconPath)) {
+      if ($value.Length -gt 260) { throw 'Unexpectedly long Shell Link StringData' }
+      $writer.Write([uint16]$value.Length)
+      $writer.Write([System.Text.Encoding]::Unicode.GetBytes($value))
+    }
+    $writer.Write([uint32]0) # TerminalBlock, end of ExtraData.
+    $writer.Flush()
+  } finally { $writer.Dispose() }
+} finally { $binary.Dispose() }
+if (-not (Test-Path -LiteralPath $shortcutPath)) { throw 'Portable LNR .lnk not created' }
+$raw = [System.IO.File]::ReadAllBytes($shortcutPath)
+$flags = [BitConverter]::ToUInt32($raw,0x14)
+if ($flags -ne 0x1EC -or [BitConverter]::ToUInt32($raw,0) -ne 0x4C) {
+  throw 'Unexpected Shell Link flags/header'
+}
+if ([System.Text.Encoding]::Unicode.GetString($raw).Contains($guiDir) -or
+    [System.Text.Encoding]::ASCII.GetString($raw).Contains($guiDir)) {
+  throw 'Shortcut must never contain an absolute CI runner directory'
+}
+Write-Host 'Created relative-only Shell Link without absolute target metadata'
 
 function Assert-LnrLink([string]$path,[string]$expectedDirectory,[bool]$resolve) {
   $link = [LnrPortableLink]::new()
@@ -126,7 +165,8 @@ function Assert-LnrLink([string]$path,[string]$expectedDirectory,[bool]$resolve)
     Write-Host "Shortcut uses stock icon #$script:stockIconIndex from $iconLocation"
     if ($link.Arguments() -ne "--lnr-batch") { throw "LNR batch arguments missing" }
     if ($resolve) {
-      $link.SetRelativePath($path) # Adjust relative base after moving the .lnk
+      # IMPORTANT: Do not call SetRelativePath here. Explorer does not call
+      # it either. The CI test must reproduce the real user's double-click.
       $link.Resolve()
     }
     $target = $link.TargetPath()
