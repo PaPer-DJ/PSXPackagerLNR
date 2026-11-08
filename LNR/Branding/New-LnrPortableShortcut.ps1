@@ -144,7 +144,19 @@ function Assert-LnrLink([string]$path,[string]$expectedDirectory,[bool]$resolve)
 Assert-LnrLink $shortcutPath $guiDir $false
 
 if ($VerifyRelocation) {
-  $testDir = Join-Path $env:RUNNER_TEMP ("lnr-portable-" + [guid]::NewGuid().ToString("N"))
+  # The published ZIP is built on D:, but most users extract it to C:.
+  # A cross-volume relocation test catches absolute cached targets that
+  # same-drive tests can miss.
+  $testBase = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
+  if ([System.IO.Path]::GetPathRoot($testBase) -eq [System.IO.Path]::GetPathRoot($guiDir)) {
+    $testBase = Join-Path $env:SystemDrive "LnrShortcutPortableTests"
+  }
+  New-Item -ItemType Directory -Path $testBase -Force | Out-Null
+  $testDir = Join-Path $testBase ("lnr-portable-" + [guid]::NewGuid().ToString("N"))
+  Write-Host "Testing cross-volume relocation: $guiDir => $testDir"
+  if ([System.IO.Path]::GetPathRoot($testDir) -eq [System.IO.Path]::GetPathRoot($guiDir)) {
+    throw "Relocation test must use a different Windows drive letter"
+  }
   New-Item -ItemType Directory -Path (Join-Path $testDir "Resources") -Force | Out-Null
   Copy-Item -LiteralPath $exePath -Destination (Join-Path $testDir "PSXPackagerGUI.exe")
   # The Windows stock icon comes from the OS and must not be copied.
