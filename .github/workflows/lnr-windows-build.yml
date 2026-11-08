@@ -110,7 +110,8 @@ jobs:
           if (-not (Test-Path -LiteralPath $shortcutPath)) { throw "LNR shortcut was not created" }
           $check = $shell.CreateShortcut($shortcutPath)
           if ($check.Arguments -ne "--lnr-batch") { throw "Shortcut is missing --lnr-batch" }
-          if ($check.IconLocation -notmatch "PSXPackagerLNR\\.ico") { throw "Shortcut does not use the LNR icon" }
+          Write-Host "Shortcut icon: $($check.IconLocation)"
+          if (-not $check.IconLocation.Contains("PSXPackagerLNR.ico")) { throw "Shortcut does not use the LNR icon" }
           if ([IO.Path]::GetFileName($check.TargetPath) -ne "PSXPackagerGUI.exe") { throw "Shortcut targets wrong executable" }
           Write-Host "Shortcut generated: $shortcutPath"
 
