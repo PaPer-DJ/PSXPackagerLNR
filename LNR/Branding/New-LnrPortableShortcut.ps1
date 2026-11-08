@@ -85,7 +85,7 @@ public sealed class LnrPortableLink : IDisposable {
 $link = [LnrPortableLink]::new()
 try {
   $link.SetPath($exePath)
-  $link.SetRelativePath("PSXPackagerGUI.exe")
+  $link.SetRelativePath($shortcutPath) # API expects full path of the .lnk, not the target
   $link.SetArguments("--lnr-batch")
   $link.SetDescription("PSXPackagerLNR - Conversion por lotes")
   $link.SetIconLocation('Resources\PSXPackagerLNR.ico')
@@ -101,7 +101,10 @@ function Assert-LnrLink([string]$path,[string]$expectedDirectory,[bool]$resolve)
       throw "Shortcut icon not relative to Resources: $($link.IconLocation())"
     }
     if ($link.Arguments() -ne "--lnr-batch") { throw "LNR batch arguments missing" }
-    if ($resolve) { $link.Resolve() }
+    if ($resolve) {
+      $link.SetRelativePath($path) # Adjust relative base after moving the .lnk
+      $link.Resolve()
+    }
     $target = $link.TargetPath()
     $expected = Join-Path $expectedDirectory "PSXPackagerGUI.exe"
     if (-not [string]::Equals([System.IO.Path]::GetFullPath($target),[System.IO.Path]::GetFullPath($expected),[System.StringComparison]::OrdinalIgnoreCase)) {
