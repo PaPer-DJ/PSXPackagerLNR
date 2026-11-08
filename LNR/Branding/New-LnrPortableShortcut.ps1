@@ -60,7 +60,7 @@ public sealed class LnrPortableLink : IDisposable {
   public void SetIconLocation(string icon) { inner.SetIconLocation(icon,0); }
   public void Save(string path) { ((IPersistFile)inner).Save(path,true); }
   public void Load(string path) { ((IPersistFile)inner).Load(path,0); }
-  public void Resolve() { inner.Resolve(IntPtr.Zero,(uint)0x1); // SLR_NO_UI; allow relative resolution }
+  public void Resolve() { inner.Resolve(IntPtr.Zero,(uint)0x1); } // SLR_NO_UI
   public string IconLocation() {
     var sb = new StringBuilder(1024);
     int index;
