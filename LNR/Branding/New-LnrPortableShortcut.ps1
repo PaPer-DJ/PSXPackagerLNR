@@ -57,7 +57,6 @@ public sealed class LnrPortableLink : IDisposable {
     finally { Marshal.Release(ptr); }
   }
   public void SetPath(string path) { inner.SetPath(path); }
-  public void SetRelativePath(string relative) { inner.SetRelativePath(relative,0); }
   public void SetArguments(string args) { inner.SetArguments(args); }
   public void SetDescription(string description) { inner.SetDescription(description); }
   public void SetIconLocation(string icon,int index) { inner.SetIconLocation(icon,index); }

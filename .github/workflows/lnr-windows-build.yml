@@ -86,6 +86,13 @@ jobs:
         shell: pwsh
         run: |
           ./LNR/Branding/New-LnrPortableShortcut.ps1 -GuiDirectory "./out/GUI" -ShortcutPath "./out/GUI/#PSXPackagerLNR.lnk" -VerifyRelocation
+          $lnkSource = Get-Content "./LNR/Branding/New-LnrPortableShortcut.ps1" -Raw
+          if ($lnkSource.Contains('$link.SetRelativePath(')) {
+            throw "No manual SetRelativePath when persisting a .lnk on disk"
+          }
+          if (-not $lnkSource.Contains('Testing cross-volume relocation:')) {
+            throw "Shortcut test must verify C: / D: relocation"
+          }
           if (-not (Test-Path "./out/GUI/#PSXPackagerLNR.lnk")) { throw "LNR .lnk missing" }
 
       - name: Verify Windows binaries
