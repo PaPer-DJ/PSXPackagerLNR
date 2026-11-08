@@ -4,6 +4,14 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.28 — 8 noviembre 2026 (seguimiento automático del juego activo)
+
+- La tabla **Juegos CHD detectados** ahora se desplaza automáticamente cuando empieza a procesarse una nueva fila, para que el juego activo siga visible aunque el lote tenga cientos de títulos.
+- Nueva casilla **Seguir juego activo**, activada por defecto. Al desmarcarla permite desplazarse libremente por el listado durante la conversión; al reactivarla vuelve al juego que esté procesándose.
+- El desplazamiento se realiza **una vez por juego**, no en cada actualización de porcentaje, para evitar saltos o interferencias con el seguimiento de progreso.
+- No se alteran conversiones, parámetros, borrado de CHD, tamaños de columna, registros ni motor.
+- **Acceso directo:** se mantiene exactamente, byte por byte, el generador restaurado de beta.23 y su verificación de integridad. El defecto de las rutas absolutas observado en Windows no se declara resuelto por esta revisión.
+
 ## v0.1.0-beta.27 — 8 noviembre 2026 (restauración EXACTA del acceso directo beta.23)
 
 - **Restaurado byte a byte** el generador `LNR/Branding/New-LnrPortableShortcut.ps1` de la beta.23, identificado por el blob de Git `b38a519e52ad6d99452d97ddf2c7d38db48c9701`. Se revierten todos los experimentos posteriores sobre el lanzador y su comprobación.

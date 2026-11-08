@@ -289,6 +289,11 @@
                 <TextBlock Text="Juegos CHD detectados" FontWeight="SemiBold" DockPanel.Dock="Left"/>
                 <TextBlock x:Name="CountLabel" DockPanel.Dock="Right" Text="0 trabajos"
                            HorizontalAlignment="Right" Margin="14,0,0,0"/>
+                <CheckBox x:Name="FollowActiveGameCheck" DockPanel.Dock="Right"
+                          Content="Seguir juego activo" IsChecked="True"
+                          VerticalAlignment="Center" Margin="14,0,0,0"
+                          Checked="FollowActiveGameCheck_OnChecked"
+                          ToolTip="Desmarca esta opción para examinar otras filas sin que la lista vuelva al juego que se está convirtiendo."/>
             </DockPanel>
             <ListView Grid.Row="1" x:Name="JobList" ScrollViewer.HorizontalScrollBarVisibility="Auto"
                       HorizontalContentAlignment="Stretch" SnapsToDevicePixels="True"

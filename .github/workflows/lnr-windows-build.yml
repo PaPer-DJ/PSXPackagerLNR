@@ -155,6 +155,41 @@ jobs:
           & "./out/CLI/psxpackager.exe" --help
           if ($LASTEXITCODE -ne 0) { throw "CLI --help failed ($LASTEXITCODE)" }
 
+      - name: Regression test - Follow current CHD game without jumping on every progress tick
+        shell: pwsh
+        run: |
+          $xaml = Get-Content "./PSXPackagerGUI/LnrBatchWindow.xaml" -Raw
+          $code = Get-Content "./PSXPackagerGUI/LnrBatchWindow.xaml.cs" -Raw
+          foreach ($marker in @(
+            'x:Name="FollowActiveGameCheck"',
+            'IsChecked="True"',
+            'Checked="FollowActiveGameCheck_OnChecked"'
+          )) {
+            if (-not $xaml.Contains($marker)) { throw "Missing follow-active-game control: $marker" }
+          }
+          foreach ($marker in @(
+            'FollowActiveGameCheck_OnChecked(',
+            'JobList.ScrollIntoView(job)',
+            '_activeJob = job;',
+            'ReferenceEquals(_activeJob, job)',
+            'DispatcherPriority.Background'
+          )) {
+            if (-not $code.Contains($marker)) { throw "Missing auto-scroll behavior: $marker" }
+          }
+          $begin = $code.IndexOf('private async Task ConvertAllAsync(')
+          $end = $code.IndexOf('private static string ReadableTime(', $begin)
+          if ($begin -lt 0 -or $end -lt 0 -or
+              -not $code.Substring($begin, $end-$begin).Contains('FollowActiveGame(job);')) {
+            throw "Auto-scroll must be invoked once at the start of each game"
+          }
+          $beginStream = $code.IndexOf('private async Task<string> ReadCliStreamAsync(')
+          if ($beginStream -ge 0) {
+            $stream = $code.Substring($beginStream, [Math]::Min(3000, $code.Length-$beginStream))
+            if ($stream.Contains('ScrollIntoView(')) {
+              throw "Auto-scroll must not be triggered on every CLI progress event"
+            }
+          }
+
       - name: Regression test - LNR auto-sizing, manual widths and log
         shell: pwsh
         run: |

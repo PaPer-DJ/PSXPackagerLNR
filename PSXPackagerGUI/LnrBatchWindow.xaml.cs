@@ -31,6 +31,9 @@ namespace PSXPackagerGUI
             @"^(Converting Disc|Writing Disc|Extracting Disc|Decompressing file)\b",
             RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
         private readonly ObservableCollection<LnrConversionJob> _jobs = new();
+        // The active row is followed only when a new job begins, never on
+        // every percentage tick. Users can disable follow while browsing.
+        private LnrConversionJob _activeJob;
         private readonly List<string> _messages = new();
         // Automatic widths are only a starting point. GridViewColumn.Width changes
         // made by dragging headers must survive Analyze and later progress updates.
@@ -270,6 +273,29 @@ namespace PSXPackagerGUI
         private void JobList_OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
             if (e.WidthChanged) ResizeJobColumns();
+        }
+
+        private void FollowActiveGameCheck_OnChecked(object sender, RoutedEventArgs e)
+        {
+            if (IsLoaded && _running && _activeJob != null)
+                FollowActiveGame(_activeJob);
+        }
+
+        private void FollowActiveGame(LnrConversionJob job)
+        {
+            if (job == null || FollowActiveGameCheck?.IsChecked != true)
+                return;
+
+            // Run after WPF has laid out/virtualized the row. This is a one-off
+            // action per job, not an automatic scroll on every progress update.
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            {
+                if (_running && FollowActiveGameCheck.IsChecked == true &&
+                    ReferenceEquals(_activeJob, job) && _jobs.Contains(job))
+                {
+                    JobList.ScrollIntoView(job);
+                }
+            }));
         }
 
         private void TrackManualColumnResizing()
@@ -702,6 +728,7 @@ namespace PSXPackagerGUI
                 _calibratedBytes = 0;
                 _calibratedSeconds = 0;
                 _batchCanceled = false;
+                _activeJob = null;
                 _activeJobClock = null;
                 WorkProgress.Value = 0;
                 foreach (var job in _jobs)
@@ -749,6 +776,7 @@ namespace PSXPackagerGUI
                     _batchTotalClock?.Stop();
                     _batchFinishedNormally = completedNormally;
                     _running = false;
+                    _activeJob = null;
                     UpdateBatchProgress();
                     _activeProcess = null;
                     _cancel?.Dispose();
@@ -807,6 +835,8 @@ namespace PSXPackagerGUI
             foreach (var job in _jobs)
             {
                 cancel.ThrowIfCancellationRequested();
+                _activeJob = job;
+                FollowActiveGame(job);
                 var finalPath = Path.Combine(dest, job.Name + ".pbp");
                 // Stage the sole provisional PBP on the *same* volume as the
                 // final output. Moving it into place then needs no second
