@@ -4,6 +4,16 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.21 — 8 noviembre 2026 (acceso directo con icono estándar de Windows)
+
+- Se elimina el lanzador nativo experimental: no se puede garantizar que un EXE nuevo y poco descargado no provoque alertas de SmartScreen, incluso con firma digital. No se añaden EXE.
+- El acceso directo portátil `PSXPackagerLNR - Conversion por lotes.lnk` mantiene `PSXPackagerGUI.exe --lnr-batch` y utiliza un icono de Windows con flechas desde `%SystemRoot%\\System32\\shell32.dll` (índice 179).
+- A diferencia de la beta.20, ya no se utiliza una referencia relativa a `Resources/PSXPackagerLNR.ico`, que Windows no mostraba correctamente en el Explorador del usuario.
+- Pruebas Windows de CI: el icono existe realmente en `shell32.dll`, el acceso directo conserva índice, ruta y argumentos, y continúa resolviendo el EXE después de trasladar la carpeta.
+- El icono neon LNR MOD aprobado se conserva como recurso de branding en el repositorio para futuros usos, pero se excluye del ZIP de la GUI.
+- Sin cambios en el motor, la GUI clásica, las preferencias, compresión, políticas de borrado ni créditos de la aplicación original.
+- Pendiente de comprobación visual del acceso directo en equipos Windows 10 y 11.
+
 ## v0.1.0-beta.20 — 8 noviembre 2026 (icono LNR MOD y acceso directo portátil)
 
 - Nuevo icono cuadrado LNR MOD aprobado para el fork; se convierte a ICO multirresolución desde `LNR/Branding/lnr-mod-square.jpg`.

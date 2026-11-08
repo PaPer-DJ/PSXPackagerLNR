@@ -1,4 +1,4 @@
-# Windows build helper only. Writes a portable Shell Link with the LNR MOD ICO in Resources.
+# Windows build helper only. Writes a portable Shell Link using a stock Windows system icon.
 # This script does not ship to end users: users run the prepared .lnk directly.
 param(
   [Parameter(Mandatory=$true)][string]$GuiDirectory,
@@ -8,10 +8,13 @@ param(
 $ErrorActionPreference = "Stop"
 $guiDir = (Resolve-Path -LiteralPath $GuiDirectory).Path
 $exePath = Join-Path $guiDir "PSXPackagerGUI.exe"
-$iconPath = Join-Path $guiDir "Resources/PSXPackagerLNR.ico"
+# System-wide DLL avoids both relative icon paths and a new unsigned launcher.
+$stockIconPath = '%SystemRoot%\System32\shell32.dll'
+$stockIconIndex = 179 # Icon with blue arrows (batch/transfer visual)
+$resolvedIconPath = [Environment]::ExpandEnvironmentVariables($stockIconPath)
 $shortcutPath = [System.IO.Path]::GetFullPath($ShortcutPath)
 if (-not (Test-Path -LiteralPath $exePath)) { throw "GUI executable is missing" }
-if (-not (Test-Path -LiteralPath $iconPath)) { throw "LNR ICO missing from Resources" }
+if (-not (Test-Path -LiteralPath $resolvedIconPath -PathType Leaf)) { throw "Windows shell icon DLL missing: $resolvedIconPath" }
 
 Add-Type -TypeDefinition @'
 using System;
@@ -57,15 +60,15 @@ public sealed class LnrPortableLink : IDisposable {
   public void SetRelativePath(string relative) { inner.SetRelativePath(relative,0); }
   public void SetArguments(string args) { inner.SetArguments(args); }
   public void SetDescription(string description) { inner.SetDescription(description); }
-  public void SetIconLocation(string icon) { inner.SetIconLocation(icon,0); }
+  public void SetIconLocation(string icon,int index) { inner.SetIconLocation(icon,index); }
   public void Save(string path) { ((IPersistFile)inner).Save(path,true); }
   public void Load(string path) { ((IPersistFile)inner).Load(path,0); }
   public void Resolve() { inner.Resolve(IntPtr.Zero,(uint)0x1); } // SLR_NO_UI
-  public string IconLocation() {
+  public string IconLocation(int expectedIndex) {
     var sb = new StringBuilder(1024);
     int index;
     inner.GetIconLocation(sb,sb.Capacity,out index);
-    if (index != 0) throw new InvalidOperationException("Unexpected icon index " + index);
+    if (index != expectedIndex) throw new InvalidOperationException("Unexpected icon index " + index + " expected " + expectedIndex);
     return sb.ToString();
   }
   public string Arguments() {
@@ -80,7 +83,26 @@ public sealed class LnrPortableLink : IDisposable {
   }
   public void Dispose() { if (inner != null) Marshal.ReleaseComObject(inner); }
 }
+public static class LnrIconProbe {
+  [DllImport("shell32.dll", CharSet=CharSet.Unicode)]
+  public static extern uint ExtractIconEx(string file, int index, out IntPtr largeIcon, out IntPtr smallIcon, uint count);
+  [DllImport("user32.dll")]
+  public static extern bool DestroyIcon(IntPtr handle);
+}
 '@ -ErrorAction Stop
+# Validate that the selected index resolves to a real icon in the Windows system DLL.
+$largeIcon = [IntPtr]::Zero
+$smallIcon = [IntPtr]::Zero
+$iconCount = [LnrIconProbe]::ExtractIconEx($resolvedIconPath, $stockIconIndex, [ref]$largeIcon, [ref]$smallIcon, [uint32]1)
+try {
+  if ($iconCount -lt 1 -or ($largeIcon -eq [IntPtr]::Zero -and $smallIcon -eq [IntPtr]::Zero)) {
+    throw "Windows icon #$stockIconIndex could not be extracted from $resolvedIconPath"
+  }
+  Write-Host "Windows stock icon #$stockIconIndex available from $resolvedIconPath"
+} finally {
+  if ($largeIcon -ne [IntPtr]::Zero) { [void][LnrIconProbe]::DestroyIcon($largeIcon) }
+  if ($smallIcon -ne [IntPtr]::Zero) { [void][LnrIconProbe]::DestroyIcon($smallIcon) }
+}
 
 $link = [LnrPortableLink]::new()
 try {
@@ -88,7 +110,7 @@ try {
   $link.SetRelativePath($shortcutPath) # API expects full path of the .lnk, not the target
   $link.SetArguments("--lnr-batch")
   $link.SetDescription("PSXPackagerLNR - Conversion por lotes")
-  $link.SetIconLocation('Resources\PSXPackagerLNR.ico')
+  $link.SetIconLocation($stockIconPath,$stockIconIndex)
   $link.Save($shortcutPath)
 } finally { $link.Dispose() }
 if (-not (Test-Path -LiteralPath $shortcutPath)) { throw "Portable .lnk not created" }
@@ -97,9 +119,11 @@ function Assert-LnrLink([string]$path,[string]$expectedDirectory,[bool]$resolve)
   $link = [LnrPortableLink]::new()
   try {
     $link.Load($path)
-    if ($link.IconLocation() -ne 'Resources\PSXPackagerLNR.ico') {
-      throw "Shortcut icon not relative to Resources: $($link.IconLocation())"
+    $iconLocation = $link.IconLocation($script:stockIconIndex)
+    if ($iconLocation -notin @($script:stockIconPath, $script:resolvedIconPath)) {
+      throw "Shortcut icon not Windows system DLL: $iconLocation"
     }
+    Write-Host "Shortcut uses stock icon #$script:stockIconIndex from $iconLocation"
     if ($link.Arguments() -ne "--lnr-batch") { throw "LNR batch arguments missing" }
     if ($resolve) {
       $link.SetRelativePath($path) # Adjust relative base after moving the .lnk
@@ -119,7 +143,7 @@ if ($VerifyRelocation) {
   $testDir = Join-Path $env:RUNNER_TEMP ("lnr-portable-" + [guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path (Join-Path $testDir "Resources") -Force | Out-Null
   Copy-Item -LiteralPath $exePath -Destination (Join-Path $testDir "PSXPackagerGUI.exe")
-  Copy-Item -LiteralPath $iconPath -Destination (Join-Path $testDir "Resources/PSXPackagerLNR.ico")
+  # The Windows stock icon comes from the OS and must not be copied.
   $testLink = Join-Path $testDir ([System.IO.Path]::GetFileName($shortcutPath))
   Copy-Item -LiteralPath $shortcutPath -Destination $testLink
   $hiddenExe = "$exePath.lnr-test-hidden"
