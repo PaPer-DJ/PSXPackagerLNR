@@ -1,0 +1,158 @@
+name: LNR Windows - test filename-only relative shortcut
+on:
+  push:
+    branches: ["lnr/windows-chd-build"]
+    paths: [".github/workflows/lnr-relative-shortcut-test.yml"]
+  workflow_dispatch:
+
+jobs:
+  test-filename-only:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - name: Reproduce filename-only Target and blank Start in
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $d = Join-Path $env:RUNNER_TEMP ('lnr-nameonly-build-' + [guid]::NewGuid().ToString('N'))
+          $c = Join-Path $env:LOCALAPPDATA ('lnr-nameonly-extract-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Force -Path $d,$c | Out-Null
+          if ([IO.Path]::GetPathRoot($d) -eq [IO.Path]::GetPathRoot($c)) {
+            throw "Source and extract dirs must be on different Windows drives"
+          }
+          $sourceExe = Join-Path $d 'PSXPackagerGUI.exe'
+          $targetExe = Join-Path $c 'PSXPackagerGUI.exe'
+          Copy-Item "$env:WINDIR\System32\PING.EXE" $sourceExe
+          Copy-Item "$env:WINDIR\System32\PING.EXE" $targetExe
+          $wsh = New-Object -ComObject WScript.Shell
+          $cases = [ordered]@{
+            'filename-no-quotes' = 'PSXPackagerGUI.exe'
+            'filename-quoted'   = '"PSXPackagerGUI.exe"'
+            'dot-relative'      = '.\PSXPackagerGUI.exe'
+            'dot-quoted'        = '".\PSXPackagerGUI.exe"'
+            'absolute-control'  = $sourceExe
+          }
+          foreach ($case in $cases.GetEnumerator()) {
+            $lnk = Join-Path $d ($case.Key + '.lnk')
+            $sc = $wsh.CreateShortcut($lnk)
+            $sc.TargetPath = $case.Value
+            $sc.WorkingDirectory = ''
+            $sc.Arguments = '-n 8 127.0.0.1'
+            $sc.IconLocation = "$env:WINDIR\System32\shell32.dll,179"
+            try {
+              $sc.Save()
+              Write-Host "CREATED $($case.Key): Target=$($sc.TargetPath); StartIn=<$($sc.WorkingDirectory)>"
+            }
+            catch {
+              Write-Host "SAVE FAILED $($case.Key): $($_.Exception.Message)"
+            }
+          }
+
+          # Also test native COM, because WScript can normalize TargetPath during saving.
+          Add-Type -TypeDefinition @'
+          using System;
+          using System.Runtime.InteropServices;
+          using System.Runtime.InteropServices.ComTypes;
+          using System.Text;
+          [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("000214F9-0000-0000-C000-000000000046")]
+          interface ILnrLink {
+            void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder buf, int len, IntPtr data, uint flags);
+            void GetIDList(out IntPtr list);
+            void SetIDList(IntPtr list);
+            void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder buf, int len);
+            void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string desc);
+            void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder buf, int len);
+            void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string path);
+            void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder buf, int len);
+            void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string arg);
+            void GetHotkey(out short hotkey);
+            void SetHotkey(short hotkey);
+            void GetShowCmd(out int cmd);
+            void SetShowCmd(int cmd);
+            void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder buf, int len, out int index);
+            void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string location, int index);
+            void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string path, uint reserved);
+            void Resolve(IntPtr hwnd, uint flags);
+            void SetPath([MarshalAs(UnmanagedType.LPWStr)] string path);
+          }
+          public static class LnrLinkCreator {
+            [DllImport("ole32.dll", ExactSpelling=true)]
+            static extern int CoCreateInstance(ref Guid clsid, IntPtr outer, uint ctx, ref Guid iid, out IntPtr obj);
+            public static void Create(string target, string lnk) {
+              Guid clsid = new Guid("00021401-0000-0000-C000-000000000046");
+              Guid iid = new Guid("000214F9-0000-0000-C000-000000000046");
+              IntPtr ptr;
+              Marshal.ThrowExceptionForHR(CoCreateInstance(ref clsid, IntPtr.Zero, 1, ref iid, out ptr));
+              ILnrLink link = null;
+              try {
+                link = (ILnrLink)Marshal.GetObjectForIUnknown(ptr);
+                link.SetPath(target);
+                link.SetWorkingDirectory("");
+                link.SetArguments("-n 8 127.0.0.1");
+                link.SetIconLocation("%SystemRoot%\\System32\\shell32.dll", 179);
+                ((IPersistFile)link).Save(lnk,true);
+              } finally {
+                if(link!=null) Marshal.ReleaseComObject(link);
+                Marshal.Release(ptr);
+              }
+            }
+          }
+          '@
+          foreach($case in @('PSXPackagerGUI.exe','.\PSXPackagerGUI.exe')) {
+            $label = if($case.StartsWith('.')) {'native-dot'} else {'native-filename'}
+            try {
+              [LnrLinkCreator]::Create($case,(Join-Path $d ($label+'.lnk')))
+              Write-Host "CREATED $label via native IShellLink"
+            } catch {
+              Write-Host "CREATE FAILED $label: $($_.Exception.Message)"
+            }
+          }
+
+          Rename-Item -LiteralPath $sourceExe -NewName 'PSXPackagerGUI.exe.hidden'
+          $pass = 0
+          $failed = 0
+          foreach ($link in Get-ChildItem $d -Filter *.lnk) {
+            $name = $link.BaseName
+            $dst = Join-Path $c $link.Name
+            Copy-Item $link.FullName $dst
+            $bytes = [IO.File]::ReadAllBytes($dst)
+            $utf16 = [Text.Encoding]::Unicode.GetString($bytes)
+            $runnerEncoded = $utf16.Contains($d)
+            Write-Host "CASE $name; contains-build-path=$runnerEncoded; size=$($bytes.Length)"
+            # Important: do NOT inspect/resolve the COM link before activating,
+            # as merely loading/resolving can silently rewrite its target.
+            $p = $null
+            try {
+              $psi = [Diagnostics.ProcessStartInfo]::new($dst)
+              $psi.UseShellExecute = $true
+              $p = [Diagnostics.Process]::Start($psi)
+              if ($null -eq $p) { throw "No process created by ShellExecute" }
+              Start-Sleep -Milliseconds 350
+              $actual = $p.MainModule.FileName
+              if (-not [string]::Equals($actual,$targetExe,[StringComparison]::OrdinalIgnoreCase)) {
+                throw "Wrong executable: $actual; expected $targetExe"
+              }
+              Write-Host "PASS $name -> opened relocated EXE"
+              $pass++
+            } catch {
+              Write-Host "FAIL $name -> $($_.Exception.Message)"
+              $failed++
+            } finally {
+              if ($null -ne $p) {
+                try {
+                  if (-not $p.HasExited) { $p.Kill($true); [void]$p.WaitForExit(3000) }
+                } catch { Write-Host "Cleanup: $($_.Exception.Message)" }
+                $p.Dispose()
+              }
+            }
+            # Test what Windows reports only after the actual double-click attempt.
+            try {
+              $lnkInfo = $wsh.CreateShortcut($dst)
+              Write-Host "PROPERTIES $name Target=<$($lnkInfo.TargetPath)> StartIn=<$($lnkInfo.WorkingDirectory)>"
+            } catch { Write-Host "PROPERTIES FAILED $name $($_.Exception.Message)" }
+          }
+          Write-Host "SUMMARY: $pass passed; $failed failed. This is diagnostics ONLY."
+          if ($pass -eq 0) {
+            Write-Host "The filename-only/blank-Start-in recipe did not pass cross-drive activation."
+          }
+          # This workflow intentionally does not change the product or publish a new beta.
