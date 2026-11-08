@@ -1,5 +1,5 @@
-# Windows-only build helper: a portable relative Shell Link to the LNR batch interface.
-# End users do not run scripts. The generated .lnk is included in the GUI ZIP.
+# Windows build helper only. Writes a portable Shell Link with the LNR MOD ICO in Resources.
+# This script does not ship to end users: users run the prepared .lnk directly.
 param(
   [Parameter(Mandatory=$true)][string]$GuiDirectory,
   [Parameter(Mandatory=$true)][string]$ShortcutPath,
@@ -11,30 +11,13 @@ $exePath = Join-Path $guiDir "PSXPackagerGUI.exe"
 $iconPath = Join-Path $guiDir "Resources/PSXPackagerLNR.ico"
 $shortcutPath = [System.IO.Path]::GetFullPath($ShortcutPath)
 if (-not (Test-Path -LiteralPath $exePath)) { throw "GUI executable is missing" }
-if (-not (Test-Path -LiteralPath $iconPath)) { throw "LNR icon is missing from Resources" }
+if (-not (Test-Path -LiteralPath $iconPath)) { throw "LNR ICO missing from Resources" }
 
 Add-Type -TypeDefinition @'
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
-
-public static class LnrComFactory {
-  [DllImport("ole32.dll", ExactSpelling=true)]
-  private static extern int CoCreateInstance(ref Guid clsid, IntPtr outer, uint context, ref Guid iid, out IntPtr ppv);
-
-  public static ILnrShellLinkW Create() {
-    Guid clsid = new Guid("00021401-0000-0000-C000-000000000046");
-    Guid iid = typeof(ILnrShellLinkW).GUID;
-    IntPtr ptr;
-    int result = CoCreateInstance(ref clsid, IntPtr.Zero, 1, ref iid, out ptr);
-    Marshal.ThrowExceptionForHR(result);
-    try {
-      return (ILnrShellLinkW)Marshal.GetObjectForIUnknown(ptr);
-    } finally {
-      Marshal.Release(ptr);
-    }
-  }
-}
+using System.Runtime.InteropServices.ComTypes;
 
 [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("000214F9-0000-0000-C000-000000000046")]
 public interface ILnrShellLinkW {
@@ -57,66 +40,92 @@ public interface ILnrShellLinkW {
   void Resolve(IntPtr hwnd, uint flags);
   void SetPath([MarshalAs(UnmanagedType.LPWStr)] string path);
 }
+public sealed class LnrPortableLink : IDisposable {
+  [DllImport("ole32.dll", ExactSpelling=true)]
+  static extern int CoCreateInstance(ref Guid clsid, IntPtr outer, uint context, ref Guid iid, out IntPtr ppv);
+  readonly ILnrShellLinkW inner;
+  public LnrPortableLink() {
+    Guid clsid = new Guid("00021401-0000-0000-C000-000000000046");
+    Guid iid = typeof(ILnrShellLinkW).GUID;
+    IntPtr ptr;
+    int result = CoCreateInstance(ref clsid, IntPtr.Zero, 1, ref iid, out ptr);
+    Marshal.ThrowExceptionForHR(result);
+    try { inner = (ILnrShellLinkW)Marshal.GetObjectForIUnknown(ptr); }
+    finally { Marshal.Release(ptr); }
+  }
+  public void SetPath(string path) { inner.SetPath(path); }
+  public void SetRelativePath(string relative) { inner.SetRelativePath(relative,0); }
+  public void SetArguments(string args) { inner.SetArguments(args); }
+  public void SetDescription(string description) { inner.SetDescription(description); }
+  public void SetIconLocation(string icon) { inner.SetIconLocation(icon,0); }
+  public void Save(string path) { ((IPersistFile)inner).Save(path,true); }
+  public void Load(string path) { ((IPersistFile)inner).Load(path,0); }
+  public void Resolve() { inner.Resolve(IntPtr.Zero,(uint)(0x1 | 0x10 | 0x20)); }
+  public string IconLocation() {
+    var sb = new StringBuilder(1024);
+    int index;
+    inner.GetIconLocation(sb,sb.Capacity,out index);
+    if (index != 0) throw new InvalidOperationException("Unexpected icon index " + index);
+    return sb.ToString();
+  }
+  public string Arguments() {
+    var sb = new StringBuilder(1024);
+    inner.GetArguments(sb,sb.Capacity);
+    return sb.ToString();
+  }
+  public string TargetPath() {
+    var sb = new StringBuilder(32768);
+    inner.GetPath(sb,sb.Capacity,IntPtr.Zero,0);
+    return sb.ToString();
+  }
+  public void Dispose() { if (inner != null) Marshal.ReleaseComObject(inner); }
+}
 '@ -ErrorAction Stop
 
-$link = [LnrComFactory]::Create()
+$link = [LnrPortableLink]::new()
 try {
   $link.SetPath($exePath)
-  $link.SetRelativePath("PSXPackagerGUI.exe", [uint32]0)
+  $link.SetRelativePath("PSXPackagerGUI.exe")
   $link.SetArguments("--lnr-batch")
   $link.SetDescription("PSXPackagerLNR - Conversion por lotes")
-  $link.SetIconLocation('Resources\PSXPackagerLNR.ico',0)
-  $persist = [System.Runtime.InteropServices.ComTypes.IPersistFile]$link
-  $persist.Save($shortcutPath,$true)
-} finally {
-  [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($link)
-}
+  $link.SetIconLocation('Resources\PSXPackagerLNR.ico')
+  $link.Save($shortcutPath)
+} finally { $link.Dispose() }
 if (-not (Test-Path -LiteralPath $shortcutPath)) { throw "Portable .lnk not created" }
 
 function Assert-LnrLink([string]$path,[string]$expectedDirectory,[bool]$resolve) {
-  $object = [LnrComFactory]::Create()
+  $link = [LnrPortableLink]::new()
   try {
-    $reader = [System.Runtime.InteropServices.ComTypes.IPersistFile]$object
-    $reader.Load($path, [int]0)
-    $icon = [System.Text.StringBuilder]::new(1024)
-    $index = 0
-    $object.GetIconLocation($icon,1024,[ref]$index)
-    if ($icon.ToString() -ne 'Resources\PSXPackagerLNR.ico' -or $index -ne 0) {
-      throw "Shortcut icon reference is not relative to Resources: $icon"
+    $link.Load($path)
+    if ($link.IconLocation() -ne 'Resources\PSXPackagerLNR.ico') {
+      throw "Shortcut icon not relative to Resources: $($link.IconLocation())"
     }
-    $arguments = [System.Text.StringBuilder]::new(1024)
-    $object.GetArguments($arguments,1024)
-    if ($arguments.ToString() -ne "--lnr-batch") { throw "LNR batch arguments missing" }
-    if ($resolve) {
-      # SLR_NO_UI | SLR_NOSEARCH | SLR_NOTRACK
-      $object.Resolve([IntPtr]::Zero, [uint32](0x1 -bor 0x10 -bor 0x20))
-    }
-    $target = [System.Text.StringBuilder]::new(32768)
-    $object.GetPath($target,32768,[IntPtr]::Zero,[uint32]0)
+    if ($link.Arguments() -ne "--lnr-batch") { throw "LNR batch arguments missing" }
+    if ($resolve) { $link.Resolve() }
+    $target = $link.TargetPath()
     $expected = Join-Path $expectedDirectory "PSXPackagerGUI.exe"
-    if (-not [string]::Equals([System.IO.Path]::GetFullPath($target.ToString()),[System.IO.Path]::GetFullPath($expected),[System.StringComparison]::OrdinalIgnoreCase)) {
-      throw "Link target does not resolve to relocated GUI: $target (expected $expected)"
+    if (-not [string]::Equals([System.IO.Path]::GetFullPath($target),[System.IO.Path]::GetFullPath($expected),[System.StringComparison]::OrdinalIgnoreCase)) {
+      throw "Link target did not resolve to relocated GUI: $target (expected $expected)"
     }
-    Write-Host "Link validated: $path"
-  } finally { [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($object) }
+    Write-Host "Portable shortcut verified: $path"
+  } finally { $link.Dispose() }
 }
 Assert-LnrLink $shortcutPath $guiDir $false
 
 if ($VerifyRelocation) {
-  $testDir = Join-Path $env:RUNNER_TEMP ("lnr-portable-test-" + [guid]::NewGuid().ToString("N"))
+  $testDir = Join-Path $env:RUNNER_TEMP ("lnr-portable-" + [guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path (Join-Path $testDir "Resources") -Force | Out-Null
   Copy-Item -LiteralPath $exePath -Destination (Join-Path $testDir "PSXPackagerGUI.exe")
   Copy-Item -LiteralPath $iconPath -Destination (Join-Path $testDir "Resources/PSXPackagerLNR.ico")
   $testLink = Join-Path $testDir ([System.IO.Path]::GetFileName($shortcutPath))
   Copy-Item -LiteralPath $shortcutPath -Destination $testLink
-  # Hide the original executable temporarily: resolution must not use its cached CI path.
   $hiddenExe = "$exePath.lnr-test-hidden"
   Move-Item -LiteralPath $exePath -Destination $hiddenExe
   try {
     Assert-LnrLink $testLink $testDir $true
-    Write-Host "LNR shortcut target relocates correctly with its parent folder."
   } finally {
     Move-Item -LiteralPath $hiddenExe -Destination $exePath
     Remove-Item -LiteralPath $testDir -Recurse -Force -ErrorAction SilentlyContinue
   }
+  Write-Host "Portable shortcut relocation test passed."
 }
