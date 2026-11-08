@@ -1,158 +1,103 @@
-# Windows build helper only. Writes a portable Shell Link using a stock Windows system icon.
-# This script does not ship to end users: users run the prepared .lnk directly.
+# LNR portable shortcut - CONFIRMED on the user's Windows after beta.28.
+# Reproduce the successful isolated candidate exactly: use Windows' native
+# WScript.Shell.CreateShortcut with an absolute target at BUILD time, an EMPTY
+# WorkingDirectory, --lnr-batch, and the standard system icon.
+# Do not revert to IShellLink.SetRelativePath or a hand-written binary .lnk.
+# This helper runs in GitHub Actions only; no script is shipped to end users.
 param(
   [Parameter(Mandatory=$true)][string]$GuiDirectory,
   [Parameter(Mandatory=$true)][string]$ShortcutPath,
   [switch]$VerifyRelocation
 )
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = 'Stop'
 $guiDir = (Resolve-Path -LiteralPath $GuiDirectory).Path
-$exePath = Join-Path $guiDir "PSXPackagerGUI.exe"
-# System-wide DLL avoids both relative icon paths and a new unsigned launcher.
-$stockIconPath = '%SystemRoot%\System32\shell32.dll'
-$stockIconIndex = 179 # Icon with blue arrows (batch/transfer visual)
-$resolvedIconPath = [Environment]::ExpandEnvironmentVariables($stockIconPath)
-$shortcutPath = [System.IO.Path]::GetFullPath($ShortcutPath)
-if (-not (Test-Path -LiteralPath $exePath)) { throw "GUI executable is missing" }
-if (-not (Test-Path -LiteralPath $resolvedIconPath -PathType Leaf)) { throw "Windows shell icon DLL missing: $resolvedIconPath" }
-
-Add-Type -TypeDefinition @'
-using System;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
-
-[ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("000214F9-0000-0000-C000-000000000046")]
-public interface ILnrShellLinkW {
-  void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int maxPath, IntPtr findData, uint flags);
-  void GetIDList(out IntPtr pidl);
-  void SetIDList(IntPtr pidl);
-  void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder description, int maxLength);
-  void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string description);
-  void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder dir, int maxLength);
-  void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string dir);
-  void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder arguments, int maxLength);
-  void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string arguments);
-  void GetHotkey(out short hotkey);
-  void SetHotkey(short hotkey);
-  void GetShowCmd(out int showCommand);
-  void SetShowCmd(int showCommand);
-  void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder iconPath, int maxPath, out int iconIndex);
-  void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string iconPath, int iconIndex);
-  void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string relativePath, uint reserved);
-  void Resolve(IntPtr hwnd, uint flags);
-  void SetPath([MarshalAs(UnmanagedType.LPWStr)] string path);
+$exePath = Join-Path $guiDir 'PSXPackagerGUI.exe'
+$shortcutPath = [IO.Path]::GetFullPath($ShortcutPath)
+if (-not (Test-Path -LiteralPath $exePath -PathType Leaf)) {
+  throw "GUI executable missing: $exePath"
 }
-public sealed class LnrPortableLink : IDisposable {
-  [DllImport("ole32.dll", ExactSpelling=true)]
-  static extern int CoCreateInstance(ref Guid clsid, IntPtr outer, uint context, ref Guid iid, out IntPtr ppv);
-  readonly ILnrShellLinkW inner;
-  public LnrPortableLink() {
-    Guid clsid = new Guid("00021401-0000-0000-C000-000000000046");
-    Guid iid = typeof(ILnrShellLinkW).GUID;
-    IntPtr ptr;
-    int result = CoCreateInstance(ref clsid, IntPtr.Zero, 1, ref iid, out ptr);
-    Marshal.ThrowExceptionForHR(result);
-    try { inner = (ILnrShellLinkW)Marshal.GetObjectForIUnknown(ptr); }
-    finally { Marshal.Release(ptr); }
-  }
-  public void SetPath(string path) { inner.SetPath(path); }
-  public void SetRelativePath(string relative) { inner.SetRelativePath(relative,0); }
-  public void SetArguments(string args) { inner.SetArguments(args); }
-  public void SetDescription(string description) { inner.SetDescription(description); }
-  public void SetIconLocation(string icon,int index) { inner.SetIconLocation(icon,index); }
-  public void Save(string path) { ((IPersistFile)inner).Save(path,true); }
-  public void Load(string path) { ((IPersistFile)inner).Load(path,0); }
-  public void Resolve() { inner.Resolve(IntPtr.Zero,(uint)0x1); } // SLR_NO_UI
-  public string IconLocation(int expectedIndex) {
-    var sb = new StringBuilder(1024);
-    int index;
-    inner.GetIconLocation(sb,sb.Capacity,out index);
-    if (index != expectedIndex) throw new InvalidOperationException("Unexpected icon index " + index + " expected " + expectedIndex);
-    return sb.ToString();
-  }
-  public string Arguments() {
-    var sb = new StringBuilder(1024);
-    inner.GetArguments(sb,sb.Capacity);
-    return sb.ToString();
-  }
-  public string TargetPath() {
-    var sb = new StringBuilder(32768);
-    inner.GetPath(sb,sb.Capacity,IntPtr.Zero,0);
-    return sb.ToString();
-  }
-  public void Dispose() { if (inner != null) Marshal.ReleaseComObject(inner); }
-}
-public static class LnrIconProbe {
-  [DllImport("shell32.dll", CharSet=CharSet.Unicode)]
-  public static extern uint ExtractIconEx(string file, int index, out IntPtr largeIcon, out IntPtr smallIcon, uint count);
-  [DllImport("user32.dll")]
-  public static extern bool DestroyIcon(IntPtr handle);
-}
-'@ -ErrorAction Stop
-# Validate that the selected index resolves to a real icon in the Windows system DLL.
-$largeIcon = [IntPtr]::Zero
-$smallIcon = [IntPtr]::Zero
-$iconCount = [LnrIconProbe]::ExtractIconEx($resolvedIconPath, $stockIconIndex, [ref]$largeIcon, [ref]$smallIcon, [uint32]1)
-try {
-  if ($iconCount -lt 1 -or ($largeIcon -eq [IntPtr]::Zero -and $smallIcon -eq [IntPtr]::Zero)) {
-    throw "Windows icon #$stockIconIndex could not be extracted from $resolvedIconPath"
-  }
-  Write-Host "Windows stock icon #$stockIconIndex available from $resolvedIconPath"
-} finally {
-  if ($largeIcon -ne [IntPtr]::Zero) { [void][LnrIconProbe]::DestroyIcon($largeIcon) }
-  if ($smallIcon -ne [IntPtr]::Zero) { [void][LnrIconProbe]::DestroyIcon($smallIcon) }
+if (-not [string]::Equals(
+    [IO.Path]::GetDirectoryName($shortcutPath),
+    $guiDir,
+    [StringComparison]::OrdinalIgnoreCase)) {
+  throw 'The portable shortcut MUST be beside PSXPackagerGUI.exe'
 }
 
-$link = [LnrPortableLink]::new()
-try {
-  $link.SetPath($exePath)
-  $link.SetRelativePath($shortcutPath) # API expects full path of the .lnk, not the target
-  $link.SetArguments("--lnr-batch")
-  $link.SetDescription("PSXPackagerLNR - Conversion por lotes")
-  $link.SetIconLocation($stockIconPath,$stockIconIndex)
-  $link.Save($shortcutPath)
-} finally { $link.Dispose() }
-if (-not (Test-Path -LiteralPath $shortcutPath)) { throw "Portable .lnk not created" }
+# DO NOT TOUCH: these six assignments are the Windows-tested candidate.
+$wsh = New-Object -ComObject WScript.Shell
+$shortcut = $wsh.CreateShortcut($shortcutPath)
+$shortcut.TargetPath = $exePath
+$shortcut.Arguments = '--lnr-batch'
+$shortcut.WorkingDirectory = ''
+$shortcut.Description = 'PSXPackagerLNR - Conversion por lotes'
+$shortcut.IconLocation = "$env:WINDIR\System32\shell32.dll,179"
+$shortcut.Save()
 
-function Assert-LnrLink([string]$path,[string]$expectedDirectory,[bool]$resolve) {
-  $link = [LnrPortableLink]::new()
-  try {
-    $link.Load($path)
-    $iconLocation = $link.IconLocation($script:stockIconIndex)
-    if ($iconLocation -notin @($script:stockIconPath, $script:resolvedIconPath)) {
-      throw "Shortcut icon not Windows system DLL: $iconLocation"
-    }
-    Write-Host "Shortcut uses stock icon #$script:stockIconIndex from $iconLocation"
-    if ($link.Arguments() -ne "--lnr-batch") { throw "LNR batch arguments missing" }
-    if ($resolve) {
-      $link.SetRelativePath($path) # Adjust relative base after moving the .lnk
-      $link.Resolve()
-    }
-    $target = $link.TargetPath()
-    $expected = Join-Path $expectedDirectory "PSXPackagerGUI.exe"
-    if (-not [string]::Equals([System.IO.Path]::GetFullPath($target),[System.IO.Path]::GetFullPath($expected),[System.StringComparison]::OrdinalIgnoreCase)) {
-      throw "Link target did not resolve to relocated GUI: $target (expected $expected)"
-    }
-    Write-Host "Portable shortcut verified: $path"
-  } finally { $link.Dispose() }
+if (-not (Test-Path -LiteralPath $shortcutPath -PathType Leaf)) {
+  throw 'LNR .lnk was not created'
 }
-Assert-LnrLink $shortcutPath $guiDir $false
+$created = $wsh.CreateShortcut($shortcutPath)
+if ($created.Arguments -ne '--lnr-batch') {
+  throw 'LNR .lnk did not retain --lnr-batch'
+}
+if ($created.WorkingDirectory -ne '') {
+  throw 'LNR .lnk Start in must remain completely empty'
+}
+Write-Host "Generated approved LNR shortcut: $shortcutPath"
 
 if ($VerifyRelocation) {
-  $testDir = Join-Path $env:RUNNER_TEMP ("lnr-portable-" + [guid]::NewGuid().ToString("N"))
-  New-Item -ItemType Directory -Path (Join-Path $testDir "Resources") -Force | Out-Null
-  Copy-Item -LiteralPath $exePath -Destination (Join-Path $testDir "PSXPackagerGUI.exe")
-  # The Windows stock icon comes from the OS and must not be copied.
-  $testLink = Join-Path $testDir ([System.IO.Path]::GetFileName($shortcutPath))
-  Copy-Item -LiteralPath $shortcutPath -Destination $testLink
-  $hiddenExe = "$exePath.lnr-test-hidden"
-  Move-Item -LiteralPath $exePath -Destination $hiddenExe
-  try {
-    Assert-LnrLink $testLink $testDir $true
-  } finally {
-    Move-Item -LiteralPath $hiddenExe -Destination $exePath
-    Remove-Item -LiteralPath $testDir -Recurse -Force -ErrorAction SilentlyContinue
+  # The build runs on D:; simulate a user extracting on C:. This must be
+  # a real ShellExecute of the UNMODIFIED copied .lnk, not a COM Resolve()
+  # or SetRelativePath() call, which previously concealed broken shortcuts.
+  $testBase = [Environment]::GetFolderPath(
+      [Environment+SpecialFolder]::LocalApplicationData)
+  if ([IO.Path]::GetPathRoot($testBase) -eq [IO.Path]::GetPathRoot($guiDir)) {
+    throw 'Portability test needs another drive for extraction'
   }
-  Write-Host "Portable shortcut relocation test passed."
+  $dest = Join-Path $testBase ('lnr-shortcut-tested-' + [guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Path $dest -Force | Out-Null
+  $hidden = "$exePath.hidden-for-portability-test"
+  $process = $null
+  $movedOriginal = $false
+  try {
+    Copy-Item -Path (Join-Path $guiDir '*') -Destination $dest -Recurse -Force
+    $relocated = Join-Path $dest ([IO.Path]::GetFileName($shortcutPath))
+    $expectedExe = Join-Path $dest 'PSXPackagerGUI.exe'
+    if (-not (Test-Path -LiteralPath $expectedExe -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $relocated -PathType Leaf)) {
+      throw 'Relocation test does not contain the real GUI and shortcut'
+    }
+    Move-Item -LiteralPath $exePath -Destination $hidden
+    $movedOriginal = $true
+    Write-Host "Testing REAL shortcut activation: $guiDir => $dest"
+    # Direct Process.Start on the .lnk is equivalent to opening it in Explorer.
+    $start = [Diagnostics.ProcessStartInfo]::new($relocated)
+    $start.UseShellExecute = $true
+    $process = [Diagnostics.Process]::Start($start)
+    if ($null -eq $process) {
+      throw 'ShellExecute failed to start PSXPackagerGUI.exe from the .lnk'
+    }
+    Start-Sleep -Milliseconds 350
+    $launched = $process.MainModule.FileName
+    if (-not [string]::Equals(
+        $launched, $expectedExe,
+        [StringComparison]::OrdinalIgnoreCase)) {
+      throw "Shortcut opened wrong executable: $launched (expected $expectedExe)"
+    }
+    Write-Host "PASS: extracted GUI shortcut launched relocated executable: $launched"
+  }
+  finally {
+    if ($null -ne $process) {
+      try {
+        if (-not $process.HasExited) {
+          $process.Kill($true)
+          [void]$process.WaitForExit(5000)
+        }
+      } finally { $process.Dispose() }
+    }
+    if ($movedOriginal) {
+      Move-Item -LiteralPath $hidden -Destination $exePath
+    }
+    Remove-Item -LiteralPath $dest -Recurse -Force -ErrorAction SilentlyContinue
+  }
 }

@@ -4,6 +4,15 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.29 — 8 noviembre 2026 (acceso directo confirmado por el usuario)
+
+- **Solucionado el acceso directo `#PSXPackagerLNR.lnk`** mediante la MISMA creación `WScript.Shell.CreateShortcut` que pasó la prueba aislada de Windows con la GUI real de beta.28 y que el usuario ha confirmado que funciona.
+- `Destino`: el `PSXPackagerGUI.exe` de la carpeta de compilación, guardado por la API de Windows. `Iniciar en`: **completamente vacío**. Se mantienen el argumento `--lnr-batch`, el nombre corto y el icono del sistema (`shell32.dll`, índice 179).
+- Se elimina del empaquetado el generador experimental con `IShellLink.SetRelativePath`, cuya lógica de resolución había provocado regresiones a partir de beta.24.
+- Se actualiza el test automatizado para reproducir la **apertura real** del archivo `.lnk` después de copiar la GUI completa de la unidad `D:` a otra unidad (`C:`), ocultando el ejecutable original durante la comprobación. Ya no se reajusta artificialmente la ruta del enlace.
+- **Protección antirregresión:** GitHub Actions comprueba el SHA del generador aprobado y falla si cambia. No modificar este mecanismo en futuras betas sin petición expresa del usuario.
+- No se alteran conversiones, configuraciones, interfaz, logo ni motor PSXPackager original.
+
 ## v0.1.0-beta.28 — 8 noviembre 2026 (seguimiento automático del juego activo)
 
 - La tabla **Juegos CHD detectados** ahora se desplaza automáticamente cuando empieza a procesarse una nueva fila, para que el juego activo siga visible aunque el lote tenga cientos de títulos.

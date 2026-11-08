@@ -82,20 +82,26 @@ jobs:
           Copy-Item "./out/CLI/psxpackager.exe" "./out/GUI/psxpackager.exe" -Force
           if (-not (Test-Path "./out/GUI/psxpackager.exe")) { throw "GUI package lacks LNR batch CLI" }
 
-      - name: Protect the beta.23 shortcut generator from regressions
+      - name: Protect the USER-VERIFIED shortcut method from regressions
         shell: pwsh
         run: |
-          # This is the EXACT Git blob from the working beta.23. Do not alter
-          # the shortcut generator without explicit user approval.
+          # Frozen: the candidate #PSXPackagerLNR.lnk that the user confirmed
+          # works on Windows. No modifications without explicit user approval.
           $file = "./LNR/Branding/New-LnrPortableShortcut.ps1"
           $sha = (git hash-object -- $file).Trim()
-          $expected = "b38a519e52ad6d99452d97ddf2c7d38db48c9701"
+          $expected = "1a91b6f81c72a7db579ec291c0509b6187089996"
           if ($sha -ne $expected) {
-            throw "The beta.23 shortcut generator changed ($sha). Restore Git blob $expected; user requires it frozen."
+            throw "USER-VERIFIED shortcut method changed: $sha (expected $expected)"
           }
-          Write-Host "Protected shortcut generator matches beta.23: $sha"
+          $body = Get-Content -LiteralPath $file -Raw
+          if (-not $body.Contains("New-Object -ComObject WScript.Shell") -or
+              -not $body.Contains("$" + "shortcut.WorkingDirectory = ''") -or
+              $body.Contains("SetRelativePath(")) {
+            throw "Shortcut generator no longer reproduces user-approved WScript method"
+          }
+          Write-Host "User-verified LNR shortcut generator frozen at $sha"
 
-      - name: Generate and relocation-test native LNR shortcut with Windows stock icon
+      - name: Create and REAL cross-drive-test approved LNR shortcut
         shell: pwsh
         run: |
           ./LNR/Branding/New-LnrPortableShortcut.ps1 -GuiDirectory "./out/GUI" -ShortcutPath "./out/GUI/#PSXPackagerLNR.lnk" -VerifyRelocation
