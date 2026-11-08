@@ -4,6 +4,15 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.22 — 8 noviembre 2026 (nombre del acceso directo y pulido visual de la GUI LNR)
+
+- El acceso directo de la edición GUI pasa a llamarse `#PSXPackagerLNR.lnk`, identificable y normalmente situado al principio al ordenar por nombre. Mantiene su icono estándar de Windows y el argumento `--lnr-batch`.
+- Se elimina el nombre anterior del ZIP para evitar accesos directos duplicados; las pruebas de Windows comprueban el nuevo nombre y su portabilidad al trasladar la carpeta.
+- El logo LNR MOD de la cabecera conserva el arte original, pero se dibuja algo más grande con escalado bitmap de alta calidad, ajuste a píxeles y sombra oscura muy sutil para resaltar sus bordes sobre fondo claro.
+- En la tabla de trabajos, `Nombre PBP` permanece alineado a la izquierda. Las otras siete columnas utilizan celdas que se estiran al ancho disponible con texto centrado; `Estado / Progreso` mantiene sus indicadores y su barra de progreso.
+- Se actualizan instrucciones de inicio rápido para reflejar el sistema real de acceso directo (sin lanzador EXE adicional).
+- Sin cambios en el motor, parámetros de compresión, conversión, borrado, GUI clásica ni créditos de autoría.
+
 ## v0.1.0-beta.21 — 8 noviembre 2026 (acceso directo con icono estándar de Windows)
 
 - Se elimina el lanzador nativo experimental: no se puede garantizar que un EXE nuevo y poco descargado no provoque alertas de SmartScreen, incluso con firma digital. No se añaden EXE.

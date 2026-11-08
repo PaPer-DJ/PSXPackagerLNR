@@ -7,56 +7,23 @@ la licencia MIT y los creditos del software original.
 
 ## Inicio rápido en Windows
 
-El ZIP **GUI-win-x64** incorpora **dos formas de abrir la aplicación**,
-sin instalar herramientas adicionales para la conversión CHD → PBP:
+Extrae el ZIP **GUI-win-x64** en una carpeta y abre la interfaz que prefieras:
 
-- **`PSXPackagerLNR.exe` — recomendado**: **lanzador diminuto y nativo**
-  (sin motor ni runtime .NET incrustados). Al ejecutarlo abre
-  `PSXPackagerGUI.exe` con la opción interna `--lnr-batch`,
-  que muestra **directamente el conversor LNR CHD → PBP por lotes**,
-  con selector de carpeta, compresión, progreso y acceso a
-  **Suite CD / CHD / ISO**. No aparece la pantalla clásica.
-- **`PSXPackagerGUI.exe` — interfaz clásica**: conserva la ventana
-  original de PSXPackager, sus funciones y los accesos a las herramientas
-  LNR para quien las necesite.
-- **`psxpackager.exe` — motor CLI**: se incluye para que la GUI LNR
-  pueda realizar la conversión directa, sin CHDMAN ni BIN/CUE
-  intermedios. No es necesario ejecutarlo manualmente.
+- **`#PSXPackagerLNR.lnk` — recomendado**: acceso directo portátil con icono estándar de Windows. Inicia `PSXPackagerGUI.exe --lnr-batch` y abre directamente la interfaz **CHD → PBP por lotes** de LaNaveRETRO, con compresión, progreso y Suite CD / CHD / ISO.
+- **`PSXPackagerGUI.exe` — interfaz clásica**: conserva las funciones originales de PSXPackager y permite acceder a las herramientas LNR.
+- **`psxpackager.exe` — conversor CLI**: motor utilizado por la interfaz LNR. No es necesario abrirlo manualmente.
 
-**No se duplica la GUI:** `PSXPackagerLNR.exe` es solo un pequeño
-acceso directo compilado como programa Win32. La aplicación completa
-y el runtime .NET autocontenido permanecen una única vez en
-`PSXPackagerGUI.exe`. También se conserva `psxpackager.exe`,
-que realiza las conversiones en segundo plano.
-
-**Extrae el ZIP completo y conserva los tres EXE en la misma carpeta**,
-junto con los recursos. No funcionaría copiando únicamente el pequeño
-lanzador a otro lugar (para crear un acceso directo en el escritorio,
-usa la opción de Windows «Crear acceso directo» en su lugar).
-El lanzador no abre consola y no requiere instalar software adicional.
-
+No se instala nada ni se utiliza un ejecutable lanzador adicional. **Conserva juntos el acceso directo y el ejecutable GUI**, así como las carpetas de recursos del ZIP. Si creas otro acceso directo en el escritorio, utiliza la opción de Windows «Crear acceso directo», en lugar de mover el enlace original fuera de la carpeta.
 
 ## Versionado y descargas identificables
 
-La version de desarrollo actual es **v0.1.0-beta.17** (lanzador nativo ultraligero sin duplicar la GUI completa).
-La version se define en [LNR/VERSION](LNR/VERSION) y sus novedades
-se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
+La versión de desarrollo actual es **v0.1.0-beta.22**. Su número se define en [LNR/VERSION](LNR/VERSION) y sus novedades se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
-**Cada compilacion de GitHub Actions lleva ademas un numero irrepetible**.
-Por ejemplo: `PSXPackagerLNR-v0.1.0-beta.17-bNN-GUI-win-x64.zip`.
-Los otros paquetes tienen el mismo prefijo y terminan en `CLI-win-x64.zip`
-y `Toolkit-win-x64.zip`.
-
-El titulo de la interfaz y el registro muestran exactamente la version y
-compilacion que se esta ejecutando. No hay que renombrar manualmente ZIPs.
+Cada compilación de GitHub Actions añade un número de ejecución único, por ejemplo `PSXPackagerLNR-v0.1.0-beta.22-bNN-GUI-win-x64.zip`. También se generan los paquetes de CLI y Toolkit.
 
 - [Descargas de pruebas (Actions)](https://github.com/PaPer-DJ/PSXPackagerLNR/actions).
-- Las builds de Actions son **temporales** y pueden caducar a los 30 dias.
-  Conserva los ZIP que quieras probar o comparar.
-- [Releases](https://github.com/PaPer-DJ/PSXPackagerLNR/releases) se usara
-  para versiones publicadas y archivadas permanentemente tras validacion.
-- De momento la rama `master` se mantiene independiente del trabajo en
-  `lnr/windows-chd-build`. No hay release estable de LNR.
+- Las compilaciones de Actions son temporales y pueden caducar a los 30 días; conserva las que necesites.
+- La rama `master` sigue independiente del trabajo en `lnr/windows-chd-build`. No hay versión estable publicada de LNR.
 
 ### Por qué LNR recomienda compresión PBP nivel 3
 

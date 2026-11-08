@@ -85,8 +85,8 @@ jobs:
       - name: Generate and relocation-test native LNR shortcut with Windows stock icon
         shell: pwsh
         run: |
-          ./LNR/Branding/New-LnrPortableShortcut.ps1 -GuiDirectory "./out/GUI" -ShortcutPath "./out/GUI/PSXPackagerLNR - Conversion por lotes.lnk" -VerifyRelocation
-          if (-not (Test-Path "./out/GUI/PSXPackagerLNR - Conversion por lotes.lnk")) { throw "LNR .lnk missing" }
+          ./LNR/Branding/New-LnrPortableShortcut.ps1 -GuiDirectory "./out/GUI" -ShortcutPath "./out/GUI/#PSXPackagerLNR.lnk" -VerifyRelocation
+          if (-not (Test-Path "./out/GUI/#PSXPackagerLNR.lnk")) { throw "LNR .lnk missing" }
 
       - name: Verify Windows binaries
         shell: pwsh
@@ -94,8 +94,16 @@ jobs:
           if (-not (Test-Path "./out/CLI/psxpackager.exe")) { throw "CLI EXE missing" }
           if (-not (Test-Path "./out/GUI/PSXPackagerGUI.exe")) { throw "GUI EXE missing" }
           if (Test-Path "./out/GUI/Resources/PSXPackagerLNR.ico") { throw "Do not ship an unused LNR icon" }
-          if (-not (Test-Path "./out/GUI/PSXPackagerLNR - Conversion por lotes.lnk")) { throw "LNR batch shortcut missing" }
+          if (-not (Test-Path "./out/GUI/#PSXPackagerLNR.lnk")) { throw "LNR batch shortcut missing" }
+          if (Test-Path "./out/GUI/PSXPackagerLNR - Conversion por lotes.lnk") { throw "Obsolete shortcut filename must not be shipped" }
           if (Test-Path "./out/GUI/PSXPackagerLNR.exe") { throw "Obsolete native LNR launcher must not be shipped" }
+          $batchXaml = Get-Content "./PSXPackagerGUI/LnrBatchWindow.xaml" -Raw
+          if ($batchXaml -notmatch 'ListView\.ItemContainerStyle' -or
+              $batchXaml -notmatch 'DropShadowEffect' -or
+              $batchXaml -notmatch 'BitmapScalingMode="HighQuality"' -or
+              $batchXaml -notmatch 'LnrLeftColumnHeader') {
+            throw "LNR batch UI alignment or logo sharpness changes missing"
+          }
           $startupXaml = Get-Content "./PSXPackagerGUI/App.xaml" -Raw
           $startupCs = Get-Content "./PSXPackagerGUI/App.xaml.cs" -Raw
           if ($startupXaml -match 'StartupUri=') { throw "StartupUri bypasses custom startup routing" }
@@ -270,7 +278,8 @@ jobs:
           $guiArchive = [System.IO.Compression.ZipFile]::OpenRead($guiZip)
           try {
             $guiNames = @($guiArchive.Entries | ForEach-Object { $_.FullName })
-            if (-not ($guiNames -contains "PSXPackagerLNR - Conversion por lotes.lnk")) { throw "GUI ZIP lacks batch shortcut" }
+            if (-not ($guiNames -contains "#PSXPackagerLNR.lnk")) { throw "GUI ZIP lacks batch shortcut" }
+            if ($guiNames -contains "PSXPackagerLNR - Conversion por lotes.lnk") { throw "GUI ZIP contains obsolete shortcut" }
             if ($guiNames -contains "Resources/PSXPackagerLNR.ico") { throw "GUI ZIP contains unused branded icon" }
             if ($guiNames -contains "PSXPackagerLNR.ico") { throw "LNR icon must not be in GUI root" }
             if ($guiNames -contains "PSXPackagerLNR.exe") { throw "GUI ZIP must not contain native launcher" }

@@ -52,27 +52,31 @@
         </DataTemplate>
         <DataTemplate x:Key="LnrGameNameTemplate">
             <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}"
+                       HorizontalAlignment="Left" TextAlignment="Left"
                        TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
         </DataTemplate>
         <Style x:Key="LnrCenteredColumnHeader" TargetType="{x:Type GridViewColumnHeader}">
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
         </Style>
+        <Style x:Key="LnrLeftColumnHeader" TargetType="{x:Type GridViewColumnHeader}">
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        </Style>
         <DataTemplate x:Key="LnrDiscCountTemplate">
             <Grid HorizontalAlignment="Stretch">
-                <TextBlock Text="{Binding DiscCount}" HorizontalAlignment="Center"
+                <TextBlock Text="{Binding DiscCount}" HorizontalAlignment="Stretch"
                            TextAlignment="Center" VerticalAlignment="Center"/>
             </Grid>
         </DataTemplate>
         <DataTemplate x:Key="LnrOriginTemplate">
             <Grid HorizontalAlignment="Stretch">
-                <TextBlock Text="{Binding Origin}" HorizontalAlignment="Center"
+                <TextBlock Text="{Binding Origin}" HorizontalAlignment="Stretch"
                            TextAlignment="Center" VerticalAlignment="Center"/>
             </Grid>
         </DataTemplate>
         <DataTemplate x:Key="LnrChdSizeTemplate">
             <Grid HorizontalAlignment="Stretch">
                 <TextBlock Text="{Binding SourceSizeText}" TextAlignment="Center"
-                           HorizontalAlignment="Center"
+                           HorizontalAlignment="Stretch"
                            ToolTip="Tamaño total de los CHD de origen; en juegos multidisco se suman todos"
                            VerticalAlignment="Center"/>
             </Grid>
@@ -80,7 +84,7 @@
         <DataTemplate x:Key="LnrPbpSizeTemplate">
             <Grid HorizontalAlignment="Stretch">
                 <TextBlock Text="{Binding OutputSizeText}" TextAlignment="Center"
-                           HorizontalAlignment="Center"
+                           HorizontalAlignment="Stretch"
                            ToolTip="Tamaño del PBP generado o, si ya existía, del archivo del destino"
                            VerticalAlignment="Center"/>
             </Grid>
@@ -88,7 +92,7 @@
         <DataTemplate x:Key="LnrVariationTemplate">
             <Grid HorizontalAlignment="Stretch">
                 <TextBlock Text="{Binding VariationText}" TextAlignment="Center"
-                           HorizontalAlignment="Center"
+                           HorizontalAlignment="Stretch"
                            Foreground="{Binding VariationBrush}"
                            ToolTip="{Binding VariationTooltip}"
                            VerticalAlignment="Center"/>
@@ -97,7 +101,7 @@
         <DataTemplate x:Key="LnrElapsedTemplate">
             <Grid HorizontalAlignment="Stretch">
                 <TextBlock Text="{Binding ElapsedText}" TextAlignment="Center"
-                           HorizontalAlignment="Center"
+                           HorizontalAlignment="Stretch"
                            ToolTip="Tiempo transcurrido en la conversión de este juego"
                            VerticalAlignment="Center"/>
             </Grid>
@@ -176,7 +180,7 @@
         <Grid Grid.Row="0" Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="165"/>
+                <ColumnDefinition Width="180"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" VerticalAlignment="Center">
                 <TextBlock Text="CHD → PBP por lotes" FontSize="22" FontWeight="SemiBold"/>
@@ -190,8 +194,16 @@
                     Background="Transparent" BorderThickness="0" Padding="3" Cursor="Hand"
                     HorizontalAlignment="Right" VerticalAlignment="Center">
                 <StackPanel HorizontalAlignment="Center">
-                    <Image Width="152" Height="35" Stretch="Uniform"
-                           Source="pack://application:,,,/Branding/lnr-mod-logo.png"/>
+                    <Image Width="164" Height="39" Stretch="Uniform"
+                           UseLayoutRounding="True" SnapsToDevicePixels="True"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           Source="pack://application:,,,/Branding/lnr-mod-logo.png">
+                        <Image.Effect>
+                            <!-- A restrained dark halo separates the metallic neon logo from the light header. -->
+                            <DropShadowEffect Color="#FF293D53" BlurRadius="2"
+                                              ShadowDepth="0" Opacity="0.52"/>
+                        </Image.Effect>
+                    </Image>
                     <TextBlock Text="Créditos y licencia"
                                TextAlignment="Center" FontSize="10"
                                Foreground="#FF607084" Margin="0,2,0,0"/>
@@ -285,11 +297,18 @@
                            HorizontalAlignment="Right" Margin="14,0,0,0"/>
             </DockPanel>
             <ListView Grid.Row="1" x:Name="JobList" ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                      HorizontalContentAlignment="Stretch"
+                      HorizontalContentAlignment="Stretch" SnapsToDevicePixels="True"
                       SizeChanged="JobList_OnSizeChanged">
+                <!-- Ensure every GridView cell template fills its column width before centering content. -->
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="Nombre PBP" CellTemplate="{StaticResource LnrGameNameTemplate}" Width="232"/>
+                        <GridViewColumn Header="Nombre PBP" CellTemplate="{StaticResource LnrGameNameTemplate}"
+                                        HeaderContainerStyle="{StaticResource LnrLeftColumnHeader}" Width="232"/>
                         <GridViewColumn Header="Discos" CellTemplate="{StaticResource LnrDiscCountTemplate}"
                                         HeaderContainerStyle="{StaticResource LnrCenteredColumnHeader}" Width="56"/>
                         <GridViewColumn Header="Origen" CellTemplate="{StaticResource LnrOriginTemplate}"
