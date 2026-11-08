@@ -12,10 +12,90 @@ namespace PSXPackager
         private long _lastTicks;
         private int _charsToDelete;
         private readonly int _logLevel;
+        // The GUI starts the CLI with redirected output and no console handle.
+        // In that mode cursor APIs throw System.IO.IOException on Windows.
+        private bool _canUseCursor;
+        private int _lastReportedPercent = -1;
 
         public ConsoleNotifier(int logLevel)
         {
             _logLevel = logLevel;
+            _canUseCursor = !Console.IsOutputRedirected;
+        }
+
+        private void HideCursor()
+        {
+            if (!_canUseCursor)
+            {
+                Console.WriteLine();
+                return;
+            }
+
+            try
+            {
+                _cursorYPos = Console.CursorTop;
+                Console.CursorVisible = false;
+            }
+            catch (System.IO.IOException)
+            {
+                _canUseCursor = false;
+                Console.WriteLine();
+            }
+            catch (System.InvalidOperationException)
+            {
+                _canUseCursor = false;
+                Console.WriteLine();
+            }
+        }
+
+        private void ShowCursor()
+        {
+            if (!_canUseCursor) return;
+            try { Console.CursorVisible = true; }
+            catch (System.IO.IOException) { _canUseCursor = false; }
+            catch (System.InvalidOperationException) { _canUseCursor = false; }
+        }
+
+        private void ShowProgress(object value, bool alreadyPercent = false)
+        {
+            var percent = alreadyPercent
+                ? Convert.ToInt32(value)
+                : _total > 0 ? (int)Math.Round(Convert.ToDouble(value) / _total * 100, 0) : 0;
+            percent = Math.Max(0, Math.Min(percent, 100));
+
+            // Print one line per new percentage in redirected mode so GUI/logs
+            // can parse it without ANSI control codes or backspace characters.
+            if (!_canUseCursor)
+            {
+                if (percent != _lastReportedPercent)
+                {
+                    Console.WriteLine($"Progress: {percent}%");
+                    _lastReportedPercent = percent;
+                }
+                return;
+            }
+
+            if (DateTime.Now.Ticks - _lastTicks > 100000)
+            {
+                Overwrite($"{percent}%");
+                _lastTicks = DateTime.Now.Ticks;
+            }
+        }
+
+        private void FinishProgress()
+        {
+            if (_canUseCursor)
+            {
+                Overwrite("100%");
+                ShowCursor();
+                Console.WriteLine();
+            }
+            else if (_lastReportedPercent != 100)
+            {
+                Console.WriteLine("Progress: 100%");
+            }
+            _charsToDelete = 0;
+            _lastReportedPercent = -1;
         }
 
         private int GetLogLevel(PopstationEventEnum @event)
@@ -82,7 +162,7 @@ namespace PSXPackager
 
                 case PopstationEventEnum.Error:
                     _charsToDelete = 0;
-                    Console.CursorVisible = true;
+                    ShowCursor();
                     WriteLine(@event, $"\r\n{value}");
                     break;
 
@@ -110,26 +190,26 @@ namespace PSXPackager
 
                 case PopstationEventEnum.ConvertStart:
                     Write(@event, $"Converting Disc {value} - ");
-                    _cursorYPos = Console.CursorTop;
-                    Console.CursorVisible = false;
+                    _lastReportedPercent = -1;
+                    HideCursor();
                     break;
 
                 case PopstationEventEnum.DiscStart:
                     Write(@event, $"Writing Disc {value} - ");
-                    _cursorYPos = Console.CursorTop;
-                    Console.CursorVisible = false;
+                    _lastReportedPercent = -1;
+                    HideCursor();
                     break;
 
                 case PopstationEventEnum.ExtractStart:
                     Write(@event, $"Extracting Disc {value} - ");
-                    _cursorYPos = Console.CursorTop;
-                    Console.CursorVisible = false;
+                    _lastReportedPercent = -1;
+                    HideCursor();
                     break;
 
                 case PopstationEventEnum.DecompressStart:
                     Write(@event, $"Decompressing file {value} - ");
-                    _cursorYPos = Console.CursorTop;
-                    Console.CursorVisible = false;
+                    _lastReportedPercent = -1;
+                    HideCursor();
                     break;
 
                 case PopstationEventEnum.ConvertComplete:
@@ -138,29 +218,16 @@ namespace PSXPackager
                 case PopstationEventEnum.ExtractComplete:
                 case PopstationEventEnum.DiscComplete:
                 case PopstationEventEnum.DecompressComplete:
-                    Overwrite($"100%");
-                    _charsToDelete = 0;
-                    Console.CursorVisible = true;
-                    Console.WriteLine();
+                    FinishProgress();
                     break;
 
                 case PopstationEventEnum.ConvertProgress:
                 case PopstationEventEnum.ExtractProgress:
                 case PopstationEventEnum.WriteProgress:
-                    //Console.SetCursorPosition(0, _cursorYPos);
-                    if (DateTime.Now.Ticks - _lastTicks > 100000)
-                    {
-                        Overwrite($"{Math.Round(Convert.ToInt32(value) / (double)_total * 100, 0)}%");
-                        _lastTicks = DateTime.Now.Ticks;
-                    }
+                    ShowProgress(value);
                     break;
                 case PopstationEventEnum.DecompressProgress:
-                    //Console.SetCursorPosition(0, _cursorYPos);
-                    if (DateTime.Now.Ticks - _lastTicks > 100000)
-                    {
-                        Overwrite($"{value}%");
-                        _lastTicks = DateTime.Now.Ticks;
-                    }
+                    ShowProgress(value, alreadyPercent: true);
                     break;
             }
         }
@@ -184,6 +251,8 @@ namespace PSXPackager
 
         private void Overwrite(string text)
         {
+            // Never issue cursor-control output into a pipe.
+            if (!_canUseCursor) return;
             Console.Write(new string('\b', _charsToDelete));
             Console.Write(text);
             _charsToDelete = text.Length;
