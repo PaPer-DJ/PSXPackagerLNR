@@ -99,11 +99,27 @@ jobs:
           if (Test-Path "./out/GUI/PSXPackagerLNR.exe") { throw "Obsolete native LNR launcher must not be shipped" }
           $batchXaml = Get-Content "./PSXPackagerGUI/LnrBatchWindow.xaml" -Raw
           if ($batchXaml -notmatch 'ListView\.ItemContainerStyle' -or
-              $batchXaml -notmatch 'DropShadowEffect' -or
+              $batchXaml -notmatch 'lnr-mod-logo-header\.png' -or
               $batchXaml -notmatch 'BitmapScalingMode="HighQuality"' -or
               $batchXaml -notmatch 'LnrLeftColumnHeader') {
-            throw "LNR batch UI alignment or logo sharpness changes missing"
+            throw "LNR batch UI alignment or optimized header logo missing"
           }
+          if ($batchXaml -match 'DropShadowEffect') {
+            throw "Header-logo drop shadow must not blur the new sharp-edged artwork"
+          }
+          $headerPng = "./PSXPackagerGUI/Branding/lnr-mod-logo-header.png"
+          if (-not (Test-Path -LiteralPath $headerPng)) { throw "Approved LNR MOD header PNG missing" }
+          $guiProject = Get-Content "./PSXPackagerGUI/PSXPackagerGUI.csproj" -Raw
+          if ($guiProject -notmatch 'Resource Include="Branding\\lnr-mod-logo-header.png"') {
+            throw "LNR header PNG is not embedded as a WPF resource"
+          }
+          Add-Type -AssemblyName System.Drawing
+          $art = [System.Drawing.Bitmap]::new((Resolve-Path $headerPng).Path)
+          try {
+            if ($art.Width -lt 500 -or $art.Height -lt 80) { throw "LNR header art too small for high-DPI Windows" }
+            if ($art.GetPixel(0,0).A -gt 10) { throw "LNR header art must have a transparent background" }
+            Write-Host "Validated LNR MOD header logo: $($art.Width)x$($art.Height) transparent PNG"
+          } finally { $art.Dispose() }
           $startupXaml = Get-Content "./PSXPackagerGUI/App.xaml" -Raw
           $startupCs = Get-Content "./PSXPackagerGUI/App.xaml.cs" -Raw
           if ($startupXaml -match 'StartupUri=') { throw "StartupUri bypasses custom startup routing" }

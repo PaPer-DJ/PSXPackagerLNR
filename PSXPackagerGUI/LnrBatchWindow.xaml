@@ -180,7 +180,7 @@
         <Grid Grid.Row="0" Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="192"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" VerticalAlignment="Center">
                 <TextBlock Text="CHD → PBP por lotes" FontSize="22" FontWeight="SemiBold"/>
@@ -194,16 +194,10 @@
                     Background="Transparent" BorderThickness="0" Padding="3" Cursor="Hand"
                     HorizontalAlignment="Right" VerticalAlignment="Center">
                 <StackPanel HorizontalAlignment="Center">
-                    <Image Width="164" Height="39" Stretch="Uniform"
+                    <Image Width="176" Height="41" Stretch="Uniform"
                            UseLayoutRounding="True" SnapsToDevicePixels="True"
                            RenderOptions.BitmapScalingMode="HighQuality"
-                           Source="pack://application:,,,/Branding/lnr-mod-logo.png">
-                        <Image.Effect>
-                            <!-- A restrained dark halo separates the metallic neon logo from the light header. -->
-                            <DropShadowEffect Color="#FF293D53" BlurRadius="2"
-                                              ShadowDepth="0" Opacity="0.52"/>
-                        </Image.Effect>
-                    </Image>
+                           Source="pack://application:,,,/Branding/lnr-mod-logo-header.png"/>
                     <TextBlock Text="Créditos y licencia"
                                TextAlignment="Center" FontSize="10"
                                Foreground="#FF607084" Margin="0,2,0,0"/>

@@ -4,6 +4,15 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## v0.1.0-beta.24 — 8 noviembre 2026 (logo LNR MOD renovado para la cabecera)
+
+- Se integra la composición horizontal LNR MOD aprobada por el usuario, con separación equilibrada entre L, N y R y espaciado más compacto entre las letras MOD.
+- El logo de cabecera utiliza un PNG transparente optimizado para Windows con márgenes recortados, bordes metálicos y neón cian/magenta, incrustado como recurso WPF en `Branding/lnr-mod-logo-header.png`.
+- Se sustituye exclusivamente el logo de la cabecera del conversor por lotes, ajustando su ancho de visualización a 176 px. Se mantiene el escalado de alta calidad, pero se retira el efecto de sombra antiguo que suavizaba excesivamente los contornos.
+- La prueba automática comprueba existencia del recurso, transparencia, dimensiones para alta densidad y vinculación con el XAML y proyecto de GUI.
+- La ventana «Acerca de» mantiene su recurso previo; se conserva el original para trazabilidad y para no modificar elementos fuera del alcance solicitado.
+- Sin cambios en conversión, compresión, borrado, accesos directos, distribución CLI/Toolkit o lógica de la GUI clásica.
+
 ## v0.1.0-beta.23 — 8 noviembre 2026 (anchuras respetadas y registro sin línea vacía)
 
 - La tabla `Juegos CHD detectados` calcula el ancho inicial de `Nombre PBP` con el nombre más largo de los trabajos detectados, aprovechando también el espacio horizontal libre. Para nombres excepcionalmente largos mantiene el desplazamiento horizontal.
