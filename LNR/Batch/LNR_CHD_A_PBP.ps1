@@ -10,7 +10,9 @@ param(
     # 0 = Auto (1..4), otherwise cap simultaneous independent CLI processes.
     [ValidateSet(0,1,2,3,4,6,8)][int]$Parallel=4,
     [switch]$PlanOnly,
-    [string]$PlanJson
+    [string]$PlanJson,
+    # Optional automation/test command channel; the BAT uses keyboard P/R/C.
+    [string]$ControlFile=''
 )
 $ErrorActionPreference='Stop'
 $script:Jobs=New-Object 'System.Collections.Generic.List[object]'
@@ -190,6 +192,83 @@ try {
     $slots=[Math]::Min($effectiveParallel,[Math]::Max(1,$script:Jobs.Count))
     Log ('PLAN DE EJECUCION: '+$slots+' conversion(es) simultanea(s). Los CHD originales se conservan siempre.')
 
+    # Interactive control is non-blocking. PAUSAR is intentionally a drain:
+    # active CLI processes finish and commit normally before EN PAUSA is shown.
+    $script:PauseRequested=$false
+    $script:Paused=$false
+    $script:CancelRequested=$false
+    $script:ConsoleControlsEnabled=$true
+    try { $script:ConsoleControlsEnabled=-not [Console]::IsInputRedirected } catch { $script:ConsoleControlsEnabled=$false }
+    Log 'CONTROLES: [P] Pausar con seguridad (termina juegos activos) | [R] Reanudar | [C] Cancelar el lote.'
+    if ($ControlFile) { Log 'Control por fichero habilitado para automatizacion avanzada.' }
+
+    function Set-ControlState([string]$state) {
+        if (-not $ControlFile) { return }
+        try {
+            [System.IO.File]::WriteAllText(($ControlFile+'.state'),$state,
+                (New-Object System.Text.UTF8Encoding($false)))
+        } catch {
+            # La escritura del estado auxiliar nunca debe detener conversiones.
+        }
+    }
+
+    function Receive-ControlCommand([string]$command) {
+        if ($script:CancelRequested) { return }
+        $normalized=($command.Trim()).ToUpperInvariant()
+        switch ($normalized) {
+            { $_ -in @('P','PAUSA','PAUSAR') } {
+                if (-not $script:PauseRequested) {
+                    $script:PauseRequested=$true
+                    $script:Paused=$false
+                    Set-ControlState 'PAUSANDO'
+                    Log ('PAUSANDO: no arrancaran mas juegos. Esperando a que terminen '+$active.Count+' conversion(es) activa(s) sin interrumpir sus PBP.')
+                }
+                break
+            }
+            { $_ -in @('R','REANUDAR') } {
+                if ($script:Paused) {
+                    $script:PauseRequested=$false
+                    $script:Paused=$false
+                    Set-ControlState 'EN_CURSO'
+                    Log 'REANUDADO: se procesaran los juegos pendientes; no se repiten los completados.'
+                } elseif ($script:PauseRequested) {
+                    Log 'Todavia PAUSANDO: termina primero la conversion de los juegos activos.' 'AVISO'
+                }
+                break
+            }
+            { $_ -in @('C','CANCELAR') } {
+                $script:CancelRequested=$true
+                $script:PauseRequested=$false
+                $script:Paused=$false
+                Set-ControlState 'CANCELANDO'
+                Log ('CANCELANDO: se detendran '+$active.Count+' proceso(s) activos y no se iniciaran mas juegos. CHD originales intactos.') 'AVISO'
+                break
+            }
+        }
+    }
+
+    function Poll-Controls {
+        if ($ControlFile -and [System.IO.File]::Exists($ControlFile)) {
+            try {
+                $command=[System.IO.File]::ReadAllText($ControlFile).Trim()
+                [System.IO.File]::Delete($ControlFile)
+                if ($command) { Receive-ControlCommand $command }
+            } catch {
+                Log ('AVISO: no se pudo leer la orden externa: '+$_.Exception.Message) 'AVISO'
+            }
+        }
+        if (-not $script:ConsoleControlsEnabled) { return }
+        try {
+            while ([Console]::KeyAvailable) {
+                $key=[Console]::ReadKey($true)
+                Receive-ControlCommand ([string]$key.KeyChar)
+            }
+        } catch {
+            # En automatizaciones con stdin redirigido no hay teclado.
+            $script:ConsoleControlsEnabled=$false
+        }
+    }
+
     function Start-Conversion([object]$job,[int]$ordinal) {
         $output=Join-Path $destDir ($job.Name+'.pbp')
         if ([System.IO.File]::Exists($output)) {
@@ -302,27 +381,29 @@ try {
         }
     }
 
-    # El planificador corre solo en el hilo de PowerShell. Cada proceso
-    # hijo convierte de forma independiente y se contabiliza al terminar.
-    # No se crean jobs de PowerShell que modifiquen archivos compartidos.
+    # El planificador corre solo en el hilo de PowerShell. Las tareas CLI
+    # activas terminan siempre sin interrupcion durante PAUSANDO; la opcion C
+    # cancela todas las tareas hijas y elimina solo temporales provisionales.
     try {
         while ($next -lt $script:Jobs.Count -or $active.Count -gt 0) {
-            while ($active.Count -lt $slots -and $next -lt $script:Jobs.Count) {
-                $job=$script:Jobs[$next]
-                $next++
-                $task=Start-Conversion $job $next
-                if ($null -ne $task) { [void]$active.Add($task) }
-            }
-            if ($active.Count -eq 0) { continue }
-            $finished=@($active.ToArray() | Where-Object { $_.Process.HasExited })
-            if ($finished.Count -eq 0) {
-                if (([DateTime]::UtcNow-$lastStatus).TotalSeconds -ge 15) {
-                    Log ('EN CURSO: '+$active.Count+' conversion(es); pendientes de iniciar: '+($script:Jobs.Count-$next))
-                    $lastStatus=[DateTime]::UtcNow
+            Poll-Controls
+            if ($script:CancelRequested) { break }
+
+            if (-not $script:PauseRequested) {
+                while ($active.Count -lt $slots -and $next -lt $script:Jobs.Count) {
+                    Poll-Controls
+                    if ($script:PauseRequested -or $script:CancelRequested) { break }
+                    $job=$script:Jobs[$next]
+                    $next++
+                    $task=Start-Conversion $job $next
+                    if ($null -ne $task) { [void]$active.Add($task) }
                 }
-                Start-Sleep -Milliseconds 200
-                continue
             }
+            if ($script:CancelRequested) { break }
+
+            # Incluso durante PAUSANDO finalizamos las tareas ya abiertas,
+            # validamos los nuevos PBP, copiamos SBI y limpiamos el staging.
+            $finished=@($active.ToArray() | Where-Object { $_.Process.HasExited })
             foreach ($task in $finished) {
                 try { Finish-Conversion $task }
                 finally {
@@ -333,10 +414,25 @@ try {
                     }
                 }
             }
+
+            if ($script:PauseRequested -and -not $script:Paused -and
+                $active.Count -eq 0 -and $next -lt $script:Jobs.Count) {
+                $script:Paused=$true
+                Set-ControlState 'EN_PAUSA'
+                Log ('EN PAUSA: 0 conversiones activas. '+($script:Jobs.Count-$next)+' pendiente(s). [R] Reanudar | [C] Cancelar.')
+            }
+            if (-not $script:PauseRequested -and $active.Count -gt 0 -and
+                ([DateTime]::UtcNow-$lastStatus).TotalSeconds -ge 15) {
+                Log ('EN CURSO: '+$active.Count+' conversion(es); pendientes de iniciar: '+($script:Jobs.Count-$next))
+                $lastStatus=[DateTime]::UtcNow
+            }
+            if ($next -lt $script:Jobs.Count -or $active.Count -gt 0) {
+                Start-Sleep -Milliseconds 150
+            }
         }
     } finally {
-        # Ctrl+C o excepcion general: no dejar procesos hijos
-        # escribiendo en carpetas que se van a borrar.
+        # Ctrl+C, excepcion o C: jamas borrar un staging si aun lo esta
+        # escribiendo un proceso. Los CHD originales NO se tocan.
         foreach ($task in @($active.ToArray())) {
             $process=$task.Process
             $stopped=$false
@@ -359,12 +455,19 @@ try {
         }
         $active.Clear()
     }
+    if ($script:CancelRequested) {
+        Log ('CANCELADO POR EL USUARIO: '+$script:OK+' correctos; '+$next+' asignados; '+($script:Jobs.Count-$next)+' sin iniciar. No se borraron CHD de origen.') 'AVISO'
+        Set-ControlState 'CANCELADO'
+    } else {
+        Set-ControlState 'TERMINADO'
+    }
     Log ('FIN: OK '+$script:OK+' | Ya existentes '+$script:Skipped+' | Fallos '+$script:Failed+' | Avisos '+$script:Warnings.Count)
     Log ('CHD convertidos: '+(MB $script:InputBytes)+' | PBP generados: '+(MB $script:OutputBytes))
     if ($script:InputBytes -gt 0) {
         Log ('Variacion respecto a CHD: '+(MB ($script:InputBytes-$script:OutputBytes))+' ('+((100*($script:InputBytes-$script:OutputBytes)/$script:InputBytes).ToString('N2',$culture))+' %)')
     }
     [System.IO.File]::WriteAllLines($report,[string[]]$script:LogLines.ToArray(),(New-Object System.Text.UTF8Encoding($true)))
+    if ($script:CancelRequested) { exit 3 }
     if ($script:Failed -gt 0) { exit 1 }
     exit 0
 } catch {
