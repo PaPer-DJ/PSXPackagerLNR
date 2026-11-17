@@ -40,7 +40,7 @@ namespace PSXPackagerGUI
         private readonly HashSet<int> _manuallySizedColumns = new();
         private bool _settingColumnWidths;
         private CancellationTokenSource _cancel;
-        private Process _activeProcess;
+        private readonly HashSet<Process> _activeProcesses = new();
         private bool _running;
         private string _planFolder;
         private int _planMode;
@@ -56,7 +56,8 @@ namespace PSXPackagerGUI
         {
             Interval = TimeSpan.FromSeconds(1)
         };
-        private Stopwatch _activeJobClock;
+        private readonly Dictionary<LnrConversionJob, Stopwatch> _activeJobClocks = new();
+        private int _activeWorkerCount = 1;
         private long _calibratedBytes;
         private double _calibratedSeconds;
         private bool _batchCanceled;
@@ -101,6 +102,12 @@ namespace PSXPackagerGUI
                 9 => 3,
                 _ => 1
             };
+            var preferredParallel = _preferences.PreferredParallelConversions;
+            foreach (ComboBoxItem item in ParallelCombo.Items)
+            {
+                if (int.TryParse(item.Tag?.ToString(), out var value) && value == preferredParallel)
+                { ParallelCombo.SelectedItem = item; break; }
+            }
             // Destructive options are intentionally never restored from preferences.
             DeleteChdCheck.IsChecked = false;
             AutoScrollCheck.IsChecked = _preferences.FollowActivity;
@@ -126,6 +133,7 @@ namespace PSXPackagerGUI
                     MultidiscMode = ModeCombo.SelectedIndex,
                     CompressionIndex = -1,
                     CompressionLevel = SelectedLevel,
+                    ParallelConversions = SelectedParallelSetting,
                     FollowActivity = AutoScrollCheck.IsChecked == true,
                     WindowWidth = ActualWidth,
                     WindowHeight = ActualHeight,
@@ -163,6 +171,11 @@ namespace PSXPackagerGUI
 
         private int SelectedLevel => int.Parse(((ComboBoxItem)LevelCombo.SelectedItem).Tag.ToString(),
                                                CultureInfo.InvariantCulture);
+        private int SelectedParallelSetting => int.TryParse(
+            (ParallelCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString(), out var value) ? value : 4;
+        private int SelectedParallelConversions => SelectedParallelSetting == 0
+            ? Math.Clamp(Environment.ProcessorCount / 2, 1, 4)
+            : SelectedParallelSetting;
 
         private bool _firstLoadScanned;
 
@@ -656,6 +669,7 @@ namespace PSXPackagerGUI
                     $"Se van a convertir {_jobs.Count} juegos a PBP.\n\n" +
                     $"Modo multidisco: {(IsMerged ? "Unidos" : "Separados")}\n" +
                     $"Compresión: {SelectedLevel}\n" +
+                    $"Conversiones simultáneas: {SelectedParallelConversions}\n" +
                     $"Destino: {Path.Combine(folder, "PBP")}\n\n" +
                     (DeleteChdCheck.IsChecked == true
                         ? "ATENCIÓN: has activado BORRAR los CHD convertidos correctamente.\n"
@@ -729,7 +743,10 @@ namespace PSXPackagerGUI
                 _calibratedSeconds = 0;
                 _batchCanceled = false;
                 _activeJob = null;
-                _activeJobClock = null;
+                _activeJobClocks.Clear();
+                _activeProcesses.Clear();
+                _activeWorkerCount = Math.Min(SelectedParallelConversions, _jobs.Count);
+                Append($"Conversión paralela: {_activeWorkerCount} juego(s) simultáneo(s). Los multidisco permanecen unidos.");
                 WorkProgress.Value = 0;
                 foreach (var job in _jobs)
                 {
@@ -772,13 +789,13 @@ namespace PSXPackagerGUI
                 if (started)
                 {
                     _batchClock.Stop();
-                    _activeJobClock = null;
+                    _activeJobClocks.Clear();
                     _batchTotalClock?.Stop();
                     _batchFinishedNormally = completedNormally;
                     _running = false;
                     _activeJob = null;
                     UpdateBatchProgress();
-                    _activeProcess = null;
+                    _activeProcesses.Clear();
                     _cancel?.Dispose();
                     _cancel = null;
                     SetControls(true);
@@ -818,6 +835,7 @@ namespace PSXPackagerGUI
             BrowseButton.IsEnabled = idle;
             ModeCombo.IsEnabled = idle;
             LevelCombo.IsEnabled = idle;
+            ParallelCombo.IsEnabled = idle;
             DeleteChdCheck.IsEnabled = idle;
             ShutdownCheck.IsEnabled = idle && !_shutdownPending;
             SourceBox.IsEnabled = idle;
@@ -831,10 +849,18 @@ namespace PSXPackagerGUI
             Directory.CreateDirectory(dest);
             var total = _jobs.Count;
             int processed = 0;
+            var nextJobIndex = -1;
 
-            foreach (var job in _jobs)
+            // Parallel jobs use isolated CLI processes and per-job staging.
+            // WPF UI state is only mutated on the captured dispatcher context.
+            async Task WorkerAsync()
             {
+                while (true)
+                {
                 cancel.ThrowIfCancellationRequested();
+                var jobIndex = Interlocked.Increment(ref nextJobIndex);
+                if (jobIndex >= total) return;
+                var job = _jobs[jobIndex];
                 _activeJob = job;
                 FollowActiveGame(job);
                 var finalPath = Path.Combine(dest, job.Name + ".pbp");
@@ -855,7 +881,7 @@ namespace PSXPackagerGUI
                     }
 
                     timer = Stopwatch.StartNew();
-                    _activeJobClock = timer;
+                    _activeJobClocks[job] = timer;
                     Directory.CreateDirectory(stage);
                     var input = job.Discs[0];
                     if (job.Discs.Count > 1)
@@ -866,7 +892,7 @@ namespace PSXPackagerGUI
                     }
                     job.ProgressPercent = 0;
                     job.Status = "Convirtiendo";
-                    Append($"[{processed + 1}/{total}] {job.Name} ({job.Discs.Count} disco/s)");
+                    Append($"[{jobIndex + 1}/{total}] {job.Name} ({job.Discs.Count} disco/s)");
                     var start = new ProcessStartInfo(cli)
                     {
                         UseShellExecute = false,
@@ -881,7 +907,7 @@ namespace PSXPackagerGUI
                         start.ArgumentList.Add(arg);
 
                     using var process = new Process { StartInfo = start };
-                    _activeProcess = process;
+                    _activeProcesses.Add(process);
                     if (!process.Start()) throw new InvalidOperationException("No se pudo iniciar la CLI.");
                     // Read stdout and stderr while conversion is running.
                     // The CLI emits "Progress: NN%" for each processing phase.
@@ -890,6 +916,7 @@ namespace PSXPackagerGUI
                     try
                     {
                         await process.WaitForExitAsync(cancel);
+                        cancel.ThrowIfCancellationRequested();
                         var outputs = await Task.WhenAll(outputTask, errorTask);
                         if (process.ExitCode != 0)
                         {
@@ -905,9 +932,10 @@ namespace PSXPackagerGUI
                     }
                     finally
                     {
-                        _activeProcess = null;
+                        _activeProcesses.Remove(process);
                     }
 
+                    cancel.ThrowIfCancellationRequested();
                     var produced = Directory.GetFiles(stage, "*.pbp", SearchOption.TopDirectoryOnly);
                     if (produced.Length != 1) throw new InvalidDataException(
                         $"Se esperaba un PBP; encontrados: {produced.Length}.");
@@ -924,6 +952,7 @@ namespace PSXPackagerGUI
                     }
                     if (File.Exists(finalPath))
                         throw new IOException("El PBP de destino apareció durante la conversión.");
+                    cancel.ThrowIfCancellationRequested();
                     File.Move(pbp, finalPath);
                     // A same-volume rename is atomic, but verify the committed
                     // file rather than trusting only the staging directory.
@@ -1007,7 +1036,7 @@ namespace PSXPackagerGUI
                     {
                         timer.Stop();
                         job.Elapsed ??= timer.Elapsed;
-                        _activeJobClock = null;
+                        _activeJobClocks.Remove(job);
                     }
                     if (Directory.Exists(stage))
                     {
@@ -1020,7 +1049,13 @@ namespace PSXPackagerGUI
                     ResizeJobColumns();
                     UpdateBatchProgress();
                 }
+                }
             }
+
+            var workers = Enumerable.Range(0, Math.Min(_activeWorkerCount, total))
+                                    .Select(_ => WorkerAsync()).ToArray();
+            await Task.WhenAll(workers);
+            cancel.ThrowIfCancellationRequested();
 
             Append($"FIN. Correctos: {_succeeded}, omitidos: {_skipped}, errores: {_failed}.");
             if (deleteOriginals)
@@ -1149,9 +1184,9 @@ namespace PSXPackagerGUI
                 }
 
                 var expectedSeconds = job.SourceBytes.Value * secondsPerByte;
-                if (job.Status == "Convirtiendo" && _activeJobClock != null)
+                if (job.Status == "Convirtiendo" && _activeJobClocks.TryGetValue(job, out var clock))
                 {
-                    var left = expectedSeconds - _activeJobClock.Elapsed.TotalSeconds;
+                    var left = expectedSeconds - clock.Elapsed.TotalSeconds;
                     // When a game runs substantially slower than previous ones,
                     // avoid falsely promising zero seconds remaining.
                     if (left <= 0)
@@ -1171,6 +1206,8 @@ namespace PSXPackagerGUI
                 return;
             }
 
+            // Estimated processor-seconds divided by available independent workers.
+            remaining /= Math.Max(1, _activeWorkerCount);
             EtaLabel.Text = "Tiempo restante estimado: ~" +
                             ReadableTime(TimeSpan.FromSeconds(Math.Min(remaining, TimeSpan.FromDays(99).TotalSeconds)));
         }
@@ -1235,14 +1272,14 @@ namespace PSXPackagerGUI
         private void Cancel_OnClick(object sender, RoutedEventArgs e)
         {
             if (!_running) return;
-            Append("Solicitada la cancelación al finalizar/cancelar el trabajo activo.");
+            Append("Solicitada la cancelación de todos los trabajos activos; se conservan CHD pendientes.");
             _cancel?.Cancel();
-            try
+            foreach (var process in _activeProcesses.ToArray())
             {
-                if (_activeProcess != null && !_activeProcess.HasExited)
-                    _activeProcess.Kill(entireProcessTree: true);
+                try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+                catch (InvalidOperationException) { /* Already exited */ }
+                catch (System.ComponentModel.Win32Exception) { /* Already exiting */ }
             }
-            catch { /* Process may have exited between checks */ }
         }
 
         private void SaveLog()
