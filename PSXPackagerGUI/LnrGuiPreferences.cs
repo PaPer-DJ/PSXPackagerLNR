@@ -33,7 +33,7 @@ namespace PSXPackagerGUI
                     _ => 3
                 };
         public bool FollowActivity { get; set; } = true;
-        public double WindowWidth { get; set; } = 1020;
+        public double WindowWidth { get; set; } = 1140;
         public double WindowHeight { get; set; } = 830;
         // Beta.10 favours a larger list of detected CHD games.
         public double LogPanelHeight { get; set; } = 200;
