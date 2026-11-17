@@ -67,7 +67,7 @@ jobs:
               assert os.path.isfile(path), f'Missing package: {path}'
               with zipfile.ZipFile(path) as z:
                   assert z.testzip() is None, f'Damaged ZIP: {path}'
-                  names = {n.replace('\\','/').lstrip('./') for n in z.namelist()}
+                  names = {n.replace('\\','/').removeprefix('./') for n in z.namelist()}
                   for name in required:
                       assert name in names, f'Missing {name} from {path}'
               print('Validated:', path, 'size=',os.path.getsize(path))
