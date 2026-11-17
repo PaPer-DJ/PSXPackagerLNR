@@ -530,6 +530,36 @@ jobs:
           if (-not $picker.Contains('Content="Entrar" Click="Go_OnClick"')) {
             throw "Entrar button no longer uses corrected handler"
           }
+          # Back must reselect (and focus) the folder we just left so
+          # users can immediately navigate with arrow keys and Enter.
+          if (-not $picker.Contains('PreviewKeyDown="FolderList_OnPreviewKeyDown"')) {
+            throw "Folder list does not receive Enter keyboard events"
+          }
+          foreach ($marker in @(
+            'var previousFolder = _currentFolder;',
+            'Navigate(parent.FullName, previousFolder);',
+            'private void Navigate(string path, string childToSelect = null)',
+            'FolderList.SelectedItem = previousChild;',
+            'FolderList.ScrollIntoView(previousChild);',
+            'FolderList.ItemContainerGenerator.ContainerFromItem(previousChild)',
+            'Keyboard.Focus(row);',
+            'Dispatcher.BeginInvoke(DispatcherPriority.Background',
+            'private void FolderList_OnPreviewKeyDown(',
+            'if (e.Key != Key.Enter && e.Key != Key.Return)',
+            'if (FolderList.SelectedItem is FolderPreview selected)',
+            'e.Handled = true;',
+            'Navigate(selected.FullPath);'
+          )) {
+            if (-not $pickerCode.Contains($marker)) {
+              throw "Keyboard/back folder navigation regression: $marker"
+            }
+          }
+          $back = $pickerCode.IndexOf('private void Up_OnClick(')
+          $keys = $pickerCode.IndexOf('private void FolderList_OnPreviewKeyDown(', $back)
+          $dbl = $pickerCode.IndexOf('private void FolderList_OnDoubleClick(', $keys)
+          if ($back -lt 0 -or $keys -le $back -or $dbl -le $keys) {
+            throw "Back and Enter keyboard handlers should be adjacent and non-destructive"
+          }
           foreach ($marker in @(
             'PlanOneFolder(',
             'LnrChdFolderScanner.EnumerateFolders(',
