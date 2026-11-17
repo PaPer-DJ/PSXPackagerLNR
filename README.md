@@ -50,6 +50,14 @@ de los autores originales.
 
 *Captura aportada por LaNaveRETRO de la beta.29 (build 465) ejecutándose en Windows: un lote de **272 PBP previstos**, con **95 trabajos completados** y el **35 % del lote** procesado en el momento de la imagen. Se aprecian la conversión activa, el progreso individual, la consola de actividad y la estimación del tiempo restante. La versión pública descargable corresponde a la compilación 466.*
 
+## Próximo desarrollo beta.30 — conversiones simultáneas
+
+La rama de desarrollo incorpora un **selector de 1, 2, 3, 4, 6, 8 conversiones simultáneas o Auto** para el flujo PS1 CHD → PBP por lotes. Cada juego se convierte en un proceso independiente, con su propio directorio temporal; los juegos multidisco se tratan como una única tarea. El valor inicial es **4**, y el modo **1** conserva la ejecución secuencial de beta.29. Auto utiliza entre 1 y 4 conversiones según la CPU.
+
+El objetivo es mejorar el rendimiento en equipos con varios núcleos y SSD. **No se promete un factor fijo de aceleración**: se requieren más RAM, CPU y espacio provisional, y el rendimiento dependerá del equipo. Cancelar afecta a todos los procesos, los PBP existentes no se sobrescriben y el borrado de CHD sigue siendo opcional y con confirmación explícita.
+
+**Estado:** funcionalidad en desarrollo y pendiente de validación real en Windows; **no forma parte de la descarga pública beta.29 build 466**. No se ha cambiado el runtime .NET 8 autocontenido ni el acceso directo aprobado.
+
 ## Inicio rápido en Windows
 
 Extrae el ZIP **GUI-win-x64** en una carpeta y abre la interfaz que prefieras:
