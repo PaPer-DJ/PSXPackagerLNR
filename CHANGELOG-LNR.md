@@ -1,12 +1,22 @@
 # Historial de versiones de PSXPackagerLNR
 
-## v0.1.0-beta.31 — en desarrollo (Toolkit con conversiones simultáneas)
+## v0.1.0-beta.31 — en desarrollo (Toolkit y exploración de subcarpetas)
+
+### Pausa/cancelación del Toolkit y mejora del navegador CHD
+
+- **Toolkit con controles en directo:** pulsar **P** solicita pausa segura entre juegos; se muestra **PAUSANDO** hasta que todos los CLI activos terminen, validen sus resultados y limpien temporales, y después **EN PAUSA**. **R** reanuda las conversiones pendientes y **C** cancela todo el lote, finalizando procesos activos y borrando solo los temporales incompletos; los CHD originales nunca se borran. El BAT muestra las instrucciones y diferencia el código de cancelación.
+- El planificador de PowerShell 5.1 sondea el teclado sin bloquear la cola, admite un canal opcional de control automatizado para pruebas y conserva los informes y datos de sesiones canceladas. La pausa no congela ni mata procesos; la cancelación es diferente y explícita.
+- **Navegador GUI:** intercambiados los botones para dejar **«Atrás»** a la izquierda y **«Entrar»** a su derecha; nueva casilla **«También subcarpetas»** en la misma línea inferior del aviso. La ventana es más ancha para conservar legibilidad.
+- **Conversión GUI recursiva opcional:** detecta CHD en subcarpetas (por defecto desactivada), mantiene el agrupamiento M3U dentro de cada carpeta y **refleja la estructura de carpetas dentro de PBP** para evitar colisiones de nombres entre subcarpetas. Nunca sigue enlaces/junciones ni reimporta las carpetas de salida `PBP`, herramientas o temporales.
+- Incorporadas pruebas automáticas Windows para la exploración recursiva, PBP de nombres repetidos en subcarpetas, archivos existentes, pausa segura, reanudación, cancelación, fallos y limpieza del Toolkit.
+
+
 
 - **Toolkit BAT/PowerShell Windows:** nuevo selector de **1, 2, 3, 4, 6, 8 y 0/Auto** conversiones simultáneas, con **4 predeterminado/recomendado HDD**, **8 recomendado SSD** y Auto entre 1 y 4 según CPU. También configurable con `-Parallel` en PowerShell 5.1.
 - El BAT muestra ahora **instrucciones antes de las preguntas**: dónde colocar CHD, posibilidad de arrastrar una carpeta al BAT, salida en subcarpeta PBP, M3U, conservación de originales, informes y ausencia de CHDMAN.
 - Procesamiento concurrente de **varios juegos** mediante procesos CLI separados, nunca varios hilos dentro del mismo PBP. Cada proceso tiene directorio temporal independiente y lectura asíncrona de stdout/stderr para evitar bloqueos; se informa del estado y finalización de cada título.
 - Seguridad conservada: no sobrescribir PBP ya existentes, validar cabecera/tamaño antes de mover a salida, limpiar temporales tras finalizar, conservar CHD/M3U/SBI y no detener el lote por un fallo aislado. Al interrumpir el PowerShell se intenta finalizar cada proceso hijo y limpiar sus temporales sin borrar CHD.
-- El modo `-PlanOnly` sigue disponible para los siete valores; los planes JSON incluyen el valor de concurrencia solicitado. **El Toolkit no añade por ahora la pausa cooperativa de la GUI**.
+- El modo `-PlanOnly` sigue disponible para los siete valores; los planes JSON incluyen el valor de concurrencia solicitado. **El Toolkit ahora incorpora pausa segura por teclado, reanudación y cancelación.**
 - Añadida prueba de humo en GitHub Actions (Windows PowerShell 5.1, CLI sintética sin juegos) para verificar que las conversiones se solapan respetando el máximo de trabajadores y que fallos/archivos existentes no dañan los originales.
 - **Pendiente de validar compilación CI y funcionamiento en el PC del usuario; no publicar beta.31 todavía.** La beta.30 build 523 pública, su etiqueta, los paquetes anteriores, el acceso directo y `master` permanecen intactos.
 
