@@ -148,7 +148,29 @@ namespace PSXPackagerGUI
             UpdateScope();
         }
 
-        private void Go_OnClick(object sender, RoutedEventArgs e) => Navigate(PathBox.Text);
+        private void Go_OnClick(object sender, RoutedEventArgs e)
+        {
+            // The former "Ir" button navigated only to PathBox.Text; when
+            // renamed "Entrar" that left the selected subfolder ignored.
+            // Give an explicitly edited/pasted path priority. Otherwise,
+            // enter the selected item in the left-hand subfolder list.
+            var typedPath = PathBox.Text?.Trim().Trim('"') ?? "";
+            if (!string.Equals(typedPath, _currentFolder,
+                               StringComparison.OrdinalIgnoreCase))
+            {
+                Navigate(typedPath);
+                return;
+            }
+
+            if (FolderList.SelectedItem is FolderPreview selected)
+            {
+                Navigate(selected.FullPath);
+                return;
+            }
+
+            StatusLabel.Text = "Selecciona una subcarpeta de la lista y pulsa «Entrar», " +
+                               "o escribe otra ruta y pulsa «Entrar».";
+        }
 
         private void PathBox_OnKeyDown(object sender, KeyEventArgs e)
         {
