@@ -142,7 +142,102 @@ try {
     Assert-Toolkit (-not (Test-Path (Join-Path $failure 'PBP\Fail Game.pbp'))) 'Failed result must not be committed'
     Assert-Toolkit (Test-Path (Join-Path $failure 'PBP\Working Game.pbp')) 'Other job must still finish'
     Assert-Toolkit (@(Get-ChildItem -LiteralPath (Join-Path $tools '_TEMP') -Directory -Filter 'LNR_*').Count -eq 0) 'Partial stages must be removed'
-    Write-Host 'Toolkit parallel smoke PASS: options, real overlap, max=4, M3U, SBI, skip, failure and temp cleanup.'
+    # PAUSAR is cooperative: active games must finish without their
+    # processes being killed. REANUDAR continues only the remaining jobs.
+    # CI has redirected stdin, so an explicit control file simulates P/R/C.
+    function New-Controller([string]$dir,[int]$parallel,[string]$control) {
+        $info=New-Object System.Diagnostics.ProcessStartInfo
+        $info.FileName=(Get-Command powershell.exe).Source
+        $info.Arguments=('-NoLogo -NoProfile -ExecutionPolicy Bypass -File "{0}" -SourceDir "{1}" -ToolsDir "{2}" -MultiMode Separados -Level 3 -Parallel {3} -ControlFile "{4}"' -f $script,$dir,$tools,$parallel,$control)
+        $info.UseShellExecute=$false
+        $info.CreateNoWindow=$true
+        $info.RedirectStandardInput=$true
+        $info.RedirectStandardOutput=$true
+        $info.RedirectStandardError=$true
+        $proc=New-Object System.Diagnostics.Process
+        $proc.StartInfo=$info
+        if (-not $proc.Start()) { throw 'Cannot start Toolkit control smoke child.' }
+        return [pscustomobject]@{
+            Process=$proc
+            Out=$proc.StandardOutput.ReadToEndAsync()
+            Err=$proc.StandardError.ReadToEndAsync()
+        }
+    }
+    function Wait-Condition([scriptblock]$predicate,[int]$seconds,[string]$message) {
+        $limit=[DateTime]::UtcNow.AddSeconds($seconds)
+        while ([DateTime]::UtcNow -lt $limit) {
+            if (& $predicate) { return }
+            Start-Sleep -Milliseconds 90
+        }
+        throw "Timed out waiting for $message"
+    }
+    function Send-Control([string]$path,[string]$key) {
+        $tmp=$path+'.new'
+        [System.IO.File]::WriteAllText($tmp,$key)
+        [System.IO.File]::Move($tmp,$path)
+    }
+
+    $pauseDir=Join-Path $base 'Pause Source'
+    [void](New-Item -ItemType Directory -Path $pauseDir -Force)
+    foreach($n in 1..9) {
+        [System.IO.File]::WriteAllBytes((Join-Path $pauseDir ("Pause Game $n.chd")),[byte[]]@(1,2,3,4))
+    }
+    $ctrl=Join-Path $base 'pause-command.txt'
+    $state=$ctrl+'.state'
+    $controller=New-Controller $pauseDir 3 $ctrl
+    try {
+        Wait-Condition { @(Get-ChildItem -LiteralPath (Join-Path $tools '_TEMP') -Directory -Filter 'LNR_*').Count -ge 2 } 20 'first active pause jobs'
+        Send-Control $ctrl 'P'
+        Wait-Condition { (Test-Path -LiteralPath $state) -and ((Get-Content -LiteralPath $state -Raw) -eq 'EN_PAUSA') } 25 'safe EN_PAUSA state'
+        Assert-Toolkit (-not $controller.Process.HasExited) 'Paused controller should remain alive'
+        $pausedCount=@(Get-ChildItem -LiteralPath (Join-Path $pauseDir 'PBP') -File -Filter '*.pbp').Count
+        Assert-Toolkit ($pausedCount -gt 0 -and $pausedCount -lt 9) "Pause must drain active games with pending work: $pausedCount"
+        Start-Sleep -Milliseconds 700
+        Assert-Toolkit (@(Get-ChildItem -LiteralPath (Join-Path $pauseDir 'PBP') -File -Filter '*.pbp').Count -eq $pausedCount) 'EN PAUSA started more jobs'
+        Send-Control $ctrl 'R'
+        Wait-Condition { (Test-Path -LiteralPath $state) -and ((Get-Content -LiteralPath $state -Raw) -eq 'EN_CURSO') } 10 'REANUDAR state'
+        Assert-Toolkit ($controller.Process.WaitForExit(45000)) 'Resumed Toolkit did not finish'
+        $outputText=$controller.Out.GetAwaiter().GetResult()
+        $errorText=$controller.Err.GetAwaiter().GetResult()
+        Assert-Toolkit ($controller.Process.ExitCode -eq 0) "Resume failed: $errorText"
+        Assert-Toolkit ($outputText.Contains('PAUSANDO:') -and $outputText.Contains('EN PAUSA:') -and $outputText.Contains('REANUDADO:')) 'Missing pause/resume visible states'
+        Assert-Toolkit (@(Get-ChildItem -LiteralPath (Join-Path $pauseDir 'PBP') -File -Filter '*.pbp').Count -eq 9) 'Resuming failed to convert all 9 games'
+        Assert-Toolkit (@(Get-ChildItem -LiteralPath $pauseDir -File -Filter '*.chd').Count -eq 9) 'Pause removed original CHDs'
+        Write-Host 'OK - safe drain-to-pause and resume without lost or duplicated games'
+    } finally {
+        if (-not $controller.Process.HasExited) { $controller.Process.Kill(); [void]$controller.Process.WaitForExit(10000) }
+        $controller.Process.Dispose()
+    }
+
+    # CANCELAR while active: partial outputs stay only in isolated staging,
+    # which must be removed after processes are terminated.
+    $cancelDir=Join-Path $base 'Cancel Source'
+    [void](New-Item -ItemType Directory -Path $cancelDir -Force)
+    foreach($n in 1..8) {
+        [System.IO.File]::WriteAllBytes((Join-Path $cancelDir ("Cancel Game $n.chd")),[byte[]]@(1,2,3,4))
+    }
+    $cancelCtrl=Join-Path $base 'cancel-command.txt'
+    $cancelState=$cancelCtrl+'.state'
+    $controller=New-Controller $cancelDir 4 $cancelCtrl
+    try {
+        Wait-Condition { @(Get-ChildItem -LiteralPath (Join-Path $tools '_TEMP') -Directory -Filter 'LNR_*').Count -ge 2 } 20 'active cancel jobs'
+        Send-Control $cancelCtrl 'C'
+        Assert-Toolkit ($controller.Process.WaitForExit(25000)) 'Cancelled Toolkit did not terminate'
+        $outputText=$controller.Out.GetAwaiter().GetResult()
+        $errorText=$controller.Err.GetAwaiter().GetResult()
+        Assert-Toolkit ($controller.Process.ExitCode -eq 3) "Cancel exit must be 3: $errorText"
+        Assert-Toolkit ((Get-Content -LiteralPath $cancelState -Raw) -eq 'CANCELADO') 'Missing cancellation status'
+        Assert-Toolkit ($outputText.Contains('CANCELANDO:') -and $outputText.Contains('CANCELADO POR EL USUARIO')) 'Missing cancellation log'
+        Assert-Toolkit (@(Get-ChildItem -LiteralPath $cancelDir -File -Filter '*.chd').Count -eq 8) 'Cancelled Toolkit deleted original CHDs'
+        Assert-Toolkit (@(Get-ChildItem -LiteralPath (Join-Path $tools '_TEMP') -Directory -Filter 'LNR_*').Count -eq 0) 'Cancelled Toolkit left provisional staging'
+        Assert-Toolkit (@(Get-ChildItem -LiteralPath (Join-Path $cancelDir 'PBP') -File -Filter '*.pbp').Count -lt 8) 'Cancelled Toolkit completed all jobs unexpectedly'
+        Write-Host 'OK - cancel kills active processes and preserves source data'
+    } finally {
+        if (-not $controller.Process.HasExited) { $controller.Process.Kill(); [void]$controller.Process.WaitForExit(10000) }
+        $controller.Process.Dispose()
+    }
+
+    Write-Host 'Toolkit parallel smoke PASS: options, real overlap, max=4, M3U, SBI, skip, failure, temp cleanup, pause/resume and cancellation.'
 }
 finally {
     if (Test-Path -LiteralPath $base) {
