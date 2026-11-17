@@ -19,6 +19,8 @@ namespace PSXPackagerGUI
         public int? CompressionLevel { get; set; }
         // 0 = Auto; existing installations without this setting default to four workers.
         public int ParallelConversions { get; set; } = 4;
+        // Off by default to preserve the original flat-folder behavior.
+        public bool IncludeSubfolders { get; set; } = false;
         public int PreferredParallelConversions =>
             ParallelConversions is 0 or 1 or 2 or 3 or 4 or 6 or 8 ? ParallelConversions : 4;
 
