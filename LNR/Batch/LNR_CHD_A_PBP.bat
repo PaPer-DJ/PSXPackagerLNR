@@ -117,11 +117,22 @@ choice /C SN /N /M "Iniciar conversion [S/N]: "
 if errorlevel 2 goto FIN
 
 echo.
+echo ================================================================
+echo CONTROLES DURANTE LA CONVERSION (EN ESTA VENTANA):
+echo   P  PAUSAR: termina los juegos activos antes de detener el lote.
+echo   R  REANUDAR: continua los juegos pendientes.
+echo   C  CANCELAR: detiene el lote y sus conversiones activas.
+echo       Los originales CHD siempre se conservan.
+echo ================================================================
+echo.
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%TOOLSDIR%\LNR_CHD_A_PBP.ps1" -SourceDir "%ROMDIR%" -ToolsDir "%TOOLSDIR%" -MultiMode "%MODE%" -Level %LEVEL% -Parallel %PARALLEL%
 set "RESULT=%ERRORLEVEL%"
 echo.
 if "%RESULT%"=="0" (
     echo [OK] Lote terminado. Revisa PBP y los informes en .tools\LNR_CHD_A_PBP\LOGS
+) else if "%RESULT%"=="3" (
+    echo [AVISO] Lote cancelado. Los PBP completados se conservan.
+    echo Los CHD originales no se han borrado.
 ) else (
     echo [AVISO] Hubo errores o faltan archivos. Codigo %RESULT%.
     echo Revisa los mensajes anteriores y los informes disponibles.
