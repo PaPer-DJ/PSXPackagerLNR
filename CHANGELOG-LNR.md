@@ -4,6 +4,7 @@
 
 ### Pausa/cancelación del Toolkit y mejora del navegador CHD
 
+- **Atajo Retroceso (Backspace) = Atrás:** desde la lista de carpetas o los controles del navegador, vuelve al directorio superior dejando seleccionada la carpeta anterior. No interfiere con Retroceso cuando se escribe en el cuadro de ruta.
 - **Navegación por teclado del explorador corregida:** al pulsar «Atrás» se vuelve al directorio superior con **la carpeta abandonada seleccionada y enfocada**. Se puede navegar con **↑/↓ + Enter** sin ratón. El botón «Entrar» también abre la carpeta seleccionada y sigue aceptando rutas manuales editadas. Añadida prueba automatizada de los manejadores y del foco recuperado.
 
 - **Toolkit con controles en directo:** pulsar **P** solicita pausa segura entre juegos; se muestra **PAUSANDO** hasta que todos los CLI activos terminen, validen sus resultados y limpien temporales, y después **EN PAUSA**. **R** reanuda las conversiones pendientes y **C** cancela todo el lote, finalizando procesos activos y borrando solo los temporales incompletos; los CHD originales nunca se borran. El BAT muestra las instrucciones y diferencia el código de cancelación.
