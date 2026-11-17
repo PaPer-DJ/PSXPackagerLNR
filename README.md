@@ -41,8 +41,9 @@ de los autores originales.
   (detalladas abajo). La Suite depende de CHDMAN en los modos indicados;
   no se debe confundir con crear PBP para Saturn o PS2.
 
-**[Descargar la primera beta pública v0.1.0-beta.29](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.29)**
-(Windows x64, formato portátil). La edición LNR sigue siendo una beta.
+**[Descargar PSXPackagerLNR v0.1.0-beta.30](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.30)** — versión beta para Windows x64, portátil sin instalación.
+
+[Consultar la beta.29 anterior](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.29).
 
 ## PSXPackagerLNR en funcionamiento: procesamiento real por lotes
 
@@ -50,17 +51,17 @@ de los autores originales.
 
 *Captura original de LaNaveRETRO con la **beta.29 build 465** en Windows: **272 PBP previstos, 170 completados (62 %)** en ese instante. Se aprecian el juego activo, el progreso individual y global, el registro, el tiempo restante y tanto **variaciones negativas (PBP menor que CHD)** como positivas (PBP mayor que CHD). La **build pública descargable es la 466**; esta sustitución es solo documental.*
 
-## Próximo desarrollo beta.30 — conversiones simultáneas
+## Beta.30 — conversiones simultáneas y pausa segura
 
-La rama de desarrollo incorpora un **selector de 1, 2, 3, 4, 6, 8 conversiones simultáneas o Auto** para el flujo PS1 CHD → PBP por lotes. Cada juego se convierte en un proceso independiente, con su propio directorio temporal; los juegos multidisco se tratan como una única tarea. El valor inicial es **4**, y el modo **1** conserva la ejecución secuencial de beta.29. Auto utiliza entre 1 y 4 conversiones según la CPU.
+La rama de desarrollo incorpora un **selector de 1, 2, 3, 4, 6, 8 conversiones simultáneas o Auto** para el flujo PS1 CHD → PBP por lotes. Cada juego se convierte en un proceso independiente, con su propio directorio temporal; los juegos multidisco se tratan como una única tarea. El valor inicial sigue siendo **4 — Recomendado (HDD)** y el valor **8 — Recomendado (SSD)** se ofrece para equipos con SSD y recursos suficientes; el modo **1** conserva la ejecución secuencial de beta.29. Auto utiliza entre 1 y 4 conversiones según la CPU. Son recomendaciones orientativas: un HDD saturado o un equipo con poca memoria puede requerir menos procesos.
 
-El objetivo es mejorar el rendimiento en equipos con varios núcleos y SSD. **No se promete un factor fijo de aceleración**: se requieren más RAM, CPU y espacio provisional, y el rendimiento dependerá del equipo. Cancelar afecta a todos los procesos, los PBP existentes no se sobrescriben y el borrado de CHD sigue siendo opcional y con confirmación explícita.
+**Prueba en el PC del autor:** con **4 conversiones simultáneas**, observó una aceleración global **próxima a 4 veces**, sin saturar de forma apreciable CPU o SSD. Según el Administrador de tareas, cada conversión utilizó aproximadamente **17 MB/s de escritura y 10,5 MB/s de lectura**. Son cifras de una prueba real concreta, **no garantías de rendimiento para otros equipos**. La sugerencia de **8 para SSD** se basa en el margen de recursos observado, pero **no hay todavía una medida que demuestre una aceleración de ocho veces**. Cancelar afecta a todos los procesos, los PBP existentes no se sobrescriben y el borrado de CHD sigue siendo opcional y con confirmación explícita.
 
 **Pausa segura:** el botón de la interfaz LNR cambia de **Convertir** a **Pausar**, luego **Pausando...** mientras terminan íntegramente los juegos activos y finalmente **Reanudar** cuando no queda ninguna operación abierta. Durante la pausa no se asignan nuevos juegos y no se interrumpe ningún PBP a mitad de escritura; al reanudar se procesan los pendientes. **Cancelar** sigue disponible y tiene una función diferente: interrumpe el lote.
 
 Los selectores de **Multidisco**, **Compresión** y **Conversiones simultáneas** ahora están alineados en una sola fila. Los detalles de consumo de recursos están en la ayuda del selector.
 
-**Estado:** funcionalidad en desarrollo y pendiente de validación real en Windows; **no forma parte de la descarga pública beta.29 build 466**. No se ha cambiado el runtime .NET 8 autocontenido ni el acceso directo aprobado.
+**Estado:** beta.30 validada por el autor en Windows con build 513 antes de la publicación pública. Se mantiene .NET 8 autocontenido, el acceso directo aprobado y el nivel de compresión 3. La beta.29 publicada permanece sin cambios.
 
 ## Inicio rápido en Windows
 
@@ -74,9 +75,9 @@ No se instala nada ni se utiliza un ejecutable lanzador adicional. **Conserva ju
 
 ## Versionado y descargas identificables
 
-La versión de desarrollo actual es **v0.1.0-beta.30** (en pruebas). La última **beta pública** descargable continúa siendo **v0.1.0-beta.29 build 466**. Su número se define en [LNR/VERSION](LNR/VERSION) y sus novedades se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
+La versión LNR más reciente es **v0.1.0-beta.30** (pre-release pública); la anterior **v0.1.0-beta.29** sigue disponible. Su número se define en [LNR/VERSION](LNR/VERSION) y sus novedades se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
-Cada compilación de GitHub Actions añade un número de ejecución único, por ejemplo `PSXPackagerLNR-v0.1.0-beta.29-bNN-GUI-win-x64.zip`. También se generan los paquetes de CLI y Toolkit.
+Cada compilación de GitHub Actions añade un número de ejecución único, por ejemplo `PSXPackagerLNR-v0.1.0-beta.30-bNN-GUI-win-x64.zip`. También se generan los paquetes de CLI y Toolkit.
 
 - [Descargas de pruebas (Actions)](https://github.com/PaPer-DJ/PSXPackagerLNR/actions).
 - Las compilaciones de Actions son temporales y pueden caducar a los 30 días; conserva las que necesites.
