@@ -64,8 +64,12 @@ la Suite sí lo requieren.
 ### Navegador de carpetas: Atrás, Entrar y «También subcarpetas» (beta.31)
 
 El navegador incorporado mantiene la vista previa de CHD y muestra los controles
-**Atrás** (sube a la carpeta superior), **Entrar** (abre la ruta escrita) y
-**Explorar Windows…**. La opción **«También subcarpetas»** está junto al
+**Atrás**, **Entrar** y **Explorar Windows…**. **Atrás** sube a la carpeta superior,
+**deja seleccionada la carpeta de la que acabas de salir y devuelve el foco a la lista**.
+Puedes moverte por las subcarpetas con **↑/↓** y pulsar **Enter** para acceder a la
+seleccionada sin utilizar el ratón. El botón **Entrar** y el doble clic también
+abren la carpeta elegida; si has pegado una ruta distinta arriba, prevalece
+la ruta escrita. La opción **«También subcarpetas»** está junto al
 aviso de análisis, desactivada por defecto para conservar el comportamiento
 original. Su selección se recuerda entre aperturas.
 
