@@ -32,6 +32,18 @@ echo ROMs:        "%ROMDIR%"
 echo HERRAMIENTAS:"%TOOLSDIR%"
 echo DESTINO:     "%ROMDIR%\PBP"
 echo.
+echo COMO USARLO:
+echo   1. Copia este Toolkit dentro de una carpeta con juegos .CHD,
+echo      o arrastra otra carpeta de CHD al archivo BAT.
+echo   2. Elige si quieres un PBP por disco o un PBP multidisco.
+echo      En modo Unidos se respetan los M3U existentes.
+echo   3. Escoge la compresion y cuantos juegos procesar a la vez.
+echo   4. Los resultados se guardaran en la carpeta PBP indicada.
+echo.
+echo SEGURIDAD: los CHD, M3U y SBI originales se conservan SIEMPRE.
+echo No se sobrescriben PBP existentes y no se necesita CHDMAN.
+echo Se guardara un informe de actividad en .tools\LNR_CHD_A_PBP\LOGS.
+echo.
 echo MODO MULTIDISCO:
 echo.
 echo   1 - SEPARADOS: un PBP por CHD, nombre original conservado.
@@ -61,19 +73,42 @@ goto ASKLEVEL
 
 :LEVEL1
 set "LEVEL=1"
-goto CONFIRM
+goto ASKPARALLEL
 :LEVEL3
 set "LEVEL=3"
-goto CONFIRM
+goto ASKPARALLEL
 :LEVEL5
 set "LEVEL=5"
-goto CONFIRM
+goto ASKPARALLEL
 :LEVEL9
 set "LEVEL=9"
 
+:ASKPARALLEL
+echo.
+echo CONVERSIONES SIMULTANEAS:
+echo   1 - SECUENCIAL: un juego cada vez.
+echo   2 - DOS juegos a la vez.
+echo   3 - TRES juegos a la vez.
+echo   4 - RECOMENDADO PARA HDD [por defecto].
+echo   6 - SEIS juegos a la vez.
+echo   8 - RECOMENDADO PARA SSD [requiere recursos suficientes].
+echo   0 - AUTO: entre 1 y 4 conversiones segun la CPU.
+echo.
+echo Mas conversiones necesitan mas RAM y espacio temporal.
+echo La velocidad real depende del equipo y del tipo de almacenamiento.
+echo.
+set "PARALLEL="
+set /p "PARALLEL=Numero de conversiones [4]: "
+if not defined PARALLEL set "PARALLEL=4"
+if /I "%PARALLEL%"=="A" set "PARALLEL=0"
+if /I "%PARALLEL%"=="AUTO" set "PARALLEL=0"
+for %%N in (0 1 2 3 4 6 8) do if "%PARALLEL%"=="%%N" goto CONFIRM
+echo [AVISO] Opcion no valida: elige 1, 2, 3, 4, 6, 8 o 0 para Auto.
+goto ASKPARALLEL
+
 :CONFIRM
 echo.
-echo MODO: %MODE%  /  NIVEL: %LEVEL%
+echo MODO: %MODE%  /  NIVEL: %LEVEL%  /  SIMULTANEAS: %PARALLEL% (0 = Auto)
 echo Solo se convertiran CHD presentes directamente en la carpeta.
 echo Los CHD originales nunca se borran ni modifican.
 echo Los PBP existentes no se sobrescriben.
@@ -82,7 +117,7 @@ choice /C SN /N /M "Iniciar conversion [S/N]: "
 if errorlevel 2 goto FIN
 
 echo.
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%TOOLSDIR%\LNR_CHD_A_PBP.ps1" -SourceDir "%ROMDIR%" -ToolsDir "%TOOLSDIR%" -MultiMode "%MODE%" -Level %LEVEL%
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%TOOLSDIR%\LNR_CHD_A_PBP.ps1" -SourceDir "%ROMDIR%" -ToolsDir "%TOOLSDIR%" -MultiMode "%MODE%" -Level %LEVEL% -Parallel %PARALLEL%
 set "RESULT=%ERRORLEVEL%"
 echo.
 if "%RESULT%"=="0" (
