@@ -7,8 +7,7 @@ no se atribuye la creacion de PSXPackager.
 
 ## Instalacion portable
 
-Descarga el artefacto de GitHub Actions y extrae el fichero
-PSXPackagerLNR-Toolkit-win-x64.zip directamente en tu carpeta de juegos.
+Descarga el ZIP **Toolkit-win-x64** de la beta de desarrollo (GitHub Actions) y extráelo directamente en una carpeta que contenga tus archivos CHD. La última versión pública anterior sigue disponible en GitHub Releases. Este README describe el Toolkit con paralelismo, en desarrollo para beta.31.
 
     C:\roms\psx\
       LNR_CHD_A_PBP.bat          <- Lanzar aqui
@@ -28,7 +27,8 @@ PSXPackagerLNR-Toolkit-win-x64.zip directamente en tu carpeta de juegos.
         Juego 2.pbp
 
 - Ejecuta cualquiera de los dos BAT. Ambos toman por defecto como origen
-  la carpeta de ROMs que contiene .tools.
+  la carpeta de ROMs que contiene .tools. **Antes de preguntar**, el BAT muestra
+  instrucciones breves, las rutas de origen y destino y las reglas de seguridad.
 - Puedes arrastrar una carpeta de CHD sobre el BAT: se procesaran
   sus CHD y los PBP se guardaran en la subcarpeta PBP.
 - Solo procesa CHD de la carpeta elegida (no recursivamente).
@@ -48,6 +48,8 @@ PSXPackagerLNR-Toolkit-win-x64.zip directamente en tu carpeta de juegos.
   La GUI clásica, la GUI por lotes, el BAT/PowerShell y la CLI LNR
   usan 3 por defecto en instalaciones nuevas; se respetan preferencias
   previamente guardadas en las interfaces gráficas.
+- **Conversiones simultaneas (beta.31):** 1 (secuencial), 2, 3, **4 (recomendado HDD y predeterminado)**, 6, **8 (recomendado SSD)** y **0/Auto** (entre 1 y 4 según CPU). La elección se pide después de la compresión y antes de confirmar el lote. En PowerShell puede utilizarse `-Parallel 4`, `-Parallel 8` o `-Parallel 0`. Un juego multidisco se ejecuta como una sola tarea, aunque haya varios procesos activos.
+- Estas recomendaciones HDD/SSD proceden de pruebas con la GUI LNR: con 4 procesos se observó una aceleración próxima a 4 veces en una colección concreta. El escalado con 8 procesos no se ha medido universalmente; no se garantiza ningún factor fijo.
 - En pruebas propias sobre una PSP original, los PBP creados con
   niveles 1–3 cargaron más rápido que 4 o 5 en determinados momentos
   de algunos juegos de PS1. Las ganancias de tamaño al pasar a 4–5 y 9
@@ -59,7 +61,10 @@ PSXPackagerLNR-Toolkit-win-x64.zip directamente en tu carpeta de juegos.
 - Los PBP existentes no se sobrescriben.
 - Convierte CHD directamente a PBP, sin BIN/CUE intermedios.
 - Cada conversion se prepara en un directorio temporal independiente
-  dentro de las herramientas.
+  dentro de las herramientas. En paralelo, cada juego utiliza **su propio
+  proceso `psxpackager.exe` y directorio provisional**. No se modifican los CHD.
+- El Toolkit **no dispone del boton Pausar/Reanudar de la GUI**; si necesitas
+  pausa segura entre juegos, utiliza la GUI beta.30 o posterior.
 - Comprueba salida de la CLI, tamano minimo y cabecera PBP.
 - Mueve el PBP correcto a la carpeta PBP tras las comprobaciones.
 - Limpia los temporales tanto si el trabajo se completa como si falla.
@@ -74,7 +79,7 @@ PSXPackagerLNR-Toolkit-win-x64.zip directamente en tu carpeta de juegos.
 
 Desde PowerShell, dentro de la carpeta de ROMs:
 
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".tools\LNR_CHD_A_PBP\LNR_CHD_A_PBP.ps1" -SourceDir "C:\roms\psx" -ToolsDir "C:\roms\psx\.tools\LNR_CHD_A_PBP" -MultiMode Unidos -Level 5 -PlanOnly
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".tools\LNR_CHD_A_PBP\LNR_CHD_A_PBP.ps1" -SourceDir "C:\roms\psx" -ToolsDir "C:\roms\psx\.tools\LNR_CHD_A_PBP" -MultiMode Unidos -Level 3 -Parallel 4 -PlanOnly
 
 El workflow prueba el planificador de ambos modos con nombres ficticios.
 Esto no sustituye una prueba real con imagenes CHD.
@@ -90,6 +95,9 @@ No se incluyen juegos comerciales, BIOS ni imagenes protegidas.
 
 ## Desarrollo
 
-Los scripts se mantienen en LNR/Batch/. GitHub Actions genera tres ZIP:
-CLI, GUI y Toolkit portable con los scripts y el CLI. La personalizacion
-visual de la GUI quedara para una fase posterior.
+Los scripts se mantienen en `LNR/Batch/`. GitHub Actions genera tres ZIP:
+CLI, GUI y Toolkit portátil con los scripts y el motor CLI. El planificador
+paralelo del Toolkit utiliza los **mismos conceptos de aislamiento por juego**
+que la GUI, pero no requiere abrir ninguna ventana gráfica. Se comprueba con
+una prueba de humo de procesos concurrentes sintéticos en Windows PowerShell 5.1,
+sin necesidad de ROMs comerciales.
