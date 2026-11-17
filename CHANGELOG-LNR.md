@@ -15,6 +15,13 @@ La autoria original y la licencia MIT se conservan.
 
 ## Documentación pública ampliada — 17 noviembre 2026 (sin cambios de binarios)
 
+### Nuevas capturas originales en la documentación (17/11/2026)
+
+- Sustituida la captura de la GUI beta.29 build 465 por la nueva, con **272 PBP previstos y 170 completados (62 %)**, mostrando variaciones CHD→PBP negativas y positivas, seguimiento del juego activo, registro y ETA global.
+- Sustituida la comparación de *Actua Soccer 3 (Europe)* por la imagen original mejor ordenada: BIN, PBP niveles 1/3/5/9, CHD y CUE. Se conservan los valores medidos; las capturas solo acreditan tamaños, no tiempos de carga.
+- Se conservan **los nombres y las rutas** de ambos PNG para no romper enlaces. README, manual y descripción pública beta.29 actualizados.
+- Cambio **solo documental**: sin modificar los ZIP, etiqueta beta.29, binarios, motor, `master` ni acceso directo aprobado.
+
 ### Corrección documental posterior: prueba completa de compresión
 
 - Incorporada la **captura original de Actua Soccer 3 (Europe)** con

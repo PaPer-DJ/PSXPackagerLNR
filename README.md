@@ -46,9 +46,9 @@ de los autores originales.
 
 ## PSXPackagerLNR en funcionamiento: procesamiento real por lotes
 
-![Captura real de PSXPackagerLNR beta.29 convirtiendo juegos PS1 de CHD a PBP por lotes, con estados por juego, progreso global y registro de actividad](docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes.png)
+![Captura original de PSXPackagerLNR beta.29: 170 de 272 PBP completados, variaciones CHD/PBP positivas y negativas, progreso y registro](docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes.png)
 
-*Captura aportada por LaNaveRETRO de la beta.29 (build 465) ejecutándose en Windows: un lote de **272 PBP previstos**, con **95 trabajos completados** y el **35 % del lote** procesado en el momento de la imagen. Se aprecian la conversión activa, el progreso individual, la consola de actividad y la estimación del tiempo restante. La versión pública descargable corresponde a la compilación 466.*
+*Captura original de LaNaveRETRO con la **beta.29 build 465** en Windows: **272 PBP previstos, 170 completados (62 %)** en ese instante. Se aprecian el juego activo, el progreso individual y global, el registro, el tiempo restante y tanto **variaciones negativas (PBP menor que CHD)** como positivas (PBP mayor que CHD). La **build pública descargable es la 466**; esta sustitución es solo documental.*
 
 ## Próximo desarrollo beta.30 — conversiones simultáneas
 
@@ -96,11 +96,9 @@ permite comparar el tamaño de los archivos BIN y CHD del mismo título.
 | PBP — nivel 9 | **274.000 KB** |
 | CUE (archivo auxiliar de pistas) | 1 KB |
 
-![Captura original de Actua Soccer 3 (Europe): tamaños de PBP en niveles 1, 3, 5 y 9, y comparación con BIN, CHD y CUE](docs/images/psxpackagerlnr-niveles-compresion-actua-soccer3.png)
+![Captura original ordenada de Actua Soccer 3 (Europe): BIN, PBP de niveles 1/3/5/9, CHD y CUE con sus tamaños en Windows](docs/images/psxpackagerlnr-niveles-compresion-actua-soccer3.png)
 
-*Captura real aportada por LaNaveRETRO. Los tamaños están transcritos
-**tal como los presenta el Explorador de Windows en KB**, que los
-redondea; no deben confundirse con bytes exactos.*
+*Captura original más clara y ordenada aportada por LaNaveRETRO: BIN, PBP en niveles 1/3/5/9, CHD y CUE del mismo juego. Los tamaños se presentan **tal como los muestra el Explorador de Windows en KB** (redondeados, no bytes exactos). La imagen compara tamaños, **no velocidades de carga en PSP**.*
 
 **Lo que enseñan estas mediciones:**
 

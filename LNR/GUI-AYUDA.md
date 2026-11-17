@@ -21,9 +21,9 @@ firmware/BIOS **no** están incluidos.
 
 ### Captura real de una conversión por lotes
 
-![Interfaz PSXPackagerLNR beta.29 durante la conversión de 272 juegos de PS1 desde CHD a PBP](../docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes.png)
+![Interfaz PSXPackagerLNR beta.29: 170 de 272 conversiones y variaciones CHD a PBP positivas y negativas](../docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes.png)
 
-*Ejemplo real de LaNaveRETRO: beta.29 (build 465), con 95 de 272 trabajos completados en el momento de la captura. La lista muestra cada juego, tiempo y estado; debajo se ven el registro de actividad, el progreso total y el tiempo restante estimado.*
+*Ejemplo real de LaNaveRETRO, **beta.29 build 465**: **170 de 272 trabajos completados (62 %)**. La tabla muestra **variación negativa** (PBP menor que CHD) y positiva (PBP mayor que CHD); también figuran juego activo, tiempo por juego, registro, progreso global y ETA. La build pública de beta.29 es la **466**.*
 
 ## 2. Cómo abrir PSXPackagerLNR (Windows)
 
@@ -101,7 +101,9 @@ no se ha demostrado que sea siempre el nivel más rápido al reproducir.
 
 ### Prueba con tamaños reales: Actua Soccer 3 (Europe)
 
-![Captura de tamaños de Actua Soccer 3 entre compresiones 1, 3, 5 y 9 y formatos BIN/CHD](../docs/images/psxpackagerlnr-niveles-compresion-actua-soccer3.png)
+![Captura ordenada de Actua Soccer 3: BIN, PBP niveles 1/3/5/9, CHD y CUE con tamaños reales mostrados por Windows](../docs/images/psxpackagerlnr-niveles-compresion-actua-soccer3.png)
+
+*Captura original ordenada, con tamaños en KB redondeados por Windows. Acredita las diferencias de tamaño, no tiempos de carga.*
 
 | Formato / compresión | Tamaño visible en Windows |
 | --- | ---: |
