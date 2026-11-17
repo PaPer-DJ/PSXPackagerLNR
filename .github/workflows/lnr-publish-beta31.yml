@@ -1,0 +1,157 @@
+name: Publish verified PSXPackagerLNR beta.31 build 620
+
+on:
+  push:
+    branches:
+      - lnr/windows-chd-build
+    paths:
+      - ".github/workflows/lnr-publish-beta31.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: lnr-release-beta31
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'PaPer-DJ/PSXPackagerLNR'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact tested beta.31 source
+        uses: actions/checkout@v4
+        with:
+          ref: 328ea04e79011191ab434759c52ca42c32cb0bf9
+          persist-credentials: false
+
+      - name: Verify beta.31 build and publish protected pre-release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo='PaPer-DJ/PSXPackagerLNR'
+          tag='v0.1.0-beta.31'
+          pinned='328ea04e79011191ab434759c52ca42c32cb0bf9'
+          run=44102597762
+          build=620
+          artifact='PSXPackagerLNR-v0.1.0-beta.31-b620-Windows-x64'
+          prefix='PSXPackagerLNR-v0.1.0-beta.31-b620'
+          oldmaster='453c0e7b11fa46d78fa1939473923699894fde03'
+          oldtag30='d738ef6fb05f1318bcc14dc08425eab6518f35cc'
+          oldtag29='69dce2b57330ff3cdb2b1bec78d337500026796d'
+
+          # Never publish a different source or change previous releases.
+          test "$(git rev-parse HEAD)" = "$pinned"
+          test "$(tr -d '\r\n' < LNR/VERSION)" = '0.1.0-beta.31'
+          grep -Fq 'v0.1.0-beta.31' README.md
+          grep -Fq '## v0.1.0-beta.31' CHANGELOG-LNR.md
+          grep -Fq 'P — Pausar' LNR/RELEASE-NOTES-beta31.md
+          grep -Fq 'Retroceso (Backspace)' LNR/RELEASE-NOTES-beta31.md
+          test -s LICENSE
+          test "$(gh api "repos/$repo/branches/master" --jq '.commit.sha')" = "$oldmaster"
+          test "$(gh api "repos/$repo/git/ref/tags/v0.1.0-beta.30" --jq '.object.sha')" = "$oldtag30"
+          test "$(gh api "repos/$repo/git/ref/tags/v0.1.0-beta.29" --jq '.object.sha')" = "$oldtag29"
+          for old in v0.1.0-beta.30 v0.1.0-beta.29; do
+            previous="$(gh api "repos/$repo/releases/tags/$old")"
+            test "$(jq -r '.draft' <<< "$previous")" = 'false'
+            test "$(jq -r '.prerelease' <<< "$previous")" = 'true'
+            test "$(jq '.assets | length' <<< "$previous")" = '4'
+          done
+
+          ci="$(gh api "repos/$repo/actions/runs/$run")"
+          test "$(jq -r '.head_sha' <<< "$ci")" = "$pinned"
+          test "$(jq -r '.status' <<< "$ci")" = 'completed'
+          test "$(jq -r '.conclusion' <<< "$ci")" = 'success'
+          test "$(jq -r '.run_number' <<< "$ci")" = "$build"
+          artifact_data="$(gh api "repos/$repo/actions/runs/$run/artifacts")"
+          test "$(jq --arg name "$artifact" '[.artifacts[] | select(.name==$name and .expired==false)] | length' <<< "$artifact_data")" = '1'
+
+          mkdir -p dist
+          gh run download "$run" --repo "$repo" --name "$artifact" --dir dist
+          for edition in GUI CLI Toolkit; do
+            filename="dist/$prefix-$edition-win-x64.zip"
+            test -s "$filename" || { echo "Missing ZIP $filename" >&2; exit 1; }
+            unzip -t "$filename" >/dev/null
+          done
+          gui="dist/$prefix-GUI-win-x64.zip"
+          cli="dist/$prefix-CLI-win-x64.zip"
+          toolkit="dist/$prefix-Toolkit-win-x64.zip"
+          unzip -Z1 "$gui" | grep -Fxq '#PSXPackagerLNR.lnk'
+          unzip -Z1 "$gui" | grep -Fxq 'PSXPackagerGUI.exe'
+          unzip -Z1 "$gui" | grep -Fxq 'psxpackager.exe'
+          unzip -Z1 "$cli" | grep -Fxq 'psxpackager.exe'
+          unzip -Z1 "$toolkit" | grep -Fxq 'LNR_CHD_A_PBP.bat'
+          unzip -Z1 "$toolkit" | grep -Fxq '.tools/LNR_CHD_A_PBP/LNR_CHD_A_PBP.ps1'
+          test "$(unzip -p "$gui" LNR-VERSION.txt | tr -d '\r\n')" = 'v0.1.0-beta.31 (b620)'
+          test "$(unzip -p "$cli" LNR-VERSION.txt | tr -d '\r\n')" = 'v0.1.0-beta.31 (b620)'
+          (
+            cd dist
+            sha256sum "$prefix"-*.zip > SHA256SUMS.txt
+            sha256sum -c SHA256SUMS.txt
+          )
+          echo 'Verified all three original build 620 ZIPs and SHA256SUMS.txt'
+
+          # Never rewrite a pre-existing tag.
+          if gh api "repos/$repo/git/ref/tags/$tag" > /tmp/beta31-tag.json 2>/dev/null; then
+            test "$(jq -r '.object.sha' < /tmp/beta31-tag.json)" = "$pinned"
+          else
+            gh api -X POST "repos/$repo/git/refs" \
+              -f "ref=refs/tags/$tag" -f "sha=$pinned" >/dev/null
+          fi
+          test "$(gh api "repos/$repo/git/ref/tags/$tag" --jq '.object.sha')" = "$pinned"
+
+          # Draft releases are intentionally absent from the by-tag endpoint.
+          # Enumerate releases to find the draft on first run/retry.
+          all_releases="$(gh api "repos/$repo/releases?per_page=50")"
+          existing_count="$(jq --arg t "$tag" '[.[] | select(.tag_name==$t)] | length' <<< "$all_releases")"
+          test "$existing_count" = '0' || test "$existing_count" = '1'
+          if [ "$existing_count" = '0' ]; then
+            gh release create "$tag" "$gui" "$cli" "$toolkit" dist/SHA256SUMS.txt \
+              --repo "$repo" --title 'PSXPackagerLNR v0.1.0-beta.31 — Toolkit paralelo y navegador mejorado' \
+              --notes-file LNR/RELEASE-NOTES-beta31.md \
+              --target "$pinned" --verify-tag --draft --prerelease
+          fi
+
+          all_releases="$(gh api "repos/$repo/releases?per_page=50")"
+          rid="$(jq -r --arg t "$tag" '.[] | select(.tag_name==$t) | .id' <<< "$all_releases")"
+          test -n "$rid" && test "$rid" != 'null'
+          endpoint="repos/$repo/releases/$rid"
+          staged="$(gh api "$endpoint")"
+          test "$(jq -r '.tag_name' <<< "$staged")" = "$tag"
+          test "$(jq -r '.target_commitish' <<< "$staged")" = "$pinned"
+          test "$(jq -r '.prerelease' <<< "$staged")" = 'true'
+          test "$(jq '.assets | length' <<< "$staged")" = '4'
+          for name in \
+            "$prefix-CLI-win-x64.zip" \
+            "$prefix-GUI-win-x64.zip" \
+            "$prefix-Toolkit-win-x64.zip" \
+            SHA256SUMS.txt
+          do
+            test "$(jq --arg n "$name" '[.assets[] | select(.name==$n and .size>0)] | length' <<< "$staged")" = '1'
+          done
+          test "$(jq -r '.body' <<< "$staged" | grep -c 'Retroceso') " -gt 0
+          test "$(jq -r '.body' <<< "$staged" | grep -c 'Pausar') " -gt 0
+
+          original_assets="$(jq -c '[.assets[] | {id,name,size}] | sort_by(.id)' <<< "$staged")"
+          if [ "$(jq -r '.draft' <<< "$staged")" = 'true' ]; then
+            gh api -X PATCH "$endpoint" -F draft=false -F prerelease=true >/dev/null
+          fi
+          final="$(gh api "repos/$repo/releases/tags/$tag")"
+          test "$(jq -r '.id' <<< "$final")" = "$rid"
+          test "$(jq -r '.draft' <<< "$final")" = 'false'
+          test "$(jq -r '.prerelease' <<< "$final")" = 'true'
+          test "$(jq -r '.target_commitish' <<< "$final")" = "$pinned"
+          test "$(jq -c '[.assets[] | {id,name,size}] | sort_by(.id)' <<< "$final")" = "$original_assets"
+          test "$(gh api "repos/$repo/git/ref/tags/$tag" --jq '.object.sha')" = "$pinned"
+          test "$(gh api "repos/$repo/git/ref/tags/v0.1.0-beta.30" --jq '.object.sha')" = "$oldtag30"
+          test "$(gh api "repos/$repo/git/ref/tags/v0.1.0-beta.29" --jq '.object.sha')" = "$oldtag29"
+          test "$(gh api "repos/$repo/branches/master" --jq '.commit.sha')" = "$oldmaster"
+
+          url="$(jq -r '.html_url' <<< "$final")"
+          echo "BETA.31 PUBLIC RELEASE VERIFIED: $url"
+          echo '### PSXPackagerLNR beta.31 public pre-release' >> "$GITHUB_STEP_SUMMARY"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Pinned commit: $pinned · Build 620 · GUI / CLI / Toolkit / SHA256" >> "$GITHUB_STEP_SUMMARY"
