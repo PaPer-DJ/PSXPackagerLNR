@@ -499,7 +499,8 @@ jobs:
           foreach ($marker in @(
             'SelectedIncludeSubfolders',
             'IncludeSubfoldersCheck.IsChecked == true',
-            'LnrChdFolderScanner.CountChds(',
+            'LnrChdFolderScanner.EnumerateFolders(',
+            'LnrChdFolderScanner.FindChds(',
             'SelectButton.IsEnabled = count > 0'
           )) {
             if (-not $pickerCode.Contains($marker)) { throw "Folder recursion picker wiring missing: $marker" }
