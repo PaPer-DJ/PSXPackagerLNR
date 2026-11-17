@@ -1,5 +1,14 @@
 # Historial de versiones de PSXPackagerLNR
 
+## v0.1.0-beta.30 — desarrollo (conversiones simultáneas)
+
+- **CHD → PBP por lotes con varios juegos en paralelo** en la interfaz LNR; selector «Conversiones simultáneas» con **1, 2, 3, 4, 6, 8 o Auto**. La opción **4** es el valor inicial recomendado para probar en SSD; **1** conserva el comportamiento secuencial. Auto usa entre 1 y 4 procesos, según la CPU. La preferencia se guarda sin alterar la compresión nivel 3.
+- Cada juego se convierte mediante **su propio proceso CLI** y carpeta temporal exclusiva. Un juego multidisco sigue constituyendo una sola tarea indivisible. No se añaden binarios auxiliares ni se modifica el motor original.
+- La interfaz puede mostrar **varios juegos «Convirtiendo» a la vez**, conserva porcentajes por fase, registro e informes, y estima el tiempo restante considerando la concurrencia, con carácter aproximado.
+- Cancelar afecta al conjunto de procesos activos; se impide iniciar nuevos trabajos y se mantienen las protecciones contra sobrescritura. Los CHD originales solo pueden borrarse bajo la opción explícita de doble confirmación, tras validar básicamente el nuevo PBP y si no hay cancelación. Al paralelizar puede aumentar el espacio temporal y la memoria necesarios.
+- Se amplían las comprobaciones automáticas de selector, número de trabajadores, temporales y cancelación; **requeridas pruebas reales de Windows y conversiones** antes de publicar. No se modifica la beta.29 publicada, el acceso directo aprobado, la rama `master` ni el destino .NET 8 autocontenido.
+
+
 Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
