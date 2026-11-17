@@ -685,7 +685,8 @@ namespace PSXPackagerGUI
                 var folder = Path.GetFullPath(SourceBox.Text.Trim().Trim('"'));
                 if (_jobs.Count == 0 || _planFolder == null ||
                     !string.Equals(folder, _planFolder, StringComparison.OrdinalIgnoreCase) ||
-                    _planMode != ModeCombo.SelectedIndex)
+                    _planMode != ModeCombo.SelectedIndex ||
+                    _planIncludeSubfolders != _includeSubfolders)
                     Scan();
 
                 string cli = Path.Combine(AppContext.BaseDirectory, "psxpackager.exe");
@@ -702,6 +703,7 @@ namespace PSXPackagerGUI
                     $"Se van a convertir {_jobs.Count} juegos a PBP.\n\n" +
                     $"Modo multidisco: {(IsMerged ? "Unidos" : "Separados")}\n" +
                     $"Compresión: {SelectedLevel}\n" +
+                    $"También subcarpetas: {(_includeSubfolders ? "Sí (estructura reflejada en PBP)" : "No")}\n" +
                     $"Conversiones simultáneas: {SelectedParallelConversions}\n" +
                     $"Destino: {Path.Combine(folder, "PBP")}\n\n" +
                     (DeleteChdCheck.IsChecked == true
@@ -791,7 +793,7 @@ namespace PSXPackagerGUI
                     job.ProgressPercent = 0;
                     job.CurrentPhase = "Iniciando";
                     job.Elapsed = null;
-                    var target = Path.Combine(folder, "PBP", job.Name + ".pbp");
+                    var target = Path.Combine(folder, "PBP", job.RelativeOutputPath);
                     if (File.Exists(target))
                     {
                         job.ReadExistingPbp(target);
@@ -998,11 +1000,12 @@ namespace PSXPackagerGUI
                 var job = _jobs[jobIndex];
                 _activeJob = job;
                 FollowActiveGame(job);
-                var finalPath = Path.Combine(dest, job.Name + ".pbp");
-                // Stage the sole provisional PBP on the *same* volume as the
-                // final output. Moving it into place then needs no second
-                // full-size copy across Windows drives. No BIN/CUE intermediates.
-                var stage = Path.Combine(dest, ".lnr_stage_" + Guid.NewGuid().ToString("N"));
+                var finalPath = Path.Combine(dest, job.RelativeOutputPath);
+                var targetDirectory = Path.GetDirectoryName(finalPath)
+                    ?? throw new InvalidDataException("Destino PBP sin carpeta.");
+                // Stage beside the final PBP on the same volume, mirroring
+                // the source tree to keep identically named games apart.
+                var stage = Path.Combine(targetDirectory, ".lnr_stage_" + Guid.NewGuid().ToString("N"));
                 Stopwatch timer = null;
                 try
                 {
@@ -1011,12 +1014,13 @@ namespace PSXPackagerGUI
                         job.ReadExistingPbp(finalPath);
                         job.Status = "Saltado / Ya existe";
                         _skipped++;
-                        Append("SALTADO: " + job.Name + ".pbp ya existe en la carpeta PBP; no se sobrescribe.");
+                        Append("SALTADO: " + job.DisplayName + " ya existe en la carpeta PBP; no se sobrescribe.");
                         continue;
                     }
 
                     timer = Stopwatch.StartNew();
                     _activeJobClocks[job] = timer;
+                    Directory.CreateDirectory(targetDirectory);
                     Directory.CreateDirectory(stage);
                     var input = job.Discs[0];
                     if (job.Discs.Count > 1)
@@ -1027,7 +1031,7 @@ namespace PSXPackagerGUI
                     }
                     job.ProgressPercent = 0;
                     job.Status = "Convirtiendo";
-                    Append($"[{jobIndex + 1}/{total}] {job.Name} ({job.Discs.Count} disco/s)");
+                    Append($"[{jobIndex + 1}/{total}] {job.DisplayName} ({job.Discs.Count} disco/s)");
                     var start = new ProcessStartInfo(cli)
                     {
                         UseShellExecute = false,
@@ -1126,7 +1130,7 @@ namespace PSXPackagerGUI
                         if (!File.Exists(sbi)) continue;
                         try
                         {
-                            var copy = Path.Combine(dest, Path.GetFileName(sbi));
+                            var copy = Path.Combine(targetDirectory, Path.GetFileName(sbi));
                             if (!File.Exists(copy)) File.Copy(sbi, copy);
                         }
                         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
