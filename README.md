@@ -67,7 +67,9 @@ Los selectores de **Multidisco**, **Compresión** y **Conversiones simultáneas*
 
 El **Toolkit sin interfaz gráfica** está incorporando el procesamiento concurrente de juegos PS1 CHD → PBP: un proceso CLI independiente por juego y un selector **1, 2, 3, 4, 6, 8 o Auto**. El valor inicial es **4 (HDD)**, con **8 (SSD)** como sugerencia para equipos con recursos suficientes. Cada juego multidisco sigue siendo una única tarea y los originales se conservan.
 
-Al ejecutar el BAT, una guía inicial explica qué carpeta se procesa, dónde aparecerán los PBP, cómo se respeta el orden de los M3U y las salvaguardas de los archivos. No hace falta instalar CHDMAN ni abrir la GUI. **El Toolkit no incluye el control Pausar/Reanudar**: esa función sigue siendo exclusiva de la interfaz gráfica.
+Al ejecutar el BAT, una guía inicial explica qué carpeta se procesa, dónde aparecerán los PBP, cómo se respeta el orden de los M3U y las salvaguardas de los archivos. No hace falta instalar CHDMAN ni abrir la GUI. **El Toolkit incluye controles de teclado P/R/C:** P solicita una pausa segura entre juegos, R reanuda y C cancela los procesos activos sin borrar CHD originales. La pausa espera a que terminen los PBP que ya se están generando, sin interrumpir su escritura.
+
+La GUI incluye además una mejora en el navegador de carpetas: botones **Atrás** y **Entrar**, y casilla **«También subcarpetas»** en la parte inferior. Activarla busca CHD de forma recursiva y conserva la estructura de carpetas en la salida `PBP`, evitando sobrescrituras entre juegos con nombres repetidos. Se omiten carpetas PBP, herramientas y enlaces de directorio; el modo original de carpeta única sigue siendo el predeterminado.
 
 **En desarrollo:** todavía requiere pruebas automáticas y comprobación real antes de distribuirse como beta.31. La descarga pública actual es **beta.30 build 523**, que no se modifica.
 
