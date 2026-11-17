@@ -5,6 +5,45 @@ Esta es una **adaptacion y automatizacion comunitaria** del proyecto original
 **No es un programa creado originalmente por LaNaveRETRO**. Se conservan
 la licencia MIT y los creditos del software original.
 
+## Por qué existe este fork: la necesidad práctica de LaNaveRETRO
+
+**PSXPackagerLNR** es el fork de **PaPer-DJ / LaNaveRETRO**, desarrollado
+sobre el código de [PSXPackager de RupertAvery y colaboradores](https://github.com/RupertAvery/PSXPackager).
+**No reescribe ni se atribuye el motor original**: aprovecha sus funciones
+de conversión, su lectura de CHD y la licencia MIT, y aporta una experiencia
+gráfica y una automatización orientadas a colecciones reales de juegos.
+
+El punto de partida fue una limitación concreta de uso: disponer de una
+colección grande de **juegos PS1 en CHD** y necesitar transformarla en
+**PBP para PSP original y otras máquinas de emulación**, de manera
+**directa y por lotes**. En las pruebas de la GUI original 1.7.0rc1,
+ese flujo no resultaba accesible o verificable de forma práctica desde
+su interfaz. Era incómodo pasar por CHDMAN, extraer archivos BIN/CUE,
+gestionar temporales y convertir cada juego de forma manual. El fork
+nació para eliminar ese trabajo repetitivo sin modificar el repositorio
+de los autores originales.
+
+**Qué resuelve de verdad:**
+
+- Analizar carpetas grandes y **convertir cientos de CHD de PS1 a PBP**
+  de forma directa, evitando generar previamente BIN/CUE en disco.
+- Mantener juntos o separados los discos de un juego según el modo
+  elegido; leer listas M3U y reconocer determinados nombres de disco.
+- Ver tamaño CHD/PBP, diferencia, estado, porcentaje por juego,
+  tiempo transcurrido, estimación orientativa del lote e informe.
+- Respetar archivos existentes, cancelar y continuar con otros juegos
+  aunque uno falle; evitar sobrescrituras involuntarias.
+- Gestionar el espacio en colecciones grandes: **borrado de CHD opcional,
+  irreversible y con doble confirmación**, solo después de validar
+  básicamente los PBP nuevos. Por defecto todos los originales se conservan.
+- Ofrecer herramientas de conversión por lotes para **otros soportes**:
+  CD de **Sega Saturn**, CD de **PS2** y DVD de **PS2**, además de PS1
+  (detalladas abajo). La Suite depende de CHDMAN en los modos indicados;
+  no se debe confundir con crear PBP para Saturn o PS2.
+
+**[Descargar la primera beta pública v0.1.0-beta.29](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.29)**
+(Windows x64, formato portátil). La edición LNR sigue siendo una beta.
+
 ## Inicio rápido en Windows
 
 Extrae el ZIP **GUI-win-x64** en una carpeta y abre la interfaz que prefieras:
@@ -24,6 +63,31 @@ Cada compilación de GitHub Actions añade un número de ejecución único, por 
 - [Descargas de pruebas (Actions)](https://github.com/PaPer-DJ/PSXPackagerLNR/actions).
 - Las compilaciones de Actions son temporales y pueden caducar a los 30 días; conserva las que necesites.
 - La rama `master` sigue independiente del trabajo en `lnr/windows-chd-build`. No hay versión estable publicada de LNR.
+
+### Mediciones reales que motivaron esta elección
+
+En una prueba de conversión **real realizada por LaNaveRETRO** con una misma
+imagen de PS1, se obtuvieron los siguientes tamaños de PBP:
+
+| Compresión | Tamaño resultante |
+| --- | ---: |
+| Nivel 1 | 284.474.391 bytes |
+| Nivel 5 | 280.715.895 bytes |
+| Nivel 9 | 280.575.015 bytes |
+
+- Pasar de **1 a 5** ahorró **3.758.496 bytes** (aprox. 3,58 MiB).
+- Pasar de **5 a 9** ahorró **solo 140.880 bytes**, alrededor del
+  **0,05 % del PBP de nivel 5**.
+
+Por ello, en esa comparación **subir más allá del nivel 5 apenas tenía
+sentido** en proporción al trabajo adicional de compresión. El tamaño
+exacto del **nivel 3 no está documentado en esta medición** y no se
+inventará: la recomendación del nivel 3 se apoya también en el
+comportamiento observado al jugar en PSP y en el equilibrio del
+algoritmo. En pruebas de LaNaveRETRO con **PSP original**, determinados
+juegos comprimidos con niveles **1–3 mostraron pausas de carga
+más breves que los equivalentes con niveles 4–5**. **No constituye un
+benchmark universal** de todas las consolas, juegos o tarjetas.
 
 ### Por qué LNR recomienda compresión PBP nivel 3
 

@@ -4,6 +4,29 @@ Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
 original [PSXPackager](https://github.com/RupertAvery/PSXPackager).
 La autoria original y la licencia MIT se conservan.
 
+## Documentación pública ampliada — 17 noviembre 2026 (sin cambios de binarios)
+
+- Presentación destacada del **fork PaPer-DJ / LaNaveRETRO**:
+  motivación para procesar colecciones PS1 CHD → PBP de forma directa
+  y por lotes, sin cadena manual de conversión previa a BIN/CUE.
+- Añadido un resultado numérico de compresión medido por LaNaveRETRO
+  sobre la misma imagen: nivel 1, **284.474.391 bytes**; nivel 5,
+  **280.715.895 bytes**; nivel 9, **280.575.015 bytes**.
+  Entre niveles 5 y 9 el ahorro fue de 140.880 bytes (aprox. 0,05 %).
+- Destacadas las **observaciones en PSP original**: en algunos títulos,
+  niveles 1–3 dieron cargas más cortas que 4–5. Se presenta nivel 3
+  como elección práctica del autor del fork, sin prometer rendimiento
+  universal ni confundir CPU de compresión con descompresión.
+- Documentado el alcance de la Suite por lotes para **Saturn (CD → BIN/CUE)**,
+  **PS2 CD → BIN/CUE** y **PS2 DVD → ISO**; los modos CHD dependen de CHDMAN
+  externo. No se afirma que Saturn ni PS2 se conviertan a PBP de PS1.
+- Corregido en el manual un texto antiguo que aún citaba el lanzador
+  `PSXPackagerLNR.exe`, sustituido desde versiones anteriores por el
+  acceso directo `#PSXPackagerLNR.lnk` ya aprobado.
+- Esta es una ampliación documental posterior a la publicación de
+  beta.29. **No recompila ni reemplaza los ZIP, no modifica el tag del
+  release ni cambia la rama `master`**.
+
 ## v0.1.0-beta.29 — 8 noviembre 2026 (acceso directo confirmado por el usuario)
 
 - **Solucionado el acceso directo `#PSXPackagerLNR.lnk`** mediante la MISMA creación `WScript.Shell.CreateShortcut` que pasó la prueba aislada de Windows con la GUI real de beta.28 y que el usuario ha confirmado que funciona.

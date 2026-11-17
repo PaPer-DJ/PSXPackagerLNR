@@ -22,25 +22,23 @@ firmware/BIOS **no** están incluidos.
 ## 2. Cómo abrir PSXPackagerLNR (Windows)
 
 Al descargar y descomprimir el paquete **GUI-win-x64**, encontrarás
-dos ejecutables gráficos en la misma carpeta:
+la aplicación gráfica y su acceso directo específico para LNR:
 
-- **`PSXPackagerLNR.exe` (recomendado)**: es un **pequeño lanzador
-  nativo de Windows** que abre directamente la ventana
-  **CHD → PBP por lotes**, con todas las herramientas LNR y el acceso
-  a **Suite CD / CHD / ISO**. No necesita duplicar el ejecutable
-  completo de la GUI ni pasar por la pantalla clásica.
-- **`PSXPackagerGUI.exe` (opcional)**: conserva la interfaz original de
-  PSXPackager, con su editor, opciones y funciones propias; también
-  permite abrir las herramientas añadidas por LNR.
+- **`#PSXPackagerLNR.lnk` (recomendado)**: acceso directo nativo de
+  Windows, con icono estándar del sistema. Abre directamente
+  **`PSXPackagerGUI.exe --lnr-batch`**, la ventana
+  **CHD → PBP por lotes**, con las herramientas LNR y la Suite.
+- **`PSXPackagerGUI.exe`**: abre la interfaz clásica de PSXPackager;
+  también permite acceder a las herramientas añadidas por LNR.
+- **`psxpackager.exe`**: CLI original compilada y utilizada
+  internamente por la GUI LNR. No es un segundo lanzador gráfico.
 
-El lanzador `PSXPackagerLNR.exe` **no contiene otra copia de la
-interfaz ni del motor**: llama a `PSXPackagerGUI.exe` con un
-parámetro de inicio interno. También se incluye `psxpackager.exe`
-(CLI) porque la GUI lo necesita para convertir. **Extrae todo
-el ZIP y no muevas los ejecutables fuera de la carpeta**. Para
-un icono en el escritorio, crea un acceso directo de Windows al
-lanzador. La conversión CHD→PBP no precisa CHDMAN; algunas
-conversiones de la Suite sí lo requieren.
+**Extrae todo el ZIP y conserva juntos el acceso directo, la GUI, la
+CLI y la carpeta de recursos.** No hace falta instalador ni un EXE
+lanzador adicional. El acceso directo de beta.29 es el método probado
+por LaNaveRETRO: no lo modifiques o muevas fuera de la carpeta.
+La conversión CHD→PBP no precisa CHDMAN; algunas operaciones de
+la Suite sí lo requieren.
 
 ## 2.1. Seleccionar carpeta y analizar
 
@@ -348,7 +346,7 @@ de estas dos conversiones de PBP (BIN/CUE, ISO limitado).
 
 **Funcionamiento de la suite (beta experimental):**
 
-1. Selecciona una de las tres conversiones en la lista desplegable.
+1. Selecciona uno de los cinco modos de conversión en la lista desplegable.
 2. Indica la carpeta de origen. Pulsa **Analizar** y revisa los archivos.
 3. Para **PBP→CHD y CHD→BIN/CUE o ISO** consigue una copia legítima de **CHDMAN**.
    **PBP→BIN/CUE y PBP→ISO de datos no la necesitan.** La fuente preferida es
