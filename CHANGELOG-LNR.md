@@ -2,6 +2,15 @@
 
 ## v0.1.0-beta.30 — desarrollo (conversiones simultáneas)
 
+### Ajuste de interfaz y pausa segura (17/11/2026)
+
+- **Diseño de los selectores corregido:** Multidisco, Compresión y Conversiones simultáneas se muestran en **la misma fila**; se ajustaron anchos de listas y se eliminó la frase lateral de consumo de memoria/espacio (sigue en el tooltip). Se amplió el ancho mínimo de la ventana para evitar solapamientos.
+- **Un único botón contextual** reemplaza «Convertir» mientras se ejecuta el lote: **Convertir (▶) → Pausar (‖) → Pausando... (reloj) → Reanudar (▶)**.
+- **Pausa cooperativa no destructiva entre juegos:** al solicitarla no se asignan más trabajos. Cada CLI ya iniciado termina su PBP, se comprueba el archivo final y finalizan las acciones del juego, incluida la protección de SBI y el borrado de origen únicamente si el usuario lo había habilitado. Solo entonces se indica **EN PAUSA**. No se suspende ni mata ningún proceso para pausar.
+- Reanudar libera el bloqueo de los trabajadores sin repetir títulos finalizados, y **Cancelar** sigue disponible durante toda la pausa, interrumpiendo también a los trabajadores que esperan la reanudación. El tiempo de pausa no se contabiliza como tiempo activo del lote.
+- Se conservan la compresión 3, las opciones de seguridad, el modo multidisco, la Suite, el acceso directo aprobado y los binarios de la beta.29. **Pendiente de pruebas reales en Windows antes de publicar esta beta.30.**
+
+
 - **CHD → PBP por lotes con varios juegos en paralelo** en la interfaz LNR; selector «Conversiones simultáneas» con **1, 2, 3, 4, 6, 8 o Auto**. La opción **4** es el valor inicial recomendado para probar en SSD; **1** conserva el comportamiento secuencial. Auto usa entre 1 y 4 procesos, según la CPU. La preferencia se guarda sin alterar la compresión nivel 3.
 - Cada juego se convierte mediante **su propio proceso CLI** y carpeta temporal exclusiva. Un juego multidisco sigue constituyendo una sola tarea indivisible. No se añaden binarios auxiliares ni se modifica el motor original.
 - La interfaz puede mostrar **varios juegos «Convirtiendo» a la vez**, conserva porcentajes por fase, registro e informes, y estima el tiempo restante considerando la concurrencia, con carácter aproximado.
