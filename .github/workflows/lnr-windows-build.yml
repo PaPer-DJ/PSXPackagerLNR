@@ -478,6 +478,52 @@ jobs:
           $multi = @($u.jobs | Where-Object { $_.Name -eq "Demo Game (ES)" })
           if ($multi.Count -ne 1 -or @($multi[0].Discs).Count -ne 2) { throw "M3U order/grouping error" }
 
+      - name: Regression test - recursive folder picker and mirrored CHD scanning
+        shell: pwsh
+        run: |
+          $picker = Get-Content "./PSXPackagerGUI/LnrFolderPickerWindow.xaml" -Raw
+          $pickerCode = Get-Content "./PSXPackagerGUI/LnrFolderPickerWindow.xaml.cs" -Raw
+          $batch = Get-Content "./PSXPackagerGUI/LnrBatchWindow.xaml.cs" -Raw
+          $view = Get-Content "./PSXPackagerGUI/LnrBatchWindow.xaml" -Raw
+          $preferences = Get-Content "./PSXPackagerGUI/LnrGuiPreferences.cs" -Raw
+          foreach ($marker in @(
+            'Grid.Column="1" x:Name="UpButton" Content="Atrás"',
+            'Grid.Column="2" Content="Entrar"',
+            'x:Name="IncludeSubfoldersCheck"',
+            'Checked="IncludeSubfolders_OnChanged"',
+            'También subcarpetas',
+            'Text="Se analizarán todos los archivos CHD de esta carpeta, sin entrar en subcarpetas."'
+          )) {
+            if (-not $picker.Contains($marker)) { throw "Folder picker missing: $marker" }
+          }
+          foreach ($marker in @(
+            'SelectedIncludeSubfolders',
+            'IncludeSubfoldersCheck.IsChecked == true',
+            'LnrChdFolderScanner.CountChds(',
+            'SelectButton.IsEnabled = count > 0'
+          )) {
+            if (-not $pickerCode.Contains($marker)) { throw "Folder recursion picker wiring missing: $marker" }
+          }
+          foreach ($marker in @(
+            'PlanOneFolder(',
+            'LnrChdFolderScanner.EnumerateFolders(',
+            'LnrChdFolderScanner.RelativeFolder(',
+            '_planIncludeSubfolders == _includeSubfolders',
+            'IncludeSubfolders = _includeSubfolders',
+            'job.RelativeOutputPath',
+            'Directory.CreateDirectory(targetDirectory)',
+            'Path.Combine(targetDirectory, Path.GetFileName(sbi))',
+            'public string DisplayName => RelativeOutputPath'
+          )) {
+            if (-not $batch.Contains($marker)) { throw "Recursive batch safety missing: $marker" }
+          }
+          if (-not $view.Contains('Text="{Binding DisplayName}"') -or
+              -not $preferences.Contains('IncludeSubfolders { get; set; } = false')) {
+            throw "Recursive display/persistence regression"
+          }
+          dotnet run --project "./LNR/Tests/LnrFolderScanSmoke.csproj" -c Release
+          if ($LASTEXITCODE -ne 0) { throw "Recursive CHD scan smoke test failed" }
+
       - name: Regression test - Toolkit PowerShell 5.1 parallel process scheduler
         shell: pwsh
         run: |
@@ -486,7 +532,9 @@ jobs:
           foreach ($marker in @(
             'COMO USARLO:', 'CONVERSIONES SIMULTANEAS:',
             '4 - RECOMENDADO PARA HDD', '8 - RECOMENDADO PARA SSD',
-            'for %%N in (0 1 2 3 4 6 8)', '-Parallel %PARALLEL%'
+            'for %%N in (0 1 2 3 4 6 8)', '-Parallel %PARALLEL%',
+            'CONTROLES DURANTE LA CONVERSION', 'P  PAUSAR',
+            'R  REANUDAR', 'C  CANCELAR'
           )) {
             if (-not $bat.Contains($marker)) { throw "Toolkit menu regression: $marker" }
           }
@@ -496,7 +544,11 @@ jobs:
             'Finish-Conversion', 'ReadToEndAsync()',
             '$active.Count -lt $slots',
             '[System.IO.File]::Move(',
-            'if ([System.IO.File]::Exists($output))'
+            'if ([System.IO.File]::Exists($output))',
+            "Receive-ControlCommand", "Poll-Controls",
+            "PAUSANDO:", "EN PAUSA:", "REANUDADO:",
+            "CANCELANDO:", "CANCELADO POR EL USUARIO",
+            "if ($script:CancelRequested) { exit 3 }"
           )) {
             if (-not $ps1.Contains($marker)) { throw "Toolkit worker/safety regression: $marker" }
           }
