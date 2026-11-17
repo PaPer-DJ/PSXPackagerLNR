@@ -61,11 +61,13 @@ la Suite sí lo requieren.
 - **Saltado / Ya existe** significa que ya hay un PBP con ese nombre: no se
   sobreescribe ni se elimina su CHD de origen.
 
-## Conversiones simultáneas — beta.30 en desarrollo
+## Conversiones simultáneas — beta.30
 
-El selector **«Conversiones simultáneas»** permite procesar varios juegos PS1 CHD → PBP al mismo tiempo: **1 (secuencial), 2, 3, 4, 6, 8 o Auto**. El valor inicial es **4**, adecuado para empezar a probar con SSD; si el equipo tiene pocos recursos o convierte desde discos mecánicos, conviene empezar por **1 o 2**. Auto utiliza hasta cuatro conversiones según el número de procesadores lógicos del equipo.
+El selector **«Conversiones simultáneas»** permite procesar varios juegos PS1 CHD → PBP al mismo tiempo: **1 (secuencial), 2, 3, 4, 6, 8 o Auto**. El valor inicial sigue siendo **4 — Recomendado (HDD)**. La opción **8 — Recomendado (SSD)** está pensada para equipos con SSD y recursos suficientes. Se trata de **orientaciones**, no límites: en HDD lentos, con varios accesos aleatorios o con poca RAM puede convenir usar 1 o 2; en SSD de alto rendimiento puede probarse 8. Auto utiliza hasta cuatro conversiones según el número de procesadores lógicos del equipo.
 
 Cada conversión usa un proceso CLI separado, con su propio directorio provisional dentro de la salida `PBP`. El resultado solo se mueve a su ubicación definitiva después de una comprobación básica. Un PBP **multidisco** siempre se gestiona como **una sola tarea**. La compresión del interior de cada PBP sigue siendo secuencial; aquí se paralelizan los **juegos diferentes**, no los bloques de un mismo archivo.
+
+**Mediciones reales del autor del fork:** ejecutando **4 conversiones** en Windows, el procesamiento global fue **casi cuatro veces más rápido** que el modo secuencial en su colección de prueba, sin saturación apreciable de procesador ni SSD. En el Administrador de tareas observó aproximadamente **17 MB/s de escritura y 10,5 MB/s de lectura por conversión**. Estas medidas se obtuvieron con su equipo y archivos concretos; no garantizan la misma aceleración en otros equipos. El valor **8 para SSD** se recomienda para probar aprovechando el margen observado con 4, **no porque se haya medido una mejora de ocho veces**.
 
 **Importante:** aumentar conversiones simultáneas no multiplica necesariamente la velocidad: dependerá de CPU, RAM y velocidad de lectura/escritura. Aumenta el consumo simultáneo de recursos y el espacio temporal necesario. Los progresos de cada juego siguen describiendo la fase de la CLI; la estimación global es orientativa. Cancelar detiene los procesos activos, deja pendientes sin procesar y conserva los CHD no completados. Las condiciones de seguridad del borrado opcional de originales no cambian.
 
@@ -85,7 +87,7 @@ Mientras se muestra **En pausa** se detiene el contador de duración activa; al 
 
 Los tres selectores **Multidisco, Compresión y Conversiones simultáneas** aparecen en **una única línea**, justo antes de los botones Analizar y Convertir. El aviso sobre uso de recursos se conserva como ayuda emergente del selector, no como texto permanente de la ventana.
 
-Esta mejora está en desarrollo y necesita pruebas de conversión reales antes de su publicación como beta.30. La beta.29 pública continúa siendo secuencial.
+El usuario ha verificado estas mejoras en Windows con la beta.30 build 513. La beta.29 previa permanece disponible con procesamiento secuencial.
 
 ## 3. Multidisco
 
