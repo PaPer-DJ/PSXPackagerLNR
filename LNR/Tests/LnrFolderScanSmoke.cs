@@ -47,16 +47,11 @@ try
         Assert(!Path.IsPathRooted(rel), "Folder relative name must not be absolute");
         Assert(!rel.StartsWith("..", StringComparison.Ordinal), "No relative traversal");
     }
-    var outside = Path.Combine(Path.GetDirectoryName(root)!, "outside");
-    Directory.CreateDirectory(outside);
-    try
-    {
-        var rejected = false;
-        try { _ = LnrChdFolderScanner.RelativeFolder(root, outside); }
-        catch (InvalidDataException) { rejected = true; }
-        Assert(rejected, "A directory outside the root must be rejected");
-    }
-    finally { Directory.Delete(outside, recursive: true); }
+    var outside = Path.Combine(Path.GetDirectoryName(root)!, "outside_" + Guid.NewGuid().ToString("N"));
+    var rejected = false;
+    try { _ = LnrChdFolderScanner.RelativeFolder(root, outside); }
+    catch (InvalidDataException) { rejected = true; }
+    Assert(rejected, "A directory outside the root must be rejected");
 
     Console.WriteLine("LNR recursive folder scan: flat, nested, duplicate basenames, PBP/.tools/staging exclusions, traversal validation passed.");
 }
