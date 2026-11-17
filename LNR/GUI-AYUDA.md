@@ -69,6 +69,22 @@ Cada conversión usa un proceso CLI separado, con su propio directorio provision
 
 **Importante:** aumentar conversiones simultáneas no multiplica necesariamente la velocidad: dependerá de CPU, RAM y velocidad de lectura/escritura. Aumenta el consumo simultáneo de recursos y el espacio temporal necesario. Los progresos de cada juego siguen describiendo la fase de la CLI; la estimación global es orientativa. Cancelar detiene los procesos activos, deja pendientes sin procesar y conserva los CHD no completados. Las condiciones de seguridad del borrado opcional de originales no cambian.
 
+### Pausar y reanudar el lote sin interrumpir archivos (beta.30)
+
+El mismo botón de acción cambia automáticamente según el estado del lote:
+
+1. **Convertir** (icono verde ▶): inicia el procesamiento y muestra la confirmación habitual.
+2. **Pausar** (icono ámbar ‖): deja de asignar nuevos juegos a los trabajadores. **No termina ni congela los procesos activos**.
+3. **Pausando...** (reloj ámbar): el botón queda desactivado mientras los juegos activos terminan normalmente, validan sus PBP y concluyen las operaciones de salida y, solo si se había autorizado, el borrado de CHD.
+4. **En pausa** (indicado en el estado inferior): no queda ninguna conversión ni operación de finalización activa. El botón pasa a **Reanudar** (icono verde ▶).
+5. **Reanudar**: reactiva los trabajadores y continúa desde los juegos pendientes **sin reconvertir los ya completados**. No solicita de nuevo la confirmación inicial ni modifica las opciones del lote.
+
+**Diferencia con Cancelar:** Pausar **espera a un punto seguro entre juegos**, por lo que puede tardar lo que necesite el juego activo; sus archivos no se dejan deliberadamente a medias. **Cancelar** sí detiene los procesos y termina el lote, incluso si está pausado. No hay opción de recuperar un lote cancelado desde el mismo botón de Reanudar.
+
+Mientras se muestra **En pausa** se detiene el contador de duración activa; al reanudar continúa. La barra global conserva los juegos completados y el estado de cada fila. Si se activó «Apagar equipo al finalizar el lote», **no se apaga mientras está en pausa**; solo se evalúa al terminar el lote de forma normal y con todas las salvaguardas originales.
+
+Los tres selectores **Multidisco, Compresión y Conversiones simultáneas** aparecen en **una única línea**, justo antes de los botones Analizar y Convertir. El aviso sobre uso de recursos se conserva como ayuda emergente del selector, no como texto permanente de la ventana.
+
 Esta mejora está en desarrollo y necesita pruebas de conversión reales antes de su publicación como beta.30. La beta.29 pública continúa siendo secuencial.
 
 ## 3. Multidisco
