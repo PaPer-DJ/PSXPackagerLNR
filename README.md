@@ -63,6 +63,14 @@ Los selectores de **Multidisco**, **Compresión** y **Conversiones simultáneas*
 
 **Estado:** beta.30 validada por el autor en Windows con build 513 antes de la publicación pública. Se mantiene .NET 8 autocontenido, el acceso directo aprobado y el nivel de compresión 3. La beta.29 publicada permanece sin cambios.
 
+## Próxima beta.31 en desarrollo — Toolkit con conversión paralela
+
+El **Toolkit sin interfaz gráfica** está incorporando el procesamiento concurrente de juegos PS1 CHD → PBP: un proceso CLI independiente por juego y un selector **1, 2, 3, 4, 6, 8 o Auto**. El valor inicial es **4 (HDD)**, con **8 (SSD)** como sugerencia para equipos con recursos suficientes. Cada juego multidisco sigue siendo una única tarea y los originales se conservan.
+
+Al ejecutar el BAT, una guía inicial explica qué carpeta se procesa, dónde aparecerán los PBP, cómo se respeta el orden de los M3U y las salvaguardas de los archivos. No hace falta instalar CHDMAN ni abrir la GUI. **El Toolkit no incluye el control Pausar/Reanudar**: esa función sigue siendo exclusiva de la interfaz gráfica.
+
+**En desarrollo:** todavía requiere pruebas automáticas y comprobación real antes de distribuirse como beta.31. La descarga pública actual es **beta.30 build 523**, que no se modifica.
+
 ## Inicio rápido en Windows
 
 Extrae el ZIP **GUI-win-x64** en una carpeta y abre la interfaz que prefieras:
