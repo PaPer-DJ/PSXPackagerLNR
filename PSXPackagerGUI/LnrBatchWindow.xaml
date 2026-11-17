@@ -260,20 +260,26 @@
                         ContentTemplate="{StaticResource LnrConvertButtonTemplate}"
                         Click="Run_OnClick" MinHeight="31"/>
                 <!-- Each worker converts one whole game (multidisc stays together). -->
-                <TextBlock Grid.Row="1" Grid.Column="3" Text="Conversiones simultáneas"
-                           VerticalAlignment="Center" Margin="0,9,9,0"
-                           ToolTip="Número de juegos CHD que pueden convertirse a PBP a la vez."/>
-                <ComboBox Grid.Row="1" Grid.Column="4" x:Name="ParallelCombo" SelectedIndex="3"
-                          VerticalAlignment="Center" MinHeight="30" Margin="0,9,0,0"
-                          ToolTip="1 = modo compatible. 2, 3, 4, 6 y 8 procesan juegos distintos en paralelo. Auto utiliza hasta 4 procesos según la CPU. Un juego multidisco sigue siendo una única tarea; más procesos consumen más RAM, CPU y espacio temporal.">
-                    <ComboBoxItem Content="1 - Secuencial" Tag="1"/>
-                    <ComboBoxItem Content="2" Tag="2"/>
-                    <ComboBoxItem Content="3" Tag="3"/>
-                    <ComboBoxItem Content="4 - Recomendado (SSD)" Tag="4"/>
-                    <ComboBoxItem Content="6" Tag="6"/>
-                    <ComboBoxItem Content="8" Tag="8"/>
-                    <ComboBoxItem Content="Auto" Tag="0"/>
-                </ComboBox>
+                <StackPanel Grid.Row="1" Grid.ColumnSpan="8" Orientation="Horizontal"
+                            HorizontalAlignment="Left" Margin="0,9,0,0">
+                    <TextBlock Text="Conversiones simultáneas" VerticalAlignment="Center"
+                               Margin="0,0,12,0"
+                               ToolTip="Número de juegos CHD que pueden convertirse a PBP a la vez."/>
+                    <ComboBox x:Name="ParallelCombo" SelectedIndex="3" Width="185"
+                              VerticalAlignment="Center" MinHeight="30"
+                              ToolTip="1 = modo compatible. 2, 3, 4, 6 y 8 procesan juegos distintos en paralelo. Auto utiliza hasta 4 procesos según la CPU. Un juego multidisco sigue siendo una única tarea; más procesos consumen más RAM, CPU y espacio temporal.">
+                        <ComboBoxItem Content="1 - Secuencial" Tag="1"/>
+                        <ComboBoxItem Content="2" Tag="2"/>
+                        <ComboBoxItem Content="3" Tag="3"/>
+                        <ComboBoxItem Content="4 - Recomendado (SSD)" Tag="4"/>
+                        <ComboBoxItem Content="6" Tag="6"/>
+                        <ComboBoxItem Content="8" Tag="8"/>
+                        <ComboBoxItem Content="Auto" Tag="0"/>
+                    </ComboBox>
+                    <TextBlock Text="Más procesos requieren más RAM y espacio temporal."
+                               Margin="14,0,0,0" Foreground="#FF546679"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
                 <DockPanel Grid.Row="2" Grid.ColumnSpan="8" Margin="0,11,0,0"
                            LastChildFill="False">
                     <Button DockPanel.Dock="Right" x:Name="SuiteButton"
