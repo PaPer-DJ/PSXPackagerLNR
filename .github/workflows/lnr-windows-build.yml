@@ -232,6 +232,71 @@ jobs:
           }
           Write-Host "Parallel conversion selector, worker pool, staging, cancellation and ETA invariants verified"
 
+      - name: Regression test - one-row selectors and safe pause/resume
+        shell: pwsh
+        run: |
+          $xaml = Get-Content "./PSXPackagerGUI/LnrBatchWindow.xaml" -Raw
+          $code = Get-Content "./PSXPackagerGUI/LnrBatchWindow.xaml.cs" -Raw
+          foreach ($marker in @(
+            'Grid.Column="7" x:Name="ParallelCombo"',
+            'Grid.Column="9" x:Name="ScanButton"',
+            'Grid.Column="10" x:Name="RunButton"',
+            'x:Key="LnrPauseButtonTemplate"',
+            'x:Key="LnrPausingButtonTemplate"'
+          )) {
+            if (-not $xaml.Contains($marker)) { throw "One-row controls or pause icons missing: $marker" }
+          }
+          if ($xaml.Contains('Text="Más procesos requieren más RAM')) {
+            throw "Permanent RAM warning must not take space beside selectors"
+          }
+          $level = $xaml.IndexOf('x:Name="LevelCombo"')
+          $parallel = $xaml.IndexOf('x:Name="ParallelCombo"')
+          $scan = $xaml.IndexOf('x:Name="ScanButton"')
+          if ($level -lt 0 -or $parallel -le $level -or $scan -le $parallel) {
+            throw "Parallel selector must follow compression in the same row"
+          }
+
+          foreach ($marker in @(
+            'RunButton.Content = "Convertir";',
+            'RunButton.Content = "Pausar";',
+            'RunButton.Content = "Pausando...";',
+            'RunButton.Content = "Reanudar";',
+            'TaskCompletionSource<bool>',
+            'TaskCreationOptions.RunContinuationsAsynchronously',
+            'await gate.Task.WaitAsync(cancel);',
+            '_inFlightJobs++;',
+            '_inFlightJobs--;',
+            'CompletePauseIfSafe();',
+            'await WaitIfPausedAsync(cancel);',
+            '_batchClock.Stop();',
+            'gate?.TrySetResult(true);',
+            '_pauseRequested = false;',
+            'EN PAUSA',
+            'PAUSANDO'
+          )) {
+            if (-not $code.Contains($marker)) { throw "Safe pause/resume invariant missing: $marker" }
+          }
+          $worker = $code.IndexOf('async Task WorkerAsync()')
+          $gate = $code.IndexOf('await WaitIfPausedAsync(cancel);', $worker)
+          $nextJob = $code.IndexOf('Interlocked.Increment(ref nextJobIndex)', $worker)
+          if ($worker -lt 0 -or $gate -lt $worker -or $nextJob -le $gate) {
+            throw "No worker may claim a pending job before checking the pause gate"
+          }
+          $pauseStart = $code.IndexOf('private void TogglePause()')
+          $pauseEnd = $code.IndexOf('private async Task ConvertAllAsync(', $pauseStart)
+          if ($pauseStart -lt 0 -or $pauseEnd -lt $pauseStart) {
+            throw "Unable to inspect pause safety section"
+          }
+          $pauseCode = $code.Substring($pauseStart, $pauseEnd - $pauseStart)
+          if ($pauseCode.Contains('.Kill(') -or $pauseCode.Contains('.Cancel()') -or
+              $pauseCode.Contains('Suspend(')) {
+            throw "Pause must drain active jobs without killing/cancelling/suspending CLI processes"
+          }
+          if ($pauseCode.IndexOf('_inFlightJobs != 0') -lt 0) {
+            throw "EN PAUSA must not be reached until every in-flight game has finalized"
+          }
+          Write-Host "Verified compact controls, contextual icons, drain-to-pause, resume and cancelable worker gate"
+
       - name: Regression test - LNR auto-sizing, manual widths and log
         shell: pwsh
         run: |
