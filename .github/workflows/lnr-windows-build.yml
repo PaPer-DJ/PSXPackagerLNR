@@ -478,6 +478,33 @@ jobs:
           $multi = @($u.jobs | Where-Object { $_.Name -eq "Demo Game (ES)" })
           if ($multi.Count -ne 1 -or @($multi[0].Discs).Count -ne 2) { throw "M3U order/grouping error" }
 
+      - name: Regression test - Toolkit PowerShell 5.1 parallel process scheduler
+        shell: pwsh
+        run: |
+          $bat = Get-Content "./LNR/Batch/LNR_CHD_A_PBP.bat" -Raw
+          $ps1 = Get-Content "./LNR/Batch/LNR_CHD_A_PBP.ps1" -Raw
+          foreach ($marker in @(
+            'COMO USARLO:', 'CONVERSIONES SIMULTANEAS:',
+            '4 - RECOMENDADO PARA HDD', '8 - RECOMENDADO PARA SSD',
+            'for %%N in (0 1 2 3 4 6 8)', '-Parallel %PARALLEL%'
+          )) {
+            if (-not $bat.Contains($marker)) { throw "Toolkit menu regression: $marker" }
+          }
+          foreach ($marker in @(
+            '[ValidateSet(0,1,2,3,4,6,8)][int]$Parallel=4',
+            'PLAN DE EJECUCION:', 'Start-Conversion',
+            'Finish-Conversion', 'ReadToEndAsync()',
+            '$active.Count -lt $slots',
+            '[System.IO.File]::Move(',
+            'if ([System.IO.File]::Exists($output))'
+          )) {
+            if (-not $ps1.Contains($marker)) { throw "Toolkit worker/safety regression: $marker" }
+          }
+          # Prove real external-process overlap with a synthetic CLI,
+          # not just string checks. CHD/PBP inputs are artificial.
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File "./LNR/Tests/ToolkitParallelSmoke.ps1"
+          if ($LASTEXITCODE -ne 0) { throw "Toolkit concurrent smoke tests failed: $LASTEXITCODE" }
+
       - name: Assemble portable LNR toolkit
         shell: pwsh
         run: |
