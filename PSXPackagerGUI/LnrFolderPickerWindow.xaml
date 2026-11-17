@@ -38,7 +38,7 @@
                     ToolTip="Volver a la carpeta superior"/>
             <Button Grid.Column="2" Content="Entrar" Click="Go_OnClick"
                     Margin="0,0,8,0" MinHeight="32"
-                    ToolTip="Abrir la ruta indicada arriba"/>
+                    ToolTip="Abrir la subcarpeta seleccionada o la ruta que hayas escrito arriba"/>
             <Button Grid.Column="3" Content="Explorar Windows..."
                     Click="NativeBrowse_OnClick" MinHeight="32"
                     ToolTip="También puedes usar el selector estándar de carpetas"/>
@@ -50,7 +50,7 @@
                 <ColumnDefinition Width="12"/>
                 <ColumnDefinition Width="5*"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Subcarpetas (doble clic para entrar)"
+            <TextBlock Grid.Column="0" Text="Subcarpetas (selecciona y pulsa Entrar, o doble clic)"
                        FontWeight="SemiBold"/>
             <TextBlock Grid.Column="2" x:Name="GamesHeading" Text="Juegos CHD de esta carpeta"
                        FontWeight="SemiBold"/>
@@ -65,7 +65,7 @@
             <ListView Grid.Column="0" x:Name="FolderList"
                       MouseDoubleClick="FolderList_OnDoubleClick"
                       BorderBrush="#FFCCD6E2" BorderThickness="1"
-                      ToolTip="Haz doble clic sobre una subcarpeta para examinarla">
+                      ToolTip="Selecciona una carpeta y pulsa Entrar, o haz doble clic para examinarla">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="Carpeta" Width="290" DisplayMemberBinding="{Binding Name}"/>
