@@ -560,6 +560,34 @@ jobs:
           if ($back -lt 0 -or $keys -le $back -or $dbl -le $keys) {
             throw "Back and Enter keyboard handlers should be adjacent and non-destructive"
           }
+          # Backspace is a window-wide "Atrás" shortcut, but must never
+          # hijack Backspace while the user edits the address text field.
+          if (-not $picker.Contains('PreviewKeyDown="Window_OnPreviewKeyDown"')) {
+            throw "Backspace is not bound to the folder-picker window"
+          }
+          foreach ($marker in @(
+            'private void NavigateToParent()',
+            'private void Window_OnPreviewKeyDown(',
+            'if (e.Key != Key.Back)',
+            'Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase',
+            'Keyboard.FocusedElement is PasswordBox',
+            'if (!UpButton.IsEnabled)',
+            'e.Handled = true;',
+            'NavigateToParent();'
+          )) {
+            if (-not $pickerCode.Contains($marker)) {
+              throw "Backspace navigation regression: $marker"
+            }
+          }
+          $handlerStart = $pickerCode.IndexOf('private void Window_OnPreviewKeyDown(')
+          $handlerEnd = $pickerCode.IndexOf('private void FolderList_OnPreviewKeyDown(', $handlerStart)
+          if ($handlerStart -lt 0 -or $handlerEnd -le $handlerStart) {
+            throw "Backspace handler missing or outside the picker navigation block"
+          }
+          $handler = $pickerCode.Substring($handlerStart, $handlerEnd - $handlerStart)
+          if ($handler.IndexOf('TextBoxBase') -gt $handler.IndexOf('NavigateToParent();')) {
+            throw "Backspace must check editable text focus before navigating"
+          }
           foreach ($marker in @(
             'PlanOneFolder(',
             'LnrChdFolderScanner.EnumerateFolders(',
