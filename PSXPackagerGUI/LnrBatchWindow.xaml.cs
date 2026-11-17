@@ -58,6 +58,12 @@ namespace PSXPackagerGUI
         };
         private readonly Dictionary<LnrConversionJob, Stopwatch> _activeJobClocks = new();
         private int _activeWorkerCount = 1;
+        // "Pausar" drains active games normally. It never freezes or kills a CLI
+        // half-way through a PBP. All new jobs wait for an explicit resume.
+        private bool _pauseRequested;
+        private bool _pauseComplete;
+        private int _inFlightJobs;
+        private TaskCompletionSource<bool> _resumeGate;
         private long _calibratedBytes;
         private double _calibratedSeconds;
         private bool _batchCanceled;
@@ -634,7 +640,11 @@ namespace PSXPackagerGUI
 
         private async void Run_OnClick(object sender, RoutedEventArgs e)
         {
-            if (_running) return;
+            if (_running)
+            {
+                TogglePause();
+                return;
+            }
             if (_shutdownPending)
             {
                 MessageBox.Show(this,
@@ -735,6 +745,10 @@ namespace PSXPackagerGUI
                 _batchFinishedNormally = false;
                 _running = true;
                 started = true;
+                _pauseRequested = false;
+                _pauseComplete = false;
+                _inFlightJobs = 0;
+                _resumeGate = null;
                 _cancel = new CancellationTokenSource();
                 SetControls(false);
                 _sumOriginal = _sumConverted = 0;
@@ -793,6 +807,11 @@ namespace PSXPackagerGUI
                     _activeJobClocks.Clear();
                     _batchTotalClock?.Stop();
                     _batchFinishedNormally = completedNormally;
+                    _pauseRequested = false;
+                    _pauseComplete = false;
+                    _inFlightJobs = 0;
+                    _resumeGate?.TrySetResult(true);
+                    _resumeGate = null;
                     _running = false;
                     _activeJob = null;
                     UpdateBatchProgress();
@@ -831,7 +850,7 @@ namespace PSXPackagerGUI
 
         private void SetControls(bool idle)
         {
-            RunButton.IsEnabled = idle && _jobs.Count > 0;
+            RefreshRunButtonState();
             ScanButton.IsEnabled = idle;
             BrowseButton.IsEnabled = idle;
             ModeCombo.IsEnabled = idle;
@@ -841,6 +860,94 @@ namespace PSXPackagerGUI
             ShutdownCheck.IsEnabled = idle && !_shutdownPending;
             SourceBox.IsEnabled = idle;
             CancelButton.IsEnabled = !idle;
+        }
+
+        private void RefreshRunButtonState()
+        {
+            // One contextual action: Convertir -> Pausar -> Pausando... -> Reanudar.
+            if (!_running)
+            {
+                RunButton.Content = "Convertir";
+                RunButton.ContentTemplate = (DataTemplate)FindResource("LnrConvertButtonTemplate");
+                RunButton.IsEnabled = _jobs.Count > 0 && !_shutdownPending;
+            }
+            else if (!_pauseRequested)
+            {
+                RunButton.Content = "Pausar";
+                RunButton.ContentTemplate = (DataTemplate)FindResource("LnrPauseButtonTemplate");
+                RunButton.IsEnabled = _cancel?.IsCancellationRequested != true;
+            }
+            else if (!_pauseComplete)
+            {
+                RunButton.Content = "Pausando...";
+                RunButton.ContentTemplate = (DataTemplate)FindResource("LnrPausingButtonTemplate");
+                RunButton.IsEnabled = false;
+            }
+            else
+            {
+                RunButton.Content = "Reanudar";
+                RunButton.ContentTemplate = (DataTemplate)FindResource("LnrConvertButtonTemplate");
+                RunButton.IsEnabled = _cancel?.IsCancellationRequested != true;
+            }
+        }
+
+        private void TogglePause()
+        {
+            if (!_running || _cancel?.IsCancellationRequested == true)
+                return;
+
+            if (!_pauseRequested)
+            {
+                _pauseRequested = true;
+                _pauseComplete = false;
+                _resumeGate = new TaskCompletionSource<bool>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+                Append("PAUSANDO: no se iniciarán nuevos juegos. Las conversiones activas finalizarán normalmente para no dejar PBP incompletos.");
+                CompletePauseIfSafe();
+            }
+            else if (_pauseComplete)
+            {
+                _pauseRequested = false;
+                _pauseComplete = false;
+                var gate = _resumeGate;
+                _resumeGate = null;
+                _batchTotalClock?.Start();
+                _batchClock.Start();
+                // Resume all waiting workers; no re-scan or repeat of finished jobs.
+                gate?.TrySetResult(true);
+                Append("REANUDADO: continuando los juegos pendientes.");
+            }
+
+            RefreshRunButtonState();
+            UpdateBatchProgress();
+        }
+
+        private void CompletePauseIfSafe()
+        {
+            // Count the entire job lifecycle, including staging, final PBP
+            // validation, optional SBI and authorized CHD cleanup.
+            if (!_pauseRequested || _pauseComplete || _inFlightJobs != 0 ||
+                _cancel?.IsCancellationRequested == true)
+                return;
+
+            _pauseComplete = true;
+            _batchClock.Stop();
+            _batchTotalClock?.Stop();
+            Append("EN PAUSA: no hay conversiones ni operaciones de finalización activas. Puedes reanudar o cancelar con seguridad.");
+            RefreshRunButtonState();
+        }
+
+        private async Task WaitIfPausedAsync(CancellationToken cancel)
+        {
+            // The dispatcher serializes button clicks and job hand-off.
+            // Cancellation also interrupts workers waiting at this gate.
+            while (_pauseRequested)
+            {
+                cancel.ThrowIfCancellationRequested();
+                var gate = _resumeGate ?? throw new InvalidOperationException(
+                    "No existe la señal de reanudación para este lote.");
+                await gate.Task.WaitAsync(cancel);
+            }
         }
 
         private async Task ConvertAllAsync(string cli, string folder, int level,
@@ -858,8 +965,13 @@ namespace PSXPackagerGUI
                 while (true)
                 {
                 cancel.ThrowIfCancellationRequested();
+                // Do not hold workers at the pause gate if no queued games remain.
+                if (nextJobIndex >= total - 1) return;
+                await WaitIfPausedAsync(cancel);
+                cancel.ThrowIfCancellationRequested();
                 var jobIndex = Interlocked.Increment(ref nextJobIndex);
                 if (jobIndex >= total) return;
+                _inFlightJobs++;
                 var job = _jobs[jobIndex];
                 _activeJob = job;
                 FollowActiveGame(job);
@@ -1049,6 +1161,8 @@ namespace PSXPackagerGUI
                     // Sizes and timing may now be known; adapt the centered
                     // columns without shortening the Status progress bar.
                     ResizeJobColumns();
+                    _inFlightJobs--;
+                    CompletePauseIfSafe();
                     UpdateBatchProgress();
                 }
                 }
@@ -1145,7 +1259,8 @@ namespace PSXPackagerGUI
             BatchPercentLabel.Text = $"Avance del lote: {overall.ToString("N0", Es)} % ({completed}/{total})";
 
             if (_running || completed > 0)
-                SummaryLabel.Text = $"Correctos: {_succeeded} · Saltados: {_skipped} · Errores: {_failed}";
+                SummaryLabel.Text = $"Correctos: {_succeeded} · Saltados: {_skipped} · Errores: {_failed}" +
+                    (_pauseRequested ? (_pauseComplete ? " · EN PAUSA" : " · PAUSANDO") : "");
             if (!_running)
             {
                 var elapsed = _batchTotalClock == null
@@ -1159,6 +1274,13 @@ namespace PSXPackagerGUI
                 return;
             }
 
+            if (_pauseRequested)
+            {
+                EtaLabel.Text = _pauseComplete
+                    ? "EN PAUSA · Sin juegos activos · Pulsa Reanudar para continuar"
+                    : $"PAUSANDO · Esperando a que finalicen {_inFlightJobs} juego(s) activo(s)";
+                return;
+            }
             if (completed >= total)
             {
                 EtaLabel.Text = "Lote finalizado";
