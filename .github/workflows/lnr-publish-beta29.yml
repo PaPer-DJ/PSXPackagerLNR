@@ -1,4 +1,4 @@
-name: Publish public PSXPackagerLNR beta.29
+name: Finalize verified PSXPackagerLNR beta.29 public release
 
 on:
   push:
@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: write
-  actions: read
 
 concurrency:
   group: lnr-release-beta29
@@ -17,136 +16,50 @@ concurrency:
 
 jobs:
   publish:
-    name: Publish GitHub pre-release beta.29
     if: github.repository == 'PaPer-DJ/PSXPackagerLNR'
     runs-on: ubuntu-latest
     steps:
-      - name: Protect the known-good beta.29
+      - name: Verify frozen draft release and publish
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view 'v0.1.0-beta.29' --repo 'PaPer-DJ/PSXPackagerLNR' >/dev/null 2>&1; then
-            echo "Release v0.1.0-beta.29 already exists. Do not overwrite it." >&2
-            exit 1
+          repo='PaPer-DJ/PSXPackagerLNR'
+          rid=448060186
+          tag='v0.1.0-beta.29'
+          pinned='69dce2b57330ff3cdb2b1bec78d337500026796d'
+          endpoint="repos/$repo/releases/$rid"
+          metadata="$(gh api "$endpoint")"
+          test "$(jq -r '.id' <<< "$metadata")" = "$rid"
+          test "$(jq -r '.tag_name' <<< "$metadata")" = "$tag"
+          test "$(jq -r '.target_commitish' <<< "$metadata")" = "$pinned"
+          test "$(jq -r '.prerelease' <<< "$metadata")" = 'true'
+
+          names="$(jq -r '.assets[].name' <<< "$metadata")"
+          test "$(jq '.assets | length' <<< "$metadata")" = '4'
+          for name in \
+            'PSXPackagerLNR-v0.1.0-beta.29-b466-GUI-win-x64.zip' \
+            'PSXPackagerLNR-v0.1.0-beta.29-b466-CLI-win-x64.zip' \
+            'PSXPackagerLNR-v0.1.0-beta.29-b466-Toolkit-win-x64.zip' \
+            'SHA256SUMS.txt'
+          do
+            grep -Fxq "$name" <<< "$names" || { echo "Missing asset $name" >&2; exit 1; }
+          done
+          echo "Verified four frozen binary assets and SHA manifest"
+          if [ "$(jq -r '.draft' <<< "$metadata")" = 'true' ]; then
+            echo "Publishing GitHub release $tag without touching master"
+            gh api -X PATCH "$endpoint" -F draft=false -F prerelease=true > /tmp/published.json
           fi
-          if gh api 'repos/PaPer-DJ/PSXPackagerLNR/git/ref/tags/v0.1.0-beta.29' >/dev/null 2>&1; then
-            echo "Tag v0.1.0-beta.29 already exists. Do not move it." >&2
-            exit 1
-          fi
-          actual="$(gh api 'repos/PaPer-DJ/PSXPackagerLNR/git/commits/69dce2b57330ff3cdb2b1bec78d337500026796d' --jq '.sha')"
-          test "$actual" = '69dce2b57330ff3cdb2b1bec78d337500026796d'
-          echo "Validated release commit: $actual"
 
-      - name: Download successful and verified Windows build 466
-        uses: actions/download-artifact@v4
-        with:
-          repository: PaPer-DJ/PSXPackagerLNR
-          run-id: 42447207943
-          name: PSXPackagerLNR-v0.1.0-beta.29-b466-Windows-x64
-          github-token: ${{ github.token }}
-          path: dist
-
-      - name: Check every ZIP and create SHA-256 manifest
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import os, zipfile
-          base = 'dist/PSXPackagerLNR-v0.1.0-beta.29-b466-'
-          expected = {
-              'GUI-win-x64.zip': ['PSXPackagerGUI.exe', 'psxpackager.exe', '#PSXPackagerLNR.lnk', 'LICENSE'],
-              'CLI-win-x64.zip': ['psxpackager.exe', 'LICENSE'],
-              'Toolkit-win-x64.zip': ['LNR_CHD_A_PBP.bat', '.tools/LNR_CHD_A_PBP/psxpackager.exe']
-          }
-          real = [name for name in os.listdir('dist') if name.lower().endswith('.zip')]
-          assert len(real) == 3, f'Expected exactly 3 ZIP packages, got {real!r}'
-          for suffix, required in expected.items():
-              path = base + suffix
-              assert os.path.isfile(path), f'Missing package: {path}'
-              with zipfile.ZipFile(path) as z:
-                  assert z.testzip() is None, f'Damaged ZIP: {path}'
-                  names = {n.replace('\\','/').removeprefix('./') for n in z.namelist()}
-                  for name in required:
-                      assert name in names, f'Missing {name} from {path}'
-              print('Validated:', path, 'size=',os.path.getsize(path))
-          PY
-          ( cd dist && sha256sum *.zip > SHA256SUMS.txt )
-          cat dist/SHA256SUMS.txt
-
-      - name: Prepare public release notes
-        shell: bash
-        run: |
-          cat > release-notes.md <<'NOTES'
-          # PSXPackagerLNR v0.1.0-beta.29 · Primera beta pública
-
-          Versión de prueba para **Windows x64**, basada en el proyecto original [PSXPackager](https://github.com/RupertAvery/PSXPackager). Incluye la interfaz clásica y las adaptaciones de **LaNaveRETRO** para conversiones por lotes.
-
-          ## Descargas
-          - **GUI-win-x64.zip (recomendada):** interfaz gráfica portátil completa, conversor integrado y acceso directo `#PSXPackagerLNR.lnk`.
-          - **CLI-win-x64.zip:** programa de línea de comandos para usuarios avanzados.
-          - **Toolkit-win-x64.zip:** herramientas portátiles CHD → PBP con lanzador BAT.
-          - **SHA256SUMS.txt:** huellas de integridad de los tres ZIP.
-
-          ## Funciones destacadas
-          - **CHD → PBP directo**, sin generar BIN/CUE intermedios, con detección y tratamiento de juegos multidisco.
-          - **Cola de conversiones** con progreso por juego, estadísticas, tamaño de origen y PBP, tiempo transcurrido y registros.
-          - **Seguir juego activo** para que el listado avance automáticamente al convertir colecciones grandes.
-          - **Suite de discos** con utilidades PBP/CHD/BIN/CUE/ISO (según formato compatible).
-          - **Compresión nivel 3** como opción equilibrada por defecto en LNR.
-          - Respeto de PBP existentes; **borrado de CHD originales y apagado automático solo si el usuario activa y confirma esas opciones**.
-          - Acceso directo `#PSXPackagerLNR.lnk` para iniciar la interfaz LNR por lotes, implementado y probado en Windows, con la ubicación de inicio vacía.
-
-          ## Instalación
-          1. Descarga **GUI-win-x64.zip** y extrae **todo** su contenido en una carpeta.
-          2. Ejecuta `#PSXPackagerLNR.lnk` para la interfaz LNR por lotes; `PSXPackagerGUI.exe` abre la interfaz clásica.
-          3. Conserva juntos los EXE, el acceso directo y la carpeta `Resources`. No necesita instalación ni un segundo lanzador EXE.
-
-          ## Advertencias de esta beta
-          - Es una **beta**, no una versión estable. Haz copias de seguridad antes de convertir colecciones importantes.
-          - Las conversiones de la ventana CHD → PBP se procesan **de una en una** en esta versión; la concurrencia configurable se está estudiando para una futura beta.
-          - Si activas la opción de **eliminar CHD originales**, la eliminación puede ser irreversible. Comprueba primero los PBP producidos en tu emulador.
-          - La compatibilidad con todos los juegos y emuladores no está garantizada.
-
-          ## Créditos y licencia
-          **PSXPackagerLNR es una adaptación comunitaria**, no un programa original creado desde cero por LaNaveRETRO. Se conservan los créditos y la licencia MIT del software de origen, incluido el aviso de copyright que figura en `LICENSE`. Proyecto original: [RupertAvery/PSXPackager](https://github.com/RupertAvery/PSXPackager).
-
-          **Código publicado:** `69dce2b57330ff3cdb2b1bec78d337500026796d` · **Compilación distribuida:** Windows build **466** (GitHub Actions, verificada).
-          NOTES
-
-      - name: Create draft pre-release with frozen build assets
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh release create 'v0.1.0-beta.29' dist/*.zip dist/SHA256SUMS.txt \
-            --repo 'PaPer-DJ/PSXPackagerLNR' \
-            --target '69dce2b57330ff3cdb2b1bec78d337500026796d' \
-            --title 'PSXPackagerLNR v0.1.0-beta.29 — Beta pública Windows' \
-            --notes-file release-notes.md \
-            --prerelease --draft
-
-      - name: Verify tag and public release payload before publishing
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          actual="$(gh api 'repos/PaPer-DJ/PSXPackagerLNR/git/ref/tags/v0.1.0-beta.29' --jq '.object.sha')"
-          test "$actual" = '69dce2b57330ff3cdb2b1bec78d337500026796d'
-          count="$(gh release view 'v0.1.0-beta.29' --repo 'PaPer-DJ/PSXPackagerLNR' --json assets --jq '.assets | length')"
-          test "$count" = '4'
-          gh release view 'v0.1.0-beta.29' --repo 'PaPer-DJ/PSXPackagerLNR' --json assets --jq '.assets[].name'
-          echo "Verified pinned tag and all four assets. Publishing pre-release."
-
-      - name: Publish beta.29 publicly
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh release edit 'v0.1.0-beta.29' --repo 'PaPer-DJ/PSXPackagerLNR' --draft=false --prerelease
-          gh release view 'v0.1.0-beta.29' --repo 'PaPer-DJ/PSXPackagerLNR' --json tagName,isDraft,isPrerelease,url,assets \
-            --jq '{tag: .tagName, draft: .isDraft, prerelease: .isPrerelease, url: .url, assets: [.assets[].name]}'
+          after="$(gh api "$endpoint")"
+          test "$(jq -r '.draft' <<< "$after")" = 'false'
+          test "$(jq -r '.prerelease' <<< "$after")" = 'true'
+          test "$(jq -r '.assets | length' <<< "$after")" = '4'
+          actual="$(gh api "repos/$repo/git/ref/tags/$tag" --jq '.object.sha')"
+          test "$actual" = "$pinned"
+          url="$(jq -r '.html_url' <<< "$after")"
+          echo "PUBLIC RELEASE VERIFIED: $url"
+          echo "### PSXPackagerLNR beta.29 public pre-release" >> "$GITHUB_STEP_SUMMARY"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tag: $tag; commit: $pinned; 4 assets (GUI / CLI / Toolkit / SHA256)" >> "$GITHUB_STEP_SUMMARY"
