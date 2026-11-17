@@ -61,6 +61,16 @@ la Suite sí lo requieren.
 - **Saltado / Ya existe** significa que ya hay un PBP con ese nombre: no se
   sobreescribe ni se elimina su CHD de origen.
 
+## Conversiones simultáneas — beta.30 en desarrollo
+
+El selector **«Conversiones simultáneas»** permite procesar varios juegos PS1 CHD → PBP al mismo tiempo: **1 (secuencial), 2, 3, 4, 6, 8 o Auto**. El valor inicial es **4**, adecuado para empezar a probar con SSD; si el equipo tiene pocos recursos o convierte desde discos mecánicos, conviene empezar por **1 o 2**. Auto utiliza hasta cuatro conversiones según el número de procesadores lógicos del equipo.
+
+Cada conversión usa un proceso CLI separado, con su propio directorio provisional dentro de la salida `PBP`. El resultado solo se mueve a su ubicación definitiva después de una comprobación básica. Un PBP **multidisco** siempre se gestiona como **una sola tarea**. La compresión del interior de cada PBP sigue siendo secuencial; aquí se paralelizan los **juegos diferentes**, no los bloques de un mismo archivo.
+
+**Importante:** aumentar conversiones simultáneas no multiplica necesariamente la velocidad: dependerá de CPU, RAM y velocidad de lectura/escritura. Aumenta el consumo simultáneo de recursos y el espacio temporal necesario. Los progresos de cada juego siguen describiendo la fase de la CLI; la estimación global es orientativa. Cancelar detiene los procesos activos, deja pendientes sin procesar y conserva los CHD no completados. Las condiciones de seguridad del borrado opcional de originales no cambian.
+
+Esta mejora está en desarrollo y necesita pruebas de conversión reales antes de su publicación como beta.30. La beta.29 pública continúa siendo secuencial.
+
 ## 3. Multidisco
 
 - **Separados (1:1)** genera un PBP por CHD, manteniendo su nombre original.
