@@ -52,7 +52,7 @@
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="Subcarpetas (doble clic para entrar)"
                        FontWeight="SemiBold"/>
-            <TextBlock Grid.Column="2" Text="Juegos CHD de esta carpeta"
+            <TextBlock Grid.Column="2" x:Name="GamesHeading" Text="Juegos CHD de esta carpeta"
                        FontWeight="SemiBold"/>
         </Grid>
 
