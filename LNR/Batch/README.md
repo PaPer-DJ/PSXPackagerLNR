@@ -7,7 +7,7 @@ no se atribuye la creacion de PSXPackager.
 
 ## Instalacion portable
 
-Descarga el ZIP **Toolkit-win-x64** de la beta de desarrollo (GitHub Actions) y extráelo directamente en una carpeta que contenga tus archivos CHD. La última versión pública anterior sigue disponible en GitHub Releases. Este README describe el Toolkit con paralelismo, en desarrollo para beta.31.
+Descarga el ZIP **Toolkit-win-x64** de la [beta.31 pública](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.31) y extráelo directamente en una carpeta que contenga tus archivos CHD. No requiere instalación ni CHDMAN para CHD → PBP.
 
     C:\roms\psx\
       LNR_CHD_A_PBP.bat          <- Lanzar aqui
