@@ -61,6 +61,32 @@ la Suite sí lo requieren.
 - **Saltado / Ya existe** significa que ya hay un PBP con ese nombre: no se
   sobreescribe ni se elimina su CHD de origen.
 
+### Navegador de carpetas: Atrás, Entrar y «También subcarpetas» (beta.31)
+
+El navegador incorporado mantiene la vista previa de CHD y muestra los controles
+**Atrás** (sube a la carpeta superior), **Entrar** (abre la ruta escrita) y
+**Explorar Windows…**. La opción **«También subcarpetas»** está junto al
+aviso de análisis, desactivada por defecto para conservar el comportamiento
+original. Su selección se recuerda entre aperturas.
+
+- **Desmarcada:** solo se procesan los CHD de la carpeta seleccionada.
+- **Marcada:** se procesan también los CHD en subcarpetas y se muestra el
+  recuento total, incluso si la carpeta principal no contiene CHD.
+- **Salida organizada:** `Origen/Subcarpeta/Juego.chd` se convierte en
+  `Origen/PBP/Subcarpeta/Juego.pbp`. Los juegos directamente en el origen
+  siguen saliendo a `Origen/PBP/Juego.pbp`. Así se pueden tener juegos
+  con el mismo nombre en subcarpetas distintas sin sobrescritura.
+- En modo **Unidos (M3U)**, cada lista y serie numerada se procesa
+  únicamente dentro de su subcarpeta de origen; no se agrupan discos
+  que estén en subcarpetas diferentes.
+- Se omiten carpetas llamadas **PBP** y **.tools**, temporales
+  `.lnr_stage_*` y enlaces/junciones de directorio para no reimportar
+  resultados ni salir de la ruta seleccionada.
+- Los PBP ya existentes se saltan; los CHD y las listas M3U de origen
+  permanecen intactos salvo que el usuario active explícitamente la
+  opción destructiva de CHD, con todas sus confirmaciones.
+
+
 ## Conversiones simultáneas — beta.30
 
 El selector **«Conversiones simultáneas»** permite procesar varios juegos PS1 CHD → PBP al mismo tiempo: **1 (secuencial), 2, 3, 4, 6, 8 o Auto**. El valor inicial sigue siendo **4 — Recomendado (HDD)**. La opción **8 — Recomendado (SSD)** está pensada para equipos con SSD y recursos suficientes. Se trata de **orientaciones**, no límites: en HDD lentos, con varios accesos aleatorios o con poca RAM puede convenir usar 1 o 2; en SSD de alto rendimiento puede probarse 8. Auto utiliza hasta cuatro conversiones según el número de procesadores lógicos del equipo.
