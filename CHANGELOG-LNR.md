@@ -1,6 +1,13 @@
 # Historial de versiones de PSXPackagerLNR
 
-## v0.1.0-beta.30 — desarrollo (conversiones simultáneas)
+## v0.1.0-beta.30 — 17 noviembre 2026 (conversiones simultáneas y pausa segura)
+
+### Comprobación real del usuario y recomendaciones HDD / SSD (17/11/2026)
+
+- **Prueba real de beta.30 build 513 en Windows:** el usuario confirma que la conversión concurrente, la pausa y la reanudación funcionan como esperaba. Con **4 conversiones simultáneas**, observó un rendimiento global **próximo a 4 veces** el de la ejecución secuencial en su equipo, sin saturación apreciable de CPU o SSD.
+- **Lectura/escritura medidas en el Administrador de tareas:** aproximadamente **10,5 MB/s de lectura y 17 MB/s de escritura por conversión** en sus pruebas. Son observaciones de un equipo y lote concretos, **no un benchmark general ni una promesa de aceleración**.
+- **Orientaciones visibles en el selector:** **4 — Recomendado (HDD)** y **8 — Recomendado (SSD)**. Con 8 procesos el usuario aprecia margen por la baja carga observada con 4, pero **no se ha medido todavía una aceleración real con 8**; en otros HDD/SSD, CPU o equipos puede ser mejor usar menos. **4 se mantiene como opción inicial por defecto**, y Auto conserva su tope de 4.
+- La beta.30 continúa siendo portátil en Windows x64, .NET 8 autocontenido, sin CHDMAN para CHD→PBP directo. Sin cambios en el motor original, compresión nivel 3, métodos de seguridad, acceso directo y `master`.
 
 ### Ajuste de interfaz y pausa segura (17/11/2026)
 
@@ -8,14 +15,14 @@
 - **Un único botón contextual** reemplaza «Convertir» mientras se ejecuta el lote: **Convertir (▶) → Pausar (‖) → Pausando... (reloj) → Reanudar (▶)**.
 - **Pausa cooperativa no destructiva entre juegos:** al solicitarla no se asignan más trabajos. Cada CLI ya iniciado termina su PBP, se comprueba el archivo final y finalizan las acciones del juego, incluida la protección de SBI y el borrado de origen únicamente si el usuario lo había habilitado. Solo entonces se indica **EN PAUSA**. No se suspende ni mata ningún proceso para pausar.
 - Reanudar libera el bloqueo de los trabajadores sin repetir títulos finalizados, y **Cancelar** sigue disponible durante toda la pausa, interrumpiendo también a los trabajadores que esperan la reanudación. El tiempo de pausa no se contabiliza como tiempo activo del lote.
-- Se conservan la compresión 3, las opciones de seguridad, el modo multidisco, la Suite, el acceso directo aprobado y los binarios de la beta.29. **Pendiente de pruebas reales en Windows antes de publicar esta beta.30.**
+- Se conservan la compresión 3, las opciones de seguridad, el modo multidisco, la Suite, el acceso directo aprobado y los binarios de la beta.29. **Validada por el usuario en Windows con beta.30 build 513 antes de la publicación oficial.**
 
 
-- **CHD → PBP por lotes con varios juegos en paralelo** en la interfaz LNR; selector «Conversiones simultáneas» con **1, 2, 3, 4, 6, 8 o Auto**. La opción **4** es el valor inicial recomendado para probar en SSD; **1** conserva el comportamiento secuencial. Auto usa entre 1 y 4 procesos, según la CPU. La preferencia se guarda sin alterar la compresión nivel 3.
+- **CHD → PBP por lotes con varios juegos en paralelo** en la interfaz LNR; selector «Conversiones simultáneas» con **1, 2, 3, 4, 6, 8 o Auto**. La opción **4** es el valor inicial recomendado para HDD; **8** se sugiere para SSD. **1** conserva el comportamiento secuencial. Auto usa entre 1 y 4 procesos, según la CPU. La preferencia se guarda sin alterar la compresión nivel 3.
 - Cada juego se convierte mediante **su propio proceso CLI** y carpeta temporal exclusiva. Un juego multidisco sigue constituyendo una sola tarea indivisible. No se añaden binarios auxiliares ni se modifica el motor original.
 - La interfaz puede mostrar **varios juegos «Convirtiendo» a la vez**, conserva porcentajes por fase, registro e informes, y estima el tiempo restante considerando la concurrencia, con carácter aproximado.
 - Cancelar afecta al conjunto de procesos activos; se impide iniciar nuevos trabajos y se mantienen las protecciones contra sobrescritura. Los CHD originales solo pueden borrarse bajo la opción explícita de doble confirmación, tras validar básicamente el nuevo PBP y si no hay cancelación. Al paralelizar puede aumentar el espacio temporal y la memoria necesarios.
-- Se amplían las comprobaciones automáticas de selector, número de trabajadores, temporales y cancelación; **requeridas pruebas reales de Windows y conversiones** antes de publicar. No se modifica la beta.29 publicada, el acceso directo aprobado, la rama `master` ni el destino .NET 8 autocontenido.
+- Se amplían las comprobaciones automáticas de selector, número de trabajadores, temporales y cancelación; **pruebas reales con 4 conversiones y pausa verificadas por el usuario** antes de publicar. No se modifica la beta.29 publicada, el acceso directo aprobado, la rama `master` ni el destino .NET 8 autocontenido.
 
 
 Este historial se refiere **solo a las adaptaciones LNR** sobre el proyecto
