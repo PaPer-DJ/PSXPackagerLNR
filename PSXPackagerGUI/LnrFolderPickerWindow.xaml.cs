@@ -218,12 +218,35 @@ namespace PSXPackagerGUI
             }
         }
 
-        private void Up_OnClick(object sender, RoutedEventArgs e)
+        private void NavigateToParent()
         {
             var previousFolder = _currentFolder;
             var parent = Directory.GetParent(previousFolder);
             if (parent != null)
                 Navigate(parent.FullName, previousFolder);
+        }
+
+        private void Up_OnClick(object sender, RoutedEventArgs e)
+        {
+            NavigateToParent();
+        }
+
+        private void Window_OnPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Back)
+                return;
+
+            // In the address field, Backspace must edit the typed path.
+            // Everywhere else it behaves like the visible "Atrás" button.
+            if (Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase ||
+                Keyboard.FocusedElement is PasswordBox)
+                return;
+
+            if (!UpButton.IsEnabled)
+                return;
+
+            e.Handled = true;
+            NavigateToParent();
         }
 
         private void FolderList_OnPreviewKeyDown(object sender, KeyEventArgs e)
