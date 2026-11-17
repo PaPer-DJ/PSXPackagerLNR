@@ -63,8 +63,21 @@ Descarga el ZIP **Toolkit-win-x64** de la beta de desarrollo (GitHub Actions) y 
 - Cada conversion se prepara en un directorio temporal independiente
   dentro de las herramientas. En paralelo, cada juego utiliza **su propio
   proceso `psxpackager.exe` y directorio provisional**. No se modifican los CHD.
-- El Toolkit **no dispone del boton Pausar/Reanudar de la GUI**; si necesitas
-  pausa segura entre juegos, utiliza la GUI beta.30 o posterior.
+- El Toolkit **incorpora pausa segura, reanudacion y cancelacion por teclado**:
+  pulsa **P** durante el lote para entrar en **PAUSANDO** (no se iniciaran
+  mas juegos; se dejara terminar normalmente cada PBP activo). Cuando no
+  queden operaciones abiertas se mostrara **EN PAUSA**.
+  Pulsa **R** para continuar con los pendientes o **C** para cancelar el lote.
+  **Cancelar**, a diferencia de Pausar, detiene los procesos activos,
+  limpia sus archivos temporales incompletos y conserva los CHD originales.
+  Los PBP que ya hayan terminado correctamente no se eliminan.
+- Los controles **P/R/C no requieren pulsar Intro** y se muestran al arrancar
+  la conversion en la misma ventana BAT/PowerShell. La pausa no es instantanea:
+  puede tardar hasta que finalice el juego activo mas largo; no se congela
+  ni interrumpe a mitad de escritura.
+- En ejecuciones sin teclado interactivo los controles de teclado no estan
+  disponibles; la prueba automatizada utiliza un canal de control externo
+  opcional. En uso normal, abre el BAT en la consola de Windows.
 - Comprueba salida de la CLI, tamano minimo y cabecera PBP.
 - Mueve el PBP correcto a la carpeta PBP tras las comprobaciones.
 - Limpia los temporales tanto si el trabajo se completa como si falla.
