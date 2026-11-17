@@ -66,6 +66,9 @@ la Suite sí lo requieren.
 El navegador incorporado mantiene la vista previa de CHD y muestra los controles
 **Atrás**, **Entrar** y **Explorar Windows…**. **Atrás** sube a la carpeta superior,
 **deja seleccionada la carpeta de la que acabas de salir y devuelve el foco a la lista**.
+También puedes utilizar **Retroceso (Backspace)** para volver al directorio superior:
+funciona como «Atrás», conserva la selección y el foco, excepto cuando
+estás escribiendo una ruta en el cuadro superior (ahí borra caracteres).
 Puedes moverte por las subcarpetas con **↑/↓** y pulsar **Enter** para acceder a la
 seleccionada sin utilizar el ratón. El botón **Entrar** y el doble clic también
 abren la carpeta elegida; si has pegado una ruta distinta arriba, prevalece
