@@ -64,6 +64,7 @@
             </Grid.ColumnDefinitions>
             <ListView Grid.Column="0" x:Name="FolderList"
                       MouseDoubleClick="FolderList_OnDoubleClick"
+                      PreviewKeyDown="FolderList_OnPreviewKeyDown"
                       BorderBrush="#FFCCD6E2" BorderThickness="1"
                       ToolTip="Selecciona una carpeta y pulsa Entrar, o haz doble clic para examinarla">
                 <ListView.View>
