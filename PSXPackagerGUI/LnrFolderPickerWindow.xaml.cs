@@ -19,10 +19,12 @@ namespace PSXPackagerGUI
         private int _chdCount;
 
         public string SelectedFolder { get; private set; } = "";
+        public bool SelectedIncludeSubfolders { get; private set; }
 
-        public LnrFolderPickerWindow(string initialFolder)
+        public LnrFolderPickerWindow(string initialFolder, bool includeSubfolders = false)
         {
             InitializeComponent();
+            IncludeSubfoldersCheck.IsChecked = includeSubfolders;
             var start = Directory.Exists(initialFolder)
                 ? initialFolder
                 : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -69,16 +71,47 @@ namespace PSXPackagerGUI
                 FolderList.ItemsSource = folders;
                 GameList.ItemsSource = chds;
                 UpButton.IsEnabled = Directory.GetParent(folder) != null;
-                SelectButton.IsEnabled = _chdCount > 0;
-                StatusLabel.Text = _chdCount == 0
-                    ? "No hay archivos CHD directamente en esta carpeta. Entra en una subcarpeta o escribe otra ruta."
-                    : $"{_chdCount} juego(s) CHD disponibles en esta carpeta. Pulsa «Usar esta carpeta» para continuar.";
+                UpdateScope();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
                                        or ArgumentException or NotSupportedException)
             {
                 StatusLabel.Text = "No se puede acceder a esa carpeta: " + ex.Message;
             }
+        }
+
+        private void UpdateScope()
+        {
+            if (StatusLabel == null || !Directory.Exists(_currentFolder)) return;
+            var recursive = IncludeSubfoldersCheck.IsChecked == true;
+            var count = _chdCount;
+            try
+            {
+                if (recursive)
+                    count = LnrChdFolderScanner.CountChds(_currentFolder, true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                StatusLabel.Text = "No se pudieron analizar todas las subcarpetas: " + ex.Message;
+                SelectButton.IsEnabled = false;
+                return;
+            }
+            SelectButton.IsEnabled = count > 0;
+            ScopeDescription.Text = recursive
+                ? "Se analizarán los CHD de esta carpeta y sus subcarpetas."
+                : "Se analizarán todos los archivos CHD de esta carpeta, sin entrar en subcarpetas.";
+            StatusLabel.Text = count == 0
+                ? (recursive
+                   ? "No hay CHD en esta carpeta ni en sus subcarpetas accesibles."
+                   : "No hay CHD directamente aquí. Entra en otra carpeta o marca «También subcarpetas».")
+                : recursive
+                    ? $"{count} juego(s) CHD encontrados en esta carpeta y subcarpetas (sin explorar PBP ni enlaces). Pulsa «Usar esta carpeta»."
+                    : $"{count} juego(s) CHD disponibles en esta carpeta. Pulsa «Usar esta carpeta» para continuar.";
+        }
+
+        private void IncludeSubfolders_OnChanged(object sender, RoutedEventArgs e)
+        {
+            UpdateScope();
         }
 
         private void Go_OnClick(object sender, RoutedEventArgs e) => Navigate(PathBox.Text);
@@ -116,12 +149,13 @@ namespace PSXPackagerGUI
 
         private void Select_OnClick(object sender, RoutedEventArgs e)
         {
-            if (_chdCount == 0 || !Directory.Exists(_currentFolder))
+            if (SelectButton.IsEnabled != true || !Directory.Exists(_currentFolder))
             {
                 StatusLabel.Text = "Selecciona primero una carpeta que contenga archivos CHD.";
                 return;
             }
             SelectedFolder = _currentFolder;
+            SelectedIncludeSubfolders = IncludeSubfoldersCheck.IsChecked == true;
             DialogResult = true;
         }
 
