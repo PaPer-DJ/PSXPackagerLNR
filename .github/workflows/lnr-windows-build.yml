@@ -242,7 +242,9 @@ jobs:
             'Grid.Column="9" x:Name="ScanButton"',
             'Grid.Column="10" x:Name="RunButton"',
             'x:Key="LnrPauseButtonTemplate"',
-            'x:Key="LnrPausingButtonTemplate"'
+            'x:Key="LnrPausingButtonTemplate"',
+            'Content="4 - Recomendado (HDD)" Tag="4"',
+            'Content="8 - Recomendado (SSD)" Tag="8"'
           )) {
             if (-not $xaml.Contains($marker)) { throw "One-row controls or pause icons missing: $marker" }
           }
