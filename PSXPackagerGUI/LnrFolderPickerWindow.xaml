@@ -4,6 +4,7 @@
         Title="Seleccionar carpeta de juegos CHD · PSXPackagerLNR"
         Width="1130" Height="650" MinWidth="1030" MinHeight="500"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        PreviewKeyDown="Window_OnPreviewKeyDown"
         Background="#FFF8FAFC">
     <Grid Margin="18">
         <Grid.RowDefinitions>
