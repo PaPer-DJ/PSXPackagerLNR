@@ -1,4 +1,4 @@
-name: Enrich PSXPackagerLNR beta.29 public release description
+name: Embed real batch-processing screenshot in beta.29 public release
 
 on:
   push:
@@ -15,10 +15,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  edit-notes:
+  update-release:
+    if: github.repository == 'PaPer-DJ/PSXPackagerLNR'
     runs-on: ubuntu-latest
     steps:
-      - name: Verify public release and update ONLY its notes
+      - name: Verify uploaded screenshot and update existing release notes
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -26,117 +27,55 @@ jobs:
           set -euo pipefail
           repo='PaPer-DJ/PSXPackagerLNR'
           tag='v0.1.0-beta.29'
-          release_id=448060186
-          sha='69dce2b57330ff3cdb2b1bec78d337500026796d'
-          endpoint="repos/$repo/releases/$release_id"
+          rid=448060186
+          pinned='69dce2b57330ff3cdb2b1bec78d337500026796d'
+          screenshot_commit='5f54df1cf08f04a4ea7190827cf063ef351d816f'
+          screenshot_path='docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes.png'
+          endpoint="repos/$repo/releases/$rid"
 
           before="$(gh api "$endpoint")"
           test "$(jq -r '.draft' <<< "$before")" = 'false'
           test "$(jq -r '.prerelease' <<< "$before")" = 'true'
           test "$(jq -r '.tag_name' <<< "$before")" = "$tag"
-          test "$(jq -r '.target_commitish' <<< "$before")" = "$sha"
+          test "$(jq -r '.target_commitish' <<< "$before")" = "$pinned"
+          test "$(gh api "repos/$repo/git/ref/tags/$tag" --jq '.object.sha')" = "$pinned"
           test "$(jq '.assets | length' <<< "$before")" = '4'
-          current_tag="$(gh api "repos/$repo/git/ref/tags/$tag" --jq '.object.sha')"
-          test "$current_tag" = "$sha"
-          before_assets="$(jq -c '[.assets[] | {id, name, size}] | sort_by(.id)' <<< "$before")"
 
-          cat > /tmp/lnr-public-release-notes.md <<'LNR_PUBLIC_NOTES_EOF'
-          # PSXPackagerLNR v0.1.0-beta.29 — primera beta pública
-          
-          **Fork de PaPer-DJ / LaNaveRETRO**, construido sobre el proyecto original [PSXPackager de RupertAvery y colaboradores](https://github.com/RupertAvery/PSXPackager). Aplicación portátil para **Windows x64**, sin instalación. **No es un motor creado desde cero por LNR**: conserva el motor original, los créditos y la licencia MIT.
-          
-          ## ¿Por qué nació este fork?
-          
-          La necesidad era muy concreta: convertir **colecciones grandes de juegos de PlayStation 1 guardadas en archivos CHD** al formato **PBP**, especialmente para **PSP originales y consolas portátiles de emulación**, sin repetir la misma operación juego por juego.
-          
-          Al estudiar y probar la GUI original (1.7.0rc1), LaNaveRETRO no encontró un flujo gráfico de **CHD → PBP directo y por lotes** que resolviera cómodamente esta tarea. El procedimiento habitual de extraer antes BIN/CUE, gestionar CHDMAN y otras herramientas, y hacer conversiones individuales resultaba innecesariamente laborioso.
-          
-          **PSXPackagerLNR convierte CHD de PS1 a PBP directamente, sin CHDMAN ni BIN/CUE intermedios**, haciendo que organizar y convertir catálogos enteros resulte mucho más práctico. La Suite adicional sí utiliza CHDMAN para determinados formatos; ambos flujos son independientes.
-          
-          ## Por qué el nivel 3 es el predeterminado LNR
-          
-          LaNaveRETRO realizó **pruebas propias sobre una PSP original**. En determinados juegos y momentos de carga, los PBP comprimidos en **niveles 1–3 cargaron antes que los comprimidos en niveles 4–5**. Por ello, **3 — Equilibrada (LNR)** es nuestra recomendación práctica cuando importan la fluidez de carga, los tamaños razonables y el tiempo de conversión, especialmente en dispositivos modestos.
-          
-          También comparamos tamaños de PBP obtenidos **a partir de la misma imagen de PS1**:
-          
-          | Nivel | Tamaño resultante |
-          | --- | ---: |
-          | **1** | 284.474.391 bytes |
-          | **5** | 280.715.895 bytes |
-          | **9** | 280.575.015 bytes |
-          
-          En esa comparación, **pasar de nivel 5 a 9 ahorró únicamente 140.880 bytes (aprox. 0,05 %)**. Para nuestras prioridades, **comprimir por encima de 5 no compensaba el trabajo extra por ese ahorro mínimo**.
-          
-          El motor emplea **DEFLATE con SharpZipLib 1.4.2**: niveles 1–4 usan un camino rápido y 5–9 uno más exhaustivo **al crear** el PBP. Esto **no** significa que la PSP ejecute las búsquedas del compresor. Las diferencias reales de carga dependen del juego, la tarjeta, los datos y el emulador. **Son observaciones de pruebas concretas, no una garantía universal de FPS, velocidad ni uso de CPU**. El nivel 3 no tiene una cifra de tamaño en la tabla anterior y no se le atribuye una medición inexistente. Se mantienen otros niveles de compresión seleccionables.
-          
-          [Explicación técnica completa y parámetros de compresión](https://github.com/PaPer-DJ/PSXPackagerLNR/blob/lnr/windows-chd-build/README.md#anexo-tecnico-lnr-nivel-3).
-          
-          ## Funciones y mejoras de esta edición
-          
-          - **Conversión directa CHD → PBP de PS1 por lotes:** seleccionar carpeta, analizar, confirmar y procesar múltiples títulos sin conversiones manuales a BIN/CUE.
-          - **Multidisco:** crear un PBP por disco o agrupar discos por juego, reconociendo listas M3U y determinadas series numeradas; el cambio de disco final depende del emulador.
-          - **Interfaz LNR dedicada:** tabla de títulos, discos, origen, tamaños CHD y PBP, variación de espacio, tiempo y progreso individual, además del avance global y estimación aproximada.
-          - **Seguimiento de juego activo:** la lista se desplaza automáticamente al juego en conversión; puede desactivarse para consultar otras filas.
-          - **Registro y productividad:** mensajes claros, copiar o limpiar registro, guardar informes y abrir la carpeta de resultados.
-          - **Seguridad:** saltar PBP existentes en vez de sobrescribirlos; validación básica de tamaño y cabecera de cada archivo generado. Los originales se conservan por defecto.
-          - **Conversión de colecciones grandes sin duplicar el espacio total:** opción *Eliminar CHD convertidos*, **desactivada por defecto y con doble confirmación**, que libera el CHD solo después de generar y comprobar básicamente un PBP nuevo. **Es irreversible; no sustituye una copia de seguridad.**
-          - **Apagado del equipo opcional**, con controles de seguridad y cuenta atrás cancelable; no se activa por defecto.
-          - **Aplicación portátil:** contiene la GUI clásica de PSXPackager, la nueva GUI LNR y el motor CLI. Acceso directo nativo **`#PSXPackagerLNR.lnk`**, ya probado por el autor del fork, sin ejecutable lanzador adicional.
-          - **Documentación y pruebas de regresión**, con compilaciones Windows identificables, notas de cambios y atribución al software original.
-          
-          ### Suite de discos: también PS1, Sega Saturn y PS2
-          
-          Además de generar PBP de PS1, la aplicación ofrece una **Suite de conversiones por lotes**:
-          
-          | Conversión | Sistema / disco | Consideraciones |
-          | --- | --- | --- |
-          | **PBP → CHD** | PS1 | Un CHD por disco; extrae BIN/CUE temporales y usa CHDMAN; no reconstruye metadatos que ya se hayan perdido |
-          | **PBP → BIN/CUE** | PS1 | Extrae pistas disponibles; sin CHDMAN |
-          | **PBP → ISO limitado** | PS1 | Exclusivamente CD de datos compatible, una pista; no para CD-Audio, Form2 XA ni multidisco |
-          | **CHD → BIN/CUE** | **PS1, Sega Saturn y PS2 en CD** | Genera imagen de CD con pistas disponibles mediante CHDMAN; no graba físicamente el disco |
-          | **CHD → ISO** | **PS2 en DVD** | Extrae ISO de DVD mediante CHDMAN |
-          
-          **Importante:** los juegos de Saturn y PS2 **no se convierten a PBP de PlayStation 1**. Las operaciones CHD → BIN/CUE y CHD → ISO y PBP → CHD requieren obtener **`chdman.exe` por separado**, por ejemplo desde MAME. No se redistribuye CHDMAN. Las conversiones de Saturn/PS2 y algunas rutas multidisco siguen siendo **experimentales y deben verificarse con imágenes reales**, especialmente las pistas de audio, los subcanales y las protecciones de discos.
-          
-          ## Evolución hasta esta beta
-          
-          - **Primeras betas:** versión Windows portátil, conexión GUI/CLI, flujo CHD → PBP y planificación de lotes.
-          - **Betas 5–8:** compresión nivel 3, seguridad al borrar CHD, Suite con conversiones inversas, CD y DVD, e importación guiada de CHDMAN.
-          - **Betas 10–15:** ergonomía de la tabla, estadísticas, preferencias, temporización, apagado opcional, nivel 3 coherente en todas las interfaces y documentación técnica basada en pruebas de PSP.
-          - **Betas 21–25:** acceso directo e icono Windows, pulido del diseño LNR MOD, centrado y tamaños de columnas, registro y refinamiento de la Suite.
-          - **Beta 28:** desplazamiento automático hasta el juego CHD activo.
-          - **Beta 29:** acceso directo portátil corregido y confirmado por el autor tras extraer/mover el programa; generador protegido contra regresiones.
-          
-          ## Descargas y uso
-          
-          - **GUI-win-x64.zip — recomendado:** paquete completo con `PSXPackagerGUI.exe`, `psxpackager.exe`, recursos y `#PSXPackagerLNR.lnk`. Extrae el ZIP completo y abre el acceso directo para iniciar directamente la GUI por lotes, o el EXE de la GUI para la interfaz clásica.
-          - **CLI-win-x64.zip:** conversor de línea de comandos.
-          - **Toolkit-win-x64.zip:** herramienta portátil de lotes con lanzador BAT.
-          - **SHA256SUMS.txt:** huellas SHA-256 de los paquetes.
-          
-          ## Advertencias de la beta
-          
-          La beta.29 está destinada a pruebas y uso bajo responsabilidad del usuario. **La conversión CHD → PBP en la GUI LNR procesa actualmente un juego cada vez**; se está estudiando un selector de conversiones simultáneas para una próxima beta. No todas las combinaciones de juegos, formatos y emuladores han sido probadas. Antes de utilizar la opción destructiva, conserva copias de los originales y comprueba los PBP en tu dispositivo.
-          
-          ## Créditos y licencia
-          
-          El software original **PSXPackager** pertenece a sus autores originales y colaboradores; repositorio mantenido por **RupertAvery**. Los avisos de copyright y la **licencia MIT** del origen se conservan en `LICENSE`. **PaPer-DJ / LaNaveRETRO aporta esta adaptación, su interfaz de lotes y herramientas adicionales**, sin atribuirse el motor original.
-          
-          [Proyecto original](https://github.com/RupertAvery/PSXPackager) · [Fork LaNaveRETRO](https://github.com/PaPer-DJ/PSXPackagerLNR) · [Documentación y cambios](https://github.com/PaPer-DJ/PSXPackagerLNR/blob/lnr/windows-chd-build/CHANGELOG-LNR.md)
-          
-          **Versión pública inmutable:** etiqueta `v0.1.0-beta.29`, commit `69dce2b57330ff3cdb2b1bec78d337500026796d`, paquetes de **GitHub Actions build 466**. La ampliación de estas notas no recompila ni sustituye los ZIP.
-          LNR_PUBLIC_NOTES_EOF
+          expected_blob='347fbcec08af46502001c2830e06d63a795acebf'
+          actual_blob="$(gh api "repos/$repo/contents/$screenshot_path?ref=$screenshot_commit" --jq '.sha')"
+          test "$actual_blob" = "$expected_blob"
+          expected_assets="$(jq -c '[.assets[] | {id, name, size}] | sort_by(.id)' <<< "$before")"
 
-          gh release edit "$tag" --repo "$repo" --notes-file /tmp/lnr-public-release-notes.md
+          jq -r '.body' <<< "$before" > /tmp/release-notes.md
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/release-notes.md')
+          body=p.read_text(encoding='utf-8')
+          url='https://raw.githubusercontent.com/PaPer-DJ/PSXPackagerLNR/5f54df1cf08f04a4ea7190827cf063ef351d816f/docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes.png'
+          marker='## Funciones y mejoras de esta edición'
+          screenshot_section=(
+              '## Captura real: PSXPackagerLNR convirtiendo por lotes\n\n'
+              '![PSXPackagerLNR beta.29 en Windows: conversión directa CHD a PBP, estados individuales, registro y avance del lote]('+url+')\n\n'
+              '*Captura original de LaNaveRETRO durante una ejecución real de la **beta.29 build 465**: '
+              '**272 PBP previstos, 95 terminados (35 %) en el instante de la imagen**, '
+              'con un juego procesándose y su progreso individual visible. '
+              'La descarga pública de esta versión corresponde a la **build 466**.*\n\n'
+          )
+          if url not in body:
+              assert body.count(marker)==1, 'No unique insertion point in release notes'
+              body=body.replace(marker,screenshot_section+marker)
+          assert body.count(url)==1, 'Screenshot link missing or duplicated'
+          p.write_text(body,encoding='utf-8')
+          PY
+
+          gh release edit "$tag" --repo "$repo" --notes-file /tmp/release-notes.md
+
           after="$(gh api "$endpoint")"
+          actual_assets="$(jq -c '[.assets[] | {id, name, size}] | sort_by(.id)' <<< "$after")"
+          test "$expected_assets" = "$actual_assets"
           test "$(jq -r '.draft' <<< "$after")" = 'false'
           test "$(jq -r '.prerelease' <<< "$after")" = 'true'
-          test "$(jq -r '.tag_name' <<< "$after")" = "$tag"
-          after_assets="$(jq -c '[.assets[] | {id, name, size}] | sort_by(.id)' <<< "$after")"
-          test "$after_assets" = "$before_assets"
-          actual_tag="$(gh api "repos/$repo/git/ref/tags/$tag" --jq '.object.sha')"
-          test "$actual_tag" = "$sha"
-          jq -r '.body' <<< "$after" | grep -Fq '140.880 bytes'
-          jq -r '.body' <<< "$after" | grep -Fq 'Sega Saturn y PS2'
-          echo "Release updated without changing assets, tag or pre-release status."
+          test "$(gh api "repos/$repo/git/ref/tags/$tag" --jq '.object.sha')" = "$pinned"
+          jq -r '.body' <<< "$after" | grep -Fq "$screenshot_commit/$screenshot_path"
+          echo "Screenshot embedded. Original release binaries and Git tag unchanged."
           jq -r '.html_url' <<< "$after"
