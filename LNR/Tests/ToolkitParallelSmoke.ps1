@@ -96,7 +96,7 @@ try {
     $traces=@(Get-ChildItem -LiteralPath $trace -File -Filter '*.txt')
     Assert-Toolkit ($traces.Count -eq 7) "Expected seven converted traces (including demo), got $($traces.Count)"
     $intervals=foreach($traceFile in $traces) {
-        $parts=(Get-Content -LiteralPath $traceFile -Raw).Trim().Split(',')
+        $parts=(Get-Content -LiteralPath $traceFile.FullName -Raw).Trim().Split(',')
         [pscustomobject]@{ Start=[long]$parts[0]; End=[long]$parts[1] }
     }
     $events=@(
