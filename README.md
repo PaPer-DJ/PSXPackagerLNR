@@ -41,9 +41,9 @@ de los autores originales.
   (detalladas abajo). La Suite depende de CHDMAN en los modos indicados;
   no se debe confundir con crear PBP para Saturn o PS2.
 
-**[Descargar PSXPackagerLNR v0.1.0-beta.30](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.30)** — versión beta para Windows x64, portátil sin instalación.
+**[Descargar PSXPackagerLNR v0.1.0-beta.31](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.31)** — beta pública para Windows x64, portátil sin instalación.
 
-[Consultar la beta.29 anterior](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.29).
+Versiones anteriores: [beta.30](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.30) · [beta.29](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.29).
 
 ## PSXPackagerLNR en funcionamiento: procesamiento real por lotes
 
@@ -63,15 +63,15 @@ Los selectores de **Multidisco**, **Compresión** y **Conversiones simultáneas*
 
 **Estado:** beta.30 validada por el autor en Windows con build 513 antes de la publicación pública. Se mantiene .NET 8 autocontenido, el acceso directo aprobado y el nivel de compresión 3. La beta.29 publicada permanece sin cambios.
 
-## Próxima beta.31 en desarrollo — Toolkit con conversión paralela
+## Beta.31 — Toolkit paralelo y explorador de carpetas mejorado
 
-El **Toolkit sin interfaz gráfica** está incorporando el procesamiento concurrente de juegos PS1 CHD → PBP: un proceso CLI independiente por juego y un selector **1, 2, 3, 4, 6, 8 o Auto**. El valor inicial es **4 (HDD)**, con **8 (SSD)** como sugerencia para equipos con recursos suficientes. Cada juego multidisco sigue siendo una única tarea y los originales se conservan.
+El **Toolkit sin interfaz gráfica** incorpora el procesamiento concurrente de juegos PS1 CHD → PBP: un proceso CLI independiente por juego y un selector **1, 2, 3, 4, 6, 8 o Auto**. El valor inicial es **4 (HDD)**, con **8 (SSD)** como sugerencia para equipos con recursos suficientes. Cada juego multidisco sigue siendo una única tarea y los originales se conservan.
 
 Al ejecutar el BAT, una guía inicial explica qué carpeta se procesa, dónde aparecerán los PBP, cómo se respeta el orden de los M3U y las salvaguardas de los archivos. No hace falta instalar CHDMAN ni abrir la GUI. **El Toolkit incluye controles de teclado P/R/C:** P solicita una pausa segura entre juegos, R reanuda y C cancela los procesos activos sin borrar CHD originales. La pausa espera a que terminen los PBP que ya se están generando, sin interrumpir su escritura.
 
 La GUI incluye además una mejora en el navegador de carpetas: botones **Atrás** y **Entrar**, y casilla **«También subcarpetas»** en la parte inferior. Activarla busca CHD de forma recursiva y conserva la estructura de carpetas en la salida `PBP`, evitando sobrescrituras entre juegos con nombres repetidos. Se omiten carpetas PBP, herramientas y enlaces de directorio; el modo original de carpeta única sigue siendo el predeterminado.
 
-**En desarrollo:** todavía requiere pruebas automáticas y comprobación real antes de distribuirse como beta.31. La descarga pública actual es **beta.30 build 523**, que no se modifica.
+**Validación:** las funciones de esta beta.31 han sido comprobadas por el autor en Windows y las pruebas automatizadas de Windows (compilación, herramientas, seguridad y portabilidad) se han superado. Sigue siendo una **versión beta**, no estable; conserva copia de seguridad de tus imágenes de origen. La beta.30 build 523 permanece disponible sin cambios.
 
 ## Inicio rápido en Windows
 
@@ -85,9 +85,9 @@ No se instala nada ni se utiliza un ejecutable lanzador adicional. **Conserva ju
 
 ## Versionado y descargas identificables
 
-La versión LNR más reciente es **v0.1.0-beta.30** (pre-release pública); la anterior **v0.1.0-beta.29** sigue disponible. Su número se define en [LNR/VERSION](LNR/VERSION) y sus novedades se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
+La última versión pública es **v0.1.0-beta.31** (pre-release); las betas **.30** y **.29** siguen disponibles. Su número se define en [LNR/VERSION](LNR/VERSION) y sus novedades se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
-Cada compilación de GitHub Actions añade un número de ejecución único, por ejemplo `PSXPackagerLNR-v0.1.0-beta.30-bNN-GUI-win-x64.zip`. También se generan los paquetes de CLI y Toolkit.
+Cada compilación de GitHub Actions añade un número de ejecución único, por ejemplo `PSXPackagerLNR-v0.1.0-beta.31-bNN-GUI-win-x64.zip`. También se generan los paquetes de CLI y Toolkit.
 
 - [Descargas de pruebas (Actions)](https://github.com/PaPer-DJ/PSXPackagerLNR/actions).
 - Las compilaciones de Actions son temporales y pueden caducar a los 30 días; conserva las que necesites.
