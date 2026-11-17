@@ -75,7 +75,7 @@
             </StackPanel>
         </DataTemplate>
         <DataTemplate x:Key="LnrGameNameTemplate">
-            <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}"
+            <TextBlock Text="{Binding DisplayName}" ToolTip="{Binding DisplayName}"
                        HorizontalAlignment="Left" TextAlignment="Left"
                        TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
         </DataTemplate>
