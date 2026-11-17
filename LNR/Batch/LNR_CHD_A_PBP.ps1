@@ -7,6 +7,8 @@ param(
     [Parameter(Mandatory=$true)][string]$ToolsDir,
     [ValidateSet('Separados','Unidos')][string]$MultiMode='Separados',
     [ValidateSet(1,3,5,9)][int]$Level=3,
+    # 0 = Auto (1..4), otherwise cap simultaneous independent CLI processes.
+    [ValidateSet(0,1,2,3,4,6,8)][int]$Parallel=4,
     [switch]$PlanOnly,
     [string]$PlanJson
 )
@@ -58,9 +60,12 @@ try {
     $byName=@{}
     foreach ($file in $chds) { $byName[$file.Name]=$file.FullName }
     $claimed=@{}; $blocked=@{}
+    $effectiveParallel=if ($Parallel -eq 0) {
+        [int][Math]::Min(4,[Math]::Max(1,[Math]::Floor([Environment]::ProcessorCount/2.0)))
+    } else { $Parallel }
     Log ('ROM: '+$SourceDir)
     Log ('Herramientas: '+$ToolsDir)
-    Log ('CHD encontrados: '+$chds.Count+' | Modo: '+$MultiMode+' | Nivel: '+$Level)
+    Log ('CHD encontrados: '+$chds.Count+' | Modo: '+$MultiMode+' | Nivel: '+$Level+' | Conversiones simultaneas: '+$effectiveParallel+$(if($Parallel -eq 0){' (Auto)'}else{''}))
 
     if ($MultiMode -eq 'Unidos') {
         # Los M3U existentes tienen prioridad. Si estan incompletos, se bloquean
@@ -144,7 +149,7 @@ try {
     Log ('PBP previstos: '+$script:Jobs.Count+' | Avisos: '+$script:Warnings.Count)
     if ($PlanJson) {
         $plan=[pscustomobject]@{
-            mode=$MultiMode; level=$Level; source=$SourceDir
+            mode=$MultiMode; level=$Level; parallel=$Parallel; source=$SourceDir
             jobs=@($script:Jobs.ToArray()); warnings=@($script:Warnings.ToArray())
         }
         $json=$plan | ConvertTo-Json -Depth 8
@@ -167,27 +172,96 @@ try {
     Log ('CLI: '+$cli)
     Log ('Destino: '+$destDir)
     Log ('Informe: '+$report)
-    $i=0
-    foreach ($job in $script:Jobs) {
-        $i++
+    # La GUI LNR y el Toolkit comparten la arquitectura: UN proceso
+    # psxpackager.exe aislado y UN staging por juego, nunca varios
+    # threads comprimiendo el mismo PBP. Windows PowerShell 5.1 compatible.
+    # Leemos stdout y stderr de forma asincrona para evitar deadlocks.
+    function Quote-CliArg([string]$value) {
+        # Paths de archivos Windows no contienen comillas dobles. Todos los
+        # argumentos de ruta usados aqui acaban en nombre de archivo/carpeta,
+        # nunca en barra inversa, por lo que son seguros entre comillas.
+        if ($value.Contains('"')) { throw 'Ruta invalida para la CLI: contiene comillas dobles.' }
+        return ('"' + $value + '"')
+    }
+
+    $active=New-Object 'System.Collections.Generic.List[object]'
+    $next=0
+    $lastStatus=[DateTime]::UtcNow
+    $slots=[Math]::Min($effectiveParallel,[Math]::Max(1,$script:Jobs.Count))
+    Log ('PLAN DE EJECUCION: '+$slots+' conversion(es) simultanea(s). Los CHD originales se conservan siempre.')
+
+    function Start-Conversion([object]$job,[int]$ordinal) {
         $output=Join-Path $destDir ($job.Name+'.pbp')
-        if (Test-Path -LiteralPath $output) {
-            $script:Skipped++; Log ('['+$i+'/'+$script:Jobs.Count+'] EXISTE, se omite: '+$job.Name) 'AVISO'
-            continue
+        if ([System.IO.File]::Exists($output)) {
+            $script:Skipped++
+            Log ('['+$ordinal+'/'+$script:Jobs.Count+'] EXISTE, se omite: '+$job.Name) 'AVISO'
+            return $null
         }
         $stage=Join-Path $tempRoot ('LNR_'+[guid]::NewGuid().ToString('N'))
+        $process=$null
         try {
             [void](New-Item -ItemType Directory -Path $stage -Force)
             $inputFile=$job.Discs[0]
             if ($job.Discs.Count -gt 1) {
-                # CHD absolutos: el conversor los abre directamente, sin BIN/CUE.
+                # CHD absolutos: el lector del motor abre cada disco original.
                 $inputFile=Join-Path $stage ($job.Name+'.m3u')
                 [System.IO.File]::WriteAllLines($inputFile,[string[]]$job.Discs,(New-Object System.Text.UTF8Encoding($false)))
             }
-            Log ('['+$i+'/'+$script:Jobs.Count+'] '+$job.Name+' ('+$job.Discs.Count+' disco(s))')
-            & $cli -i $inputFile -o $stage -l $Level -s
-            if ($LASTEXITCODE -ne 0) { throw ('La CLI devolvio '+$LASTEXITCODE) }
-            $candidates=@(Get-ChildItem -LiteralPath $stage -File -Filter '*.pbp')
+            $info=New-Object System.Diagnostics.ProcessStartInfo
+            $info.FileName=$cli
+            $info.WorkingDirectory=$ToolsDir
+            $info.UseShellExecute=$false
+            $info.CreateNoWindow=$true
+            $info.RedirectStandardOutput=$true
+            $info.RedirectStandardError=$true
+            # No hay expansion de shell ni consola; se citan las rutas.
+            $info.Arguments=('-i {0} -o {1} -l {2} -s' -f (Quote-CliArg $inputFile),(Quote-CliArg $stage),$Level)
+            $process=New-Object System.Diagnostics.Process
+            $process.StartInfo=$info
+            if (-not $process.Start()) { throw 'No se pudo iniciar psxpackager.exe' }
+            $outTask=$process.StandardOutput.ReadToEndAsync()
+            $errTask=$process.StandardError.ReadToEndAsync()
+            Log ('['+$ordinal+'/'+$script:Jobs.Count+'] INICIADO: '+$job.Name+' ('+$job.Discs.Count+' disco(s))')
+            return [pscustomobject]@{
+                Job=$job; Ordinal=$ordinal; Output=$output; Stage=$stage
+                Process=$process; StdoutTask=$outTask; StderrTask=$errTask
+                Started=[DateTime]::UtcNow
+            }
+        } catch {
+            $script:Failed++
+            Log ('ERROR al iniciar '+$job.Name+': '+$_.Exception.Message) 'ERROR'
+            if ($null -ne $process) {
+                try {
+                    if (-not $process.HasExited) {
+                        $process.Kill()
+                        [void]$process.WaitForExit(15000)
+                    }
+                } catch {}
+                $process.Dispose()
+            }
+            if (Test-Path -LiteralPath $stage) {
+                Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            return $null
+        }
+    }
+
+    function Finish-Conversion([object]$task) {
+        $job=$task.Job
+        $ordinal=$task.Ordinal
+        $process=$task.Process
+        try {
+            # El proceso ya ha terminado; el final de los dos streams
+            # siempre debe consumirse antes de leer ExitCode y limpiar.
+            $stdout=$task.StdoutTask.GetAwaiter().GetResult()
+            $stderr=$task.StderrTask.GetAwaiter().GetResult()
+            $process.WaitForExit()
+            if ($process.ExitCode -ne 0) {
+                $details=if (-not [string]::IsNullOrWhiteSpace($stderr)) { $stderr.Trim() } else { $stdout.Trim() }
+                if ($details.Length -gt 400) { $details=$details.Substring($details.Length-400) }
+                throw ('La CLI devolvio '+$process.ExitCode+'. '+$details)
+            }
+            $candidates=@(Get-ChildItem -LiteralPath $task.Stage -File -Filter '*.pbp')
             if ($candidates.Count -ne 1 -or $candidates[0].Length -lt 4096) {
                 throw ('Se esperaba 1 PBP valido, encontrados: '+$candidates.Count)
             }
@@ -200,13 +274,16 @@ try {
                     throw 'Cabecera PBP no reconocida'
                 }
             } finally { $handle.Dispose() }
-            if (Test-Path -LiteralPath $output) { throw 'Otro proceso ya creo el archivo de destino' }
-            Move-Item -LiteralPath $candidates[0].FullName -Destination $output -ErrorAction Stop
+            if ([System.IO.File]::Exists($task.Output)) { throw 'Otro proceso ya creo el archivo de destino' }
+            # File.Move falla si aparece un PBP de destino. Evita el
+            # comportamiento de sobreescritura potencial de Move-Item.
+            [System.IO.File]::Move($candidates[0].FullName,$task.Output)
             $a=[long]0
             foreach ($disc in $job.Discs) { $a+=(Get-Item -LiteralPath $disc).Length }
-            $b=(Get-Item -LiteralPath $output).Length
+            $b=(Get-Item -LiteralPath $task.Output).Length
             $script:InputBytes+=$a; $script:OutputBytes+=$b; $script:OK++
-            Log ('OK: CHD '+(MB $a)+' -> PBP '+(MB $b)+' | diferencia '+(MB ($a-$b))) 'OK'
+            $elapsed=([DateTime]::UtcNow-$task.Started).TotalSeconds
+            Log ('['+$ordinal+'/'+$script:Jobs.Count+'] OK: '+$job.Name+' | CHD '+(MB $a)+' -> PBP '+(MB $b)+' | diferencia '+(MB ($a-$b))+' | '+[Math]::Round($elapsed,1)+' s') 'OK'
             foreach ($disc in $job.Discs) {
                 $sbi=[System.IO.Path]::ChangeExtension($disc,'.sbi')
                 if (Test-Path -LiteralPath $sbi -PathType Leaf) {
@@ -222,11 +299,65 @@ try {
         } catch {
             $script:Failed++
             Log ('ERROR '+$job.Name+': '+$_.Exception.Message) 'ERROR'
-        } finally {
-            if (Test-Path -LiteralPath $stage) {
-                Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    # El planificador corre solo en el hilo de PowerShell. Cada proceso
+    # hijo convierte de forma independiente y se contabiliza al terminar.
+    # No se crean jobs de PowerShell que modifiquen archivos compartidos.
+    try {
+        while ($next -lt $script:Jobs.Count -or $active.Count -gt 0) {
+            while ($active.Count -lt $slots -and $next -lt $script:Jobs.Count) {
+                $job=$script:Jobs[$next]
+                $next++
+                $task=Start-Conversion $job $next
+                if ($null -ne $task) { [void]$active.Add($task) }
+            }
+            if ($active.Count -eq 0) { continue }
+            $finished=@($active.ToArray() | Where-Object { $_.Process.HasExited })
+            if ($finished.Count -eq 0) {
+                if (([DateTime]::UtcNow-$lastStatus).TotalSeconds -ge 15) {
+                    Log ('EN CURSO: '+$active.Count+' conversion(es); pendientes de iniciar: '+($script:Jobs.Count-$next))
+                    $lastStatus=[DateTime]::UtcNow
+                }
+                Start-Sleep -Milliseconds 200
+                continue
+            }
+            foreach ($task in $finished) {
+                try { Finish-Conversion $task }
+                finally {
+                    [void]$active.Remove($task)
+                    $task.Process.Dispose()
+                    if (Test-Path -LiteralPath $task.Stage) {
+                        Remove-Item -LiteralPath $task.Stage -Recurse -Force -ErrorAction SilentlyContinue
+                    }
+                }
             }
         }
+    } finally {
+        # Ctrl+C o excepcion general: no dejar procesos hijos
+        # escribiendo en carpetas que se van a borrar.
+        foreach ($task in @($active.ToArray())) {
+            $process=$task.Process
+            $stopped=$false
+            try {
+                if (-not $process.HasExited) { $process.Kill() }
+                $stopped=$process.WaitForExit(15000)
+            } catch {
+                Warn ('No se pudo confirmar la detencion de '+$task.Job.Name)
+            }
+            if ($stopped) {
+                try {
+                    [void]$task.StdoutTask.GetAwaiter().GetResult()
+                    [void]$task.StderrTask.GetAwaiter().GetResult()
+                } catch {}
+                if (Test-Path -LiteralPath $task.Stage) {
+                    Remove-Item -LiteralPath $task.Stage -Recurse -Force -ErrorAction SilentlyContinue
+                }
+            }
+            $process.Dispose()
+        }
+        $active.Clear()
     }
     Log ('FIN: OK '+$script:OK+' | Ya existentes '+$script:Skipped+' | Fallos '+$script:Failed+' | Avisos '+$script:Warnings.Count)
     Log ('CHD convertidos: '+(MB $script:InputBytes)+' | PBP generados: '+(MB $script:OutputBytes))
