@@ -4,7 +4,9 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Microsoft.Win32;
 
 namespace PSXPackagerGUI
@@ -32,7 +34,7 @@ namespace PSXPackagerGUI
             Navigate(start);
         }
 
-        private void Navigate(string path)
+        private void Navigate(string path, string childToSelect = null)
         {
             try
             {
@@ -73,6 +75,41 @@ namespace PSXPackagerGUI
                 _directChds = chds;
                 UpButton.IsEnabled = Directory.GetParent(folder) != null;
                 UpdateScope();
+
+                // When returning to the parent, highlight the child that was
+                // just visited and restore KEYBOARD focus to that row. This
+                // permits immediate Up/Down + Enter navigation without a mouse.
+                if (childToSelect != null)
+                {
+                    var previousChild = folders.FirstOrDefault(entry =>
+                        string.Equals(entry.FullPath, childToSelect,
+                                      StringComparison.OrdinalIgnoreCase));
+                    if (previousChild != null)
+                    {
+                        FolderList.SelectedItem = previousChild;
+                        FolderList.ScrollIntoView(previousChild);
+                        Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                        {
+                            // A later navigation/selection must not be undone
+                            // by a pending focus callback from an older folder.
+                            if (!string.Equals(_currentFolder, folder, StringComparison.OrdinalIgnoreCase) ||
+                                !ReferenceEquals(FolderList.SelectedItem, previousChild))
+                                return;
+
+                            FolderList.UpdateLayout();
+                            if (FolderList.ItemContainerGenerator.ContainerFromItem(previousChild)
+                                is ListViewItem row)
+                            {
+                                row.Focus();
+                                Keyboard.Focus(row);
+                            }
+                            else
+                            {
+                                FolderList.Focus();
+                            }
+                        }));
+                    }
+                }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
                                        or ArgumentException or NotSupportedException)
@@ -183,8 +220,24 @@ namespace PSXPackagerGUI
 
         private void Up_OnClick(object sender, RoutedEventArgs e)
         {
-            var parent = Directory.GetParent(_currentFolder);
-            if (parent != null) Navigate(parent.FullName);
+            var previousFolder = _currentFolder;
+            var parent = Directory.GetParent(previousFolder);
+            if (parent != null)
+                Navigate(parent.FullName, previousFolder);
+        }
+
+        private void FolderList_OnPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Up/Down remain handled natively by ListView. Enter navigates
+            // into the selected folder, exactly like the on-screen button.
+            if (e.Key != Key.Enter && e.Key != Key.Return)
+                return;
+
+            if (FolderList.SelectedItem is FolderPreview selected)
+            {
+                e.Handled = true;
+                Navigate(selected.FullPath);
+            }
         }
 
         private void FolderList_OnDoubleClick(object sender, MouseButtonEventArgs e)
