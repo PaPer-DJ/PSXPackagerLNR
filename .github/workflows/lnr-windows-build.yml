@@ -549,7 +549,7 @@ jobs:
             "Receive-ControlCommand", "Poll-Controls",
             "PAUSANDO:", "EN PAUSA:", "REANUDADO:",
             "CANCELANDO:", "CANCELADO POR EL USUARIO",
-            "if ($script:CancelRequested) { exit 3 }"
+            'if ($script:CancelRequested) { exit 3 }'
           )) {
             if (-not $ps1.Contains($marker)) { throw "Toolkit worker/safety regression: $marker" }
           }
