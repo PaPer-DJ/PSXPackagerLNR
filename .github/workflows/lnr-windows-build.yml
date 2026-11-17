@@ -505,6 +505,31 @@ jobs:
           )) {
             if (-not $pickerCode.Contains($marker)) { throw "Folder recursion picker wiring missing: $marker" }
           }
+          # "Entrar" opens the selected subfolder. Edited path retains
+          # priority so users can also paste an absolute folder location.
+          foreach ($marker in @(
+            'if (FolderList.SelectedItem is FolderPreview selected)',
+            'Navigate(selected.FullPath);',
+            'if (!string.Equals(typedPath, _currentFolder',
+            'Navigate(typedPath);',
+            'Selecciona una subcarpeta de la lista'
+          )) {
+            if (-not $pickerCode.Contains($marker)) { throw "Entrar navigation regression: $marker" }
+          }
+          $go = $pickerCode.IndexOf('private void Go_OnClick(')
+          $typed = $pickerCode.IndexOf('Navigate(typedPath);', $go)
+          $selected = $pickerCode.IndexOf('Navigate(selected.FullPath);', $go)
+          $onEnter = $pickerCode.IndexOf('private void PathBox_OnKeyDown(', $go)
+          if ($go -lt 0 -or $typed -lt $go -or $selected -le $typed -or
+              $onEnter -le $selected) {
+            throw "Entrar must navigate edited path or selected subfolder, in that order"
+          }
+          if ($pickerCode.Contains('Go_OnClick(object sender, RoutedEventArgs e) => Navigate(PathBox.Text)')) {
+            throw "Old inert Entrar handler has returned"
+          }
+          if (-not $picker.Contains('Content="Entrar" Click="Go_OnClick"')) {
+            throw "Entrar button no longer uses corrected handler"
+          }
           foreach ($marker in @(
             'PlanOneFolder(',
             'LnrChdFolderScanner.EnumerateFolders(',
