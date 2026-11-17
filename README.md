@@ -56,6 +56,10 @@ La rama de desarrollo incorpora un **selector de 1, 2, 3, 4, 6, 8 conversiones s
 
 El objetivo es mejorar el rendimiento en equipos con varios núcleos y SSD. **No se promete un factor fijo de aceleración**: se requieren más RAM, CPU y espacio provisional, y el rendimiento dependerá del equipo. Cancelar afecta a todos los procesos, los PBP existentes no se sobrescriben y el borrado de CHD sigue siendo opcional y con confirmación explícita.
 
+**Pausa segura:** el botón de la interfaz LNR cambia de **Convertir** a **Pausar**, luego **Pausando...** mientras terminan íntegramente los juegos activos y finalmente **Reanudar** cuando no queda ninguna operación abierta. Durante la pausa no se asignan nuevos juegos y no se interrumpe ningún PBP a mitad de escritura; al reanudar se procesan los pendientes. **Cancelar** sigue disponible y tiene una función diferente: interrumpe el lote.
+
+Los selectores de **Multidisco**, **Compresión** y **Conversiones simultáneas** ahora están alineados en una sola fila. Los detalles de consumo de recursos están en la ayuda del selector.
+
 **Estado:** funcionalidad en desarrollo y pendiente de validación real en Windows; **no forma parte de la descarga pública beta.29 build 466**. No se ha cambiado el runtime .NET 8 autocontenido ni el acceso directo aprobado.
 
 ## Inicio rápido en Windows
@@ -70,7 +74,7 @@ No se instala nada ni se utiliza un ejecutable lanzador adicional. **Conserva ju
 
 ## Versionado y descargas identificables
 
-La versión de desarrollo actual es **v0.1.0-beta.29**. Su número se define en [LNR/VERSION](LNR/VERSION) y sus novedades se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
+La versión de desarrollo actual es **v0.1.0-beta.30** (en pruebas). La última **beta pública** descargable continúa siendo **v0.1.0-beta.29 build 466**. Su número se define en [LNR/VERSION](LNR/VERSION) y sus novedades se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
 Cada compilación de GitHub Actions añade un número de ejecución único, por ejemplo `PSXPackagerLNR-v0.1.0-beta.29-bNN-GUI-win-x64.zip`. También se generan los paquetes de CLI y Toolkit.
 
