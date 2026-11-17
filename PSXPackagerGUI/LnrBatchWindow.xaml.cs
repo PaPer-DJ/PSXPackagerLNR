@@ -44,6 +44,8 @@ namespace PSXPackagerGUI
         private bool _running;
         private string _planFolder;
         private int _planMode;
+        private bool _planIncludeSubfolders;
+        private bool _includeSubfolders;
         private long _sumOriginal;
         private long _sumConverted;
         private int _succeeded;
@@ -89,6 +91,7 @@ namespace PSXPackagerGUI
             _shutdownCountdown.Tick += ShutdownCountdown_OnTick;
             ShutdownCheck.IsChecked = false; // Opt-in never persisted.
             _preferences = LnrGuiPreferences.Load();
+            _includeSubfolders = _preferences.IncludeSubfolders;
 
             var current = new DirectoryInfo(AppContext.BaseDirectory);
             var portableSource = current.Parent?.Name.Equals(".tools", StringComparison.OrdinalIgnoreCase) == true
@@ -140,6 +143,7 @@ namespace PSXPackagerGUI
                     CompressionIndex = -1,
                     CompressionLevel = SelectedLevel,
                     ParallelConversions = SelectedParallelSetting,
+                    IncludeSubfolders = _includeSubfolders,
                     FollowActivity = AutoScrollCheck.IsChecked == true,
                     WindowWidth = ActualWidth,
                     WindowHeight = ActualHeight,
@@ -228,11 +232,13 @@ namespace PSXPackagerGUI
         {
             // The default Windows folder dialog hides files. Our picker
             // previews all CHD games before the folder is selected.
-            var dialog = new LnrFolderPickerWindow(SourceBox.Text) { Owner = this };
+            var dialog = new LnrFolderPickerWindow(SourceBox.Text, _includeSubfolders) { Owner = this };
             if (dialog.ShowDialog() == true)
             {
                 SourceBox.Text = dialog.SelectedFolder;
+                _includeSubfolders = dialog.SelectedIncludeSubfolders;
                 TryAutoScan(force: true);
+                SavePreferences();
             }
         }
 
@@ -271,7 +277,8 @@ namespace PSXPackagerGUI
             }
             if (!force && _planFolder != null
                 && string.Equals(Path.GetFullPath(folder), _planFolder, StringComparison.OrdinalIgnoreCase)
-                && _planMode == ModeCombo.SelectedIndex)
+                && _planMode == ModeCombo.SelectedIndex
+                && _planIncludeSubfolders == _includeSubfolders)
                 return;
             try
             {
@@ -399,7 +406,7 @@ namespace PSXPackagerGUI
                     preferred[i] = view.Columns[i].Width;
 
             var available = JobList.ActualWidth - SystemParameters.VerticalScrollBarWidth - 8;
-            var longestName = AutoWidth("Nombre PBP", j => j.Name, 160, 1800);
+            var longestName = AutoWidth("Nombre PBP", j => j.DisplayName, 160, 1800);
             preferred[0] = _manuallySizedColumns.Contains(0)
                 ? view.Columns[0].Width
                 : Math.Max(longestName, Math.Floor(available - preferred.Skip(1).Sum()));
@@ -503,7 +510,7 @@ namespace PSXPackagerGUI
             var existing = 0;
             foreach (var job in Plan(folder, IsMerged))
             {
-                var foundPbp = Path.Combine(outputFolder, job.Name + ".pbp");
+                var foundPbp = Path.Combine(outputFolder, job.RelativeOutputPath);
                 if (File.Exists(foundPbp))
                 {
                     job.ReadExistingPbp(foundPbp);
@@ -515,12 +522,13 @@ namespace PSXPackagerGUI
 
             _planFolder = folder;
             _planMode = ModeCombo.SelectedIndex;
+            _planIncludeSubfolders = _includeSubfolders;
             CountLabel.Text = existing == 0
                 ? $"{_jobs.Count} PBP previstos"
                 : $"{_jobs.Count} PBP previstos · {existing} ya existen";
             RunButton.IsEnabled = _jobs.Count > 0;
-            SummaryLabel.Text = "Salida: " + outputFolder + " · originales intactos.";
-            Append($"Plan preparado: {_jobs.Count} PBP / modo {(IsMerged ? "UNIDOS" : "SEPARADOS")}, compresión {SelectedLevel}.");
+            SummaryLabel.Text = "Salida: " + outputFolder + (_includeSubfolders ? " (subcarpetas reflejadas)" : "") + " · originales intactos.";
+            Append($"Plan preparado: {_jobs.Count} PBP / modo {(IsMerged ? "UNIDOS" : "SEPARADOS")}, compresión {SelectedLevel}, subcarpetas {(_includeSubfolders ? "SÍ" : "NO")}.");
             if (existing > 0)
                 Append($"AVISO: {existing} archivos ya están en PBP y serán saltados sin sobrescribir.");
             UpdateBatchProgress();
@@ -529,13 +537,28 @@ namespace PSXPackagerGUI
 
         private IEnumerable<LnrConversionJob> Plan(string folder, bool merge)
         {
-            var files = Directory.EnumerateFiles(folder, "*.chd", SearchOption.TopDirectoryOnly)
-                                 .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
-                                 .ToList();
+            var jobs = new List<LnrConversionJob>();
+            foreach (var subfolder in LnrChdFolderScanner.EnumerateFolders(folder, _includeSubfolders, Append))
+            {
+                var files = LnrChdFolderScanner.FindChds(subfolder, Append);
+                if (files.Count == 0) continue;
+                var relative = LnrChdFolderScanner.RelativeFolder(folder, subfolder);
+                jobs.AddRange(PlanOneFolder(subfolder, relative, merge, files));
+            }
+            if (jobs.Count == 0)
+                throw new InvalidOperationException(_includeSubfolders
+                    ? "No se encontraron archivos CHD en la carpeta ni en sus subcarpetas accesibles."
+                    : "No hay archivos .chd en la carpeta seleccionada.");
 
-            if (files.Count == 0)
-                throw new InvalidOperationException("No hay archivos .chd en la carpeta seleccionada.");
+            return jobs.OrderBy(job => job.DisplayName, StringComparer.OrdinalIgnoreCase);
+        }
 
+        private IEnumerable<LnrConversionJob> PlanOneFolder(
+            string folder, string relativeFolder, bool merge, IReadOnlyList<string> foundFiles)
+        {
+            // Only group M3U and numbered discs in their own source folder.
+            // Identical names in different subfolders have distinct PBP targets.
+            var files = foundFiles.ToList();
             var byName = files.ToDictionary(Path.GetFileName, StringComparer.OrdinalIgnoreCase);
             var claimed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var blocked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -586,7 +609,7 @@ namespace PSXPackagerGUI
 
                     foreach (var disc in found) claimed.Add(disc);
                     result.Add(new LnrConversionJob(Path.GetFileNameWithoutExtension(playlist),
-                                                    found, "M3U"));
+                                                    found, "M3U", relativeFolder));
                 }
 
                 var grouped = new Dictionary<string, List<(int number, string path)>>(StringComparer.OrdinalIgnoreCase);
@@ -619,20 +642,20 @@ namespace PSXPackagerGUI
                     }
                     var paths = discs.Select(d => d.path).ToList();
                     foreach (var path in paths) claimed.Add(path);
-                    result.Add(new LnrConversionJob(group.Key, paths, "Auto"));
+                    result.Add(new LnrConversionJob(group.Key, paths, "Auto", relativeFolder));
                 }
             }
 
             foreach (var file in files.Where(f => !claimed.Contains(f) && !blocked.Contains(f)))
             {
                 result.Add(new LnrConversionJob(Path.GetFileNameWithoutExtension(file),
-                                                new List<string> { file }, "Individual"));
+                                                new List<string> { file }, "Individual", relativeFolder));
             }
 
             var counts = result.GroupBy(job => job.Name + ".pbp", StringComparer.OrdinalIgnoreCase)
                                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
             foreach (var duplicate in counts.Where(pair => pair.Value > 1))
-                Append("AVISO: nombre PBP duplicado: " + duplicate.Key + ". Se excluye para evitar sobrescrituras.");
+                Append("AVISO: nombre PBP duplicado en " + folder + ": " + duplicate.Key + ". Se excluye para evitar sobrescrituras.");
 
             return result.Where(job => counts[job.Name + ".pbp"] == 1)
                          .OrderBy(job => job.Name, StringComparer.OrdinalIgnoreCase);
@@ -1552,9 +1575,11 @@ namespace PSXPackagerGUI
             private long? _outputBytes;
             private TimeSpan? _elapsed;
 
-            public LnrConversionJob(string name, List<string> discs, string origin)
+            public LnrConversionJob(string name, List<string> discs, string origin,
+                                    string relativeFolder = "")
             {
                 Name = name;
+                RelativeFolder = relativeFolder ?? "";
                 Discs = discs;
                 Origin = origin;
                 try
@@ -1576,6 +1601,9 @@ namespace PSXPackagerGUI
             }
 
             public string Name { get; }
+            public string RelativeFolder { get; }
+            public string RelativeOutputPath => Path.Combine(RelativeFolder, Name + ".pbp");
+            public string DisplayName => RelativeOutputPath;
             public List<string> Discs { get; }
             public Dictionary<string, (long Length, DateTime LastWriteTimeUtc)> OriginalFiles { get; } = new(StringComparer.OrdinalIgnoreCase);
             public int DiscCount => Discs.Count;
