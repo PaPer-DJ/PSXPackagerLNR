@@ -70,32 +70,61 @@ Cada compilación de GitHub Actions añade un número de ejecución único, por 
 - Las compilaciones de Actions son temporales y pueden caducar a los 30 días; conserva las que necesites.
 - La rama `master` sigue independiente del trabajo en `lnr/windows-chd-build`. No hay versión estable publicada de LNR.
 
-### Mediciones reales que motivaron esta elección
+## Por qué el nivel 3 de Compresión es el predeterminado LNR
 
-En una prueba de conversión **real realizada por LaNaveRETRO** con una misma
-imagen de PS1, se obtuvieron los siguientes tamaños de PBP:
+### Prueba real: Actua Soccer 3 (Europe)
 
-| Compresión | Tamaño resultante |
+LaNaveRETRO comparó **cuatro niveles de compresión de PBP** para
+*Actua Soccer 3 (Europe)*. La captura del Explorador de Windows también
+permite comparar el tamaño de los archivos BIN y CHD del mismo título.
+
+| Archivo / formato | Tamaño que muestra Windows |
 | --- | ---: |
-| Nivel 1 | 284.474.391 bytes |
-| Nivel 5 | 280.715.895 bytes |
-| Nivel 9 | 280.575.015 bytes |
+| BIN (imagen de CD sin comprimir) | **429.709 KB** |
+| CHD | **235.208 KB** |
+| PBP — nivel 1 | **277.808 KB** |
+| **PBP — nivel 3 (predeterminado LNR)** | **276.892 KB** |
+| PBP — nivel 5 | **274.137 KB** |
+| PBP — nivel 9 | **274.000 KB** |
+| CUE (archivo auxiliar de pistas) | 1 KB |
 
-- Pasar de **1 a 5** ahorró **3.758.496 bytes** (aprox. 3,58 MiB).
-- Pasar de **5 a 9** ahorró **solo 140.880 bytes**, alrededor del
-  **0,05 % del PBP de nivel 5**.
+![Captura original de Actua Soccer 3 (Europe): tamaños de PBP en niveles 1, 3, 5 y 9, y comparación con BIN, CHD y CUE](docs/images/psxpackagerlnr-niveles-compresion-actua-soccer3.png)
 
-Por ello, en esa comparación **subir más allá del nivel 5 apenas tenía
-sentido** en proporción al trabajo adicional de compresión. El tamaño
-exacto del **nivel 3 no está documentado en esta medición** y no se
-inventará: la recomendación del nivel 3 se apoya también en el
-comportamiento observado al jugar en PSP y en el equilibrio del
-algoritmo. En pruebas de LaNaveRETRO con **PSP original**, determinados
-juegos comprimidos con niveles **1–3 mostraron pausas de carga
-más breves que los equivalentes con niveles 4–5**. **No constituye un
-benchmark universal** de todas las consolas, juegos o tarjetas.
+*Captura real aportada por LaNaveRETRO. Los tamaños están transcritos
+**tal como los presenta el Explorador de Windows en KB**, que los
+redondea; no deben confundirse con bytes exactos.*
 
-### Por qué LNR recomienda compresión PBP nivel 3
+**Lo que enseñan estas mediciones:**
+
+- **Del nivel 1 al 3:** el PBP se reduce en **916 KB**, cerca del
+  **0,33 %** del archivo de nivel 1.
+- **Del nivel 3 al 5:** el ahorro es de **2.755 KB**,
+  aproximadamente **0,99 %** respecto al nivel 3.
+- **Del nivel 5 al 9:** solo **137 KB**, alrededor del **0,05 %**;
+  en los tamaños exactos en bytes anotados anteriormente, la diferencia
+  fue de **140.880 bytes**.
+- El **PBP de nivel 3** ocupa aproximadamente **35,56 % menos que el
+  BIN** del mismo juego, pero **17,72 % más que el CHD**.
+  Por tanto, **CHD es más compacto** en esta muestra; PBP se utiliza
+  por sus necesidades de compatibilidad con PSP y emuladores compatibles,
+  no por superar siempre el tamaño de CHD.
+
+Los tamaños exactos en bytes anotados para los niveles **1, 5 y 9**
+son **284.474.391**, **280.715.895** y **280.575.015 bytes**,
+respectivamente. Del **nivel 3** tenemos aquí el tamaño mostrado por
+Windows (**276.892 KB**), **no la cifra exacta en bytes**; no debe
+atribuirse una precisión mayor que la disponible.
+
+En pruebas de LaNaveRETRO sobre una **PSP original**, determinados
+juegos de PS1 mostraron **pausas de carga menores con niveles 1–3**
+que con 4–5. **Esta captura acredita los tamaños, no los tiempos de
+carga**; las observaciones de PSP corresponden a pruebas prácticas
+independientes. El nivel **3 — Equilibrada (LNR)** es la elección
+práctica del fork por su equilibrio entre tamaño, velocidad de
+conversión y comportamiento observado en PSP, **no un óptimo universal
+para todos los juegos o dispositivos**.
+
+### Fundamento técnico de la recomendación LNR
 
 El motor de [PSXPackager utiliza SharpZipLib 1.4.2](Popstation/Popstation.csproj)
 para la compresión DEFLATE del contenido del PBP. La

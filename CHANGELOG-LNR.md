@@ -6,6 +6,27 @@ La autoria original y la licencia MIT se conservan.
 
 ## Documentación pública ampliada — 17 noviembre 2026 (sin cambios de binarios)
 
+### Corrección documental posterior: prueba completa de compresión
+
+- Incorporada la **captura original de Actua Soccer 3 (Europe)** con
+  los **cuatro niveles probados**: 1 (277.808 KB), 3 (276.892 KB),
+  5 (274.137 KB) y 9 (274.000 KB), tal como aparecen en Windows.
+- Se añaden las comparaciones con **BIN (429.709 KB)**, **CHD
+  (235.208 KB)** y **CUE (1 KB)**; se calcula el pequeño ahorro
+  entre 3→5 (0,99 %) y entre 5→9 (0,05 %), y se explica que en
+  este título el CHD es menor que el PBP.
+- Corregida la afirmación anterior según la cual no había un
+  tamaño medido del nivel 3: existe la cifra **276.892 KB
+  en el Explorador**, aunque no se conoce el tamaño exacto
+  en bytes de ese PBP. No atribuir precisión falsa.
+- Título público actualizado a **«Por qué el nivel 3 de
+  Compresión es el predeterminado LNR»**.
+- Actualización **solo documental** del README, manual y notas
+  de la publicación beta.29. Sin cambios en binarios,
+  etiqueta, código original del release ni `master`.
+
+
+
 - Presentación destacada del **fork PaPer-DJ / LaNaveRETRO**:
   motivación para procesar colecciones PS1 CHD → PBP de forma directa
   y por lotes, sin cadena manual de conversión previa a BIN/CUE.

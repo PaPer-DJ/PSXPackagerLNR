@@ -89,6 +89,30 @@ no se ha demostrado que sea siempre el nivel más rápido al reproducir.
 - **9 — Máxima**: búsqueda de coincidencias más costosa al comprimir;
   no garantiza producir siempre el archivo más pequeño para cada juego.
 
+### Prueba con tamaños reales: Actua Soccer 3 (Europe)
+
+![Captura de tamaños de Actua Soccer 3 entre compresiones 1, 3, 5 y 9 y formatos BIN/CHD](../docs/images/psxpackagerlnr-niveles-compresion-actua-soccer3.png)
+
+| Formato / compresión | Tamaño visible en Windows |
+| --- | ---: |
+| BIN | 429.709 KB |
+| CHD | 235.208 KB |
+| PBP nivel 1 | 277.808 KB |
+| **PBP nivel 3 (LNR)** | **276.892 KB** |
+| PBP nivel 5 | 274.137 KB |
+| PBP nivel 9 | 274.000 KB |
+| CUE (archivo auxiliar) | 1 KB |
+
+*Valores visibles en el Explorador de Windows; están redondeados a KB.*
+En este juego, pasar de nivel **3 a 5** ahorró unos **2.755 KB
+(0,99 %)**; de **5 a 9**, solo **137 KB (0,05 %)**. El PBP de nivel
+3 fue un **35,56 % más pequeño que el BIN**, pero **17,72 % mayor
+que el CHD**. Esta imagen prueba tamaños, **no mide velocidades de
+carga ni garantiza conservación idéntica de pistas o subcanales**.
+LaNaveRETRO observó en **otras pruebas prácticas con PSP original**
+cargas más cortas en determinados juegos con niveles 1–3 frente a
+4–5, motivo adicional para seleccionar el nivel 3 por defecto.
+
 ### Lo que está comprobado en el código
 
 El fork usa **SharpZipLib 1.4.2** y llama a
