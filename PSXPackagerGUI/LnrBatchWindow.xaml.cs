@@ -699,7 +699,8 @@ namespace PSXPackagerGUI
                         "se conservarán. Las listas M3U y los archivos SBI también se conservan.\n\n" +
                         "NO se enviarán los CHD a la Papelera.\n" +
                         "Una comprobación técnica del PBP NO garantiza que arranque en tu consola.\n" +
-                        "Se necesita espacio disponible para escribir al menos un PBP completo.\n\n" +
+                        $"Con {SelectedParallelConversions} conversiones simultáneas, necesitarás espacio para varios PBP provisionales a la vez.\n" +
+                        "Comprueba el espacio disponible antes de continuar.\n\n" +
                         "¿Confirmas que dispones de copia de seguridad o aceptas perder esos CHD?",
                         "Confirmación adicional: ELIMINAR CHD",
                         MessageBoxButton.YesNo, MessageBoxImage.Warning);
@@ -848,7 +849,6 @@ namespace PSXPackagerGUI
             var dest = Path.Combine(folder, "PBP");
             Directory.CreateDirectory(dest);
             var total = _jobs.Count;
-            int processed = 0;
             var nextJobIndex = -1;
 
             // Parallel jobs use isolated CLI processes and per-job staging.
@@ -927,7 +927,10 @@ namespace PSXPackagerGUI
                     }
                     catch (OperationCanceledException)
                     {
-                        if (!process.HasExited) process.Kill(entireProcessTree: true);
+                        try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+                        catch (InvalidOperationException) { /* Process already ended */ }
+                        // Wait for process termination before deleting its staging folder.
+                        await process.WaitForExitAsync();
                         throw;
                     }
                     finally
@@ -1043,7 +1046,6 @@ namespace PSXPackagerGUI
                         try { Directory.Delete(stage, recursive: true); }
                         catch (Exception ex) { Append("AVISO: no se pudo borrar el temporal: " + ex.Message); }
                     }
-                    processed++;
                     // Sizes and timing may now be known; adapt the centered
                     // columns without shortening the Status progress bar.
                     ResizeJobColumns();
