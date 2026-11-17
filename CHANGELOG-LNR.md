@@ -1,6 +1,6 @@
 # Historial de versiones de PSXPackagerLNR
 
-## v0.1.0-beta.31 — en desarrollo (Toolkit y exploración de subcarpetas)
+## v0.1.0-beta.31 — 17 noviembre 2026 (Toolkit concurrente, pausa y navegador de carpetas)
 
 ### Pausa/cancelación del Toolkit y mejora del navegador CHD
 
@@ -21,7 +21,7 @@
 - Seguridad conservada: no sobrescribir PBP ya existentes, validar cabecera/tamaño antes de mover a salida, limpiar temporales tras finalizar, conservar CHD/M3U/SBI y no detener el lote por un fallo aislado. Al interrumpir el PowerShell se intenta finalizar cada proceso hijo y limpiar sus temporales sin borrar CHD.
 - El modo `-PlanOnly` sigue disponible para los siete valores; los planes JSON incluyen el valor de concurrencia solicitado. **El Toolkit ahora incorpora pausa segura por teclado, reanudación y cancelación.**
 - Añadida prueba de humo en GitHub Actions (Windows PowerShell 5.1, CLI sintética sin juegos) para verificar que las conversiones se solapan respetando el máximo de trabajadores y que fallos/archivos existentes no dañan los originales.
-- **Pendiente de validar compilación CI y funcionamiento en el PC del usuario; no publicar beta.31 todavía.** La beta.30 build 523 pública, su etiqueta, los paquetes anteriores, el acceso directo y `master` permanecen intactos.
+- **Validación para publicar:** el autor ha confirmado que todas las funciones de la beta.31 se comportan correctamente en Windows; CI ha superado las pruebas de concurrencia, pausa/reanudación/cancelación del Toolkit, escaneo recursivo, navegación por teclado y protección del acceso directo. **La beta.31 se distribuye como pre-release, no versión estable.** La beta.30 build 523, su etiqueta, sus paquetes, el acceso directo aprobado y `master` se mantienen intactos.
 
 ## v0.1.0-beta.30 — 17 noviembre 2026 (conversiones simultáneas y pausa segura)
 
