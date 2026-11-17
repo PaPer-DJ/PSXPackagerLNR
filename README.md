@@ -44,6 +44,12 @@ de los autores originales.
 **[Descargar la primera beta pública v0.1.0-beta.29](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.29)**
 (Windows x64, formato portátil). La edición LNR sigue siendo una beta.
 
+## PSXPackagerLNR en funcionamiento: procesamiento real por lotes
+
+![Captura real de PSXPackagerLNR beta.29 convirtiendo juegos PS1 de CHD a PBP por lotes, con estados por juego, progreso global y registro de actividad](docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes.png)
+
+*Captura aportada por LaNaveRETRO de la beta.29 (build 465) ejecutándose en Windows: un lote de **272 PBP previstos**, con **95 trabajos completados** y el **35 % del lote** procesado en el momento de la imagen. Se aprecian la conversión activa, el progreso individual, la consola de actividad y la estimación del tiempo restante. La versión pública descargable corresponde a la compilación 466.*
+
 ## Inicio rápido en Windows
 
 Extrae el ZIP **GUI-win-x64** en una carpeta y abre la interfaz que prefieras:

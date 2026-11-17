@@ -19,6 +19,12 @@ La interfaz permite seleccionar una carpeta, comprobar los juegos, convertir,
 consultar estadísticas, cancelar y abrir los resultados. Los juegos y
 firmware/BIOS **no** están incluidos.
 
+### Captura real de una conversión por lotes
+
+![Interfaz PSXPackagerLNR beta.29 durante la conversión de 272 juegos de PS1 desde CHD a PBP](../docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes.png)
+
+*Ejemplo real de LaNaveRETRO: beta.29 (build 465), con 95 de 272 trabajos completados en el momento de la captura. La lista muestra cada juego, tiempo y estado; debajo se ven el registro de actividad, el progreso total y el tiempo restante estimado.*
+
 ## 2. Cómo abrir PSXPackagerLNR (Windows)
 
 Al descargar y descomprimir el paquete **GUI-win-x64**, encontrarás
