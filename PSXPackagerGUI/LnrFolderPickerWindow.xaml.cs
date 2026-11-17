@@ -17,6 +17,7 @@ namespace PSXPackagerGUI
     {
         private string _currentFolder = "";
         private int _chdCount;
+        private List<GamePreview> _directChds = new();
 
         public string SelectedFolder { get; private set; } = "";
         public bool SelectedIncludeSubfolders { get; private set; }
@@ -69,7 +70,7 @@ namespace PSXPackagerGUI
                 _chdCount = chds.Count;
                 PathBox.Text = folder;
                 FolderList.ItemsSource = folders;
-                GameList.ItemsSource = chds;
+                _directChds = chds;
                 UpButton.IsEnabled = Directory.GetParent(folder) != null;
                 UpdateScope();
             }
@@ -85,10 +86,39 @@ namespace PSXPackagerGUI
             if (StatusLabel == null || !Directory.Exists(_currentFolder)) return;
             var recursive = IncludeSubfoldersCheck.IsChecked == true;
             var count = _chdCount;
+            var previewTruncated = false;
             try
             {
                 if (recursive)
-                    count = LnrChdFolderScanner.CountChds(_currentFolder, true);
+                {
+                    const int previewLimit = 1500;
+                    var previews = new List<GamePreview>();
+                    count = 0;
+                    foreach (var subfolder in LnrChdFolderScanner.EnumerateFolders(_currentFolder, true))
+                    {
+                        foreach (var path in LnrChdFolderScanner.FindChds(subfolder))
+                        {
+                            count++;
+                            if (previews.Count >= previewLimit)
+                            {
+                                previewTruncated = true;
+                                continue;
+                            }
+                            try
+                            {
+                                previews.Add(new GamePreview(path, Path.GetRelativePath(_currentFolder, path)));
+                            }
+                            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+                        }
+                    }
+                    GameList.ItemsSource = previews
+                        .OrderBy(game => game.Name, StringComparer.CurrentCultureIgnoreCase)
+                        .ToArray();
+                }
+                else
+                {
+                    GameList.ItemsSource = _directChds;
+                }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -96,6 +126,9 @@ namespace PSXPackagerGUI
                 SelectButton.IsEnabled = false;
                 return;
             }
+            GamesHeading.Text = recursive
+                ? "Juegos CHD de esta carpeta y subcarpetas"
+                : "Juegos CHD de esta carpeta";
             SelectButton.IsEnabled = count > 0;
             ScopeDescription.Text = recursive
                 ? "Se analizarán los CHD de esta carpeta y sus subcarpetas."
@@ -105,7 +138,8 @@ namespace PSXPackagerGUI
                    ? "No hay CHD en esta carpeta ni en sus subcarpetas accesibles."
                    : "No hay CHD directamente aquí. Entra en otra carpeta o marca «También subcarpetas».")
                 : recursive
-                    ? $"{count} juego(s) CHD encontrados en esta carpeta y subcarpetas (sin explorar PBP ni enlaces). Pulsa «Usar esta carpeta»."
+                    ? $"{count} CHD en esta carpeta y subcarpetas (sin PBP ni enlaces). Pulsa «Usar esta carpeta»." +
+                      (previewTruncated ? " La lista muestra solo los primeros 1.500." : "")
                     : $"{count} juego(s) CHD disponibles en esta carpeta. Pulsa «Usar esta carpeta» para continuar.";
         }
 
@@ -174,10 +208,10 @@ namespace PSXPackagerGUI
 
         public sealed class GamePreview
         {
-            public GamePreview(string path)
+            public GamePreview(string path, string displayName = null)
             {
                 var file = new FileInfo(path);
-                Name = file.Name;
+                Name = displayName ?? file.Name;
                 Size = (file.Length / 1048576.0).ToString("N1",
                     CultureInfo.GetCultureInfo("es-ES")) + " MB";
             }
