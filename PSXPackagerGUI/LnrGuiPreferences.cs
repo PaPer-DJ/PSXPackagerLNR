@@ -17,6 +17,10 @@ namespace PSXPackagerGUI
         public int CompressionIndex { get; set; } = -1;
         // New format stores the actual level; fresh installations default to 3.
         public int? CompressionLevel { get; set; }
+        // 0 = Auto; existing installations without this setting default to four workers.
+        public int ParallelConversions { get; set; } = 4;
+        public int PreferredParallelConversions =>
+            ParallelConversions is 0 or 1 or 2 or 3 or 4 or 6 or 8 ? ParallelConversions : 4;
 
         public int PreferredCompressionLevel =>
             CompressionLevel is 1 or 3 or 5 or 9
