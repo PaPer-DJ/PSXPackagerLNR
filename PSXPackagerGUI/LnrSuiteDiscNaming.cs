@@ -175,7 +175,8 @@ namespace PSXPackagerGUI
         /// successfully created, never deleting pre-existing user files.
         /// </summary>
         public static bool PublishChdGroup(string stage, string outputFolder,
-                                           IReadOnlyList<string> names)
+                                           IReadOnlyList<string> names,
+                                           Action<string> verifyPublished = null)
         {
             if (names.Count == 0 || names.Distinct(StringComparer.OrdinalIgnoreCase).Count() != names.Count)
                 throw new InvalidDataException("Grupo CHD vacío o con nombres repetidos.");
@@ -198,6 +199,10 @@ namespace PSXPackagerGUI
                     File.Move(Path.Combine(stage, name), output);
                     committed.Add(output);
                 }
+                // Validate the committed files as a group. If final storage
+                // fails verification, roll back every file just published.
+                foreach (var output in committed)
+                    verifyPublished?.Invoke(output);
                 return true;
             }
             catch
