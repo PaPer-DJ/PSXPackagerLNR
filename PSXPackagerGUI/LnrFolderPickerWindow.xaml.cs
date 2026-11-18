@@ -31,8 +31,8 @@ namespace PSXPackagerGUI
                                       string sourceExtension = ".chd",
                                       string[] excludedFolders = null)
         {
-            if (sourceExtension != ".chd" && sourceExtension != ".pbp")
-                throw new ArgumentException("Solo se admiten carpetas CHD o PBP.", nameof(sourceExtension));
+            if (sourceExtension != ".chd" && sourceExtension != ".pbp" && sourceExtension != ".gdi")
+                throw new ArgumentException("Solo se admiten carpetas CHD, PBP o GDI.", nameof(sourceExtension));
             _sourceExtension = sourceExtension;
             _excludedFolders = excludedFolders ?? Array.Empty<string>();
             InitializeComponent();
