@@ -71,6 +71,7 @@ jobs:
             Copy-Item "./LICENSE" "$destination/LICENSE" -Force
             Copy-Item "./README.md" "$destination/UPSTREAM-README.md" -Force
             Copy-Item "./LNR-BUILD.md" "$destination/LNR-BUILD.md" -Force
+            Copy-Item "./LNR/LEEME-CLI-LNR.txt" "$destination/LEEME-CLI-LNR.txt" -Force
             Copy-Item "./CHANGELOG-LNR.md" "$destination/CHANGELOG-LNR.md" -Force
             $label = "v{0} (b{1})" -f $env:LNR_VERSION, $env:GITHUB_RUN_NUMBER
             Set-Content -LiteralPath "$destination/LNR-VERSION.txt" -Value $label -Encoding utf8
@@ -740,6 +741,22 @@ jobs:
           if (-not (Test-Path "$tool/psxpackager.exe")) { throw "CLI not in portable toolkit" }
           if (-not (Test-Path "$tool/Resources/gameInfo.db")) { throw "Database not in portable toolkit" }
           if (-not (Test-Path "./out/Toolkit/LNR_CHD_A_PBP.bat")) { throw "Root launcher missing" }
+
+      - name: Verify CLI LNR changelog text is included in published CLI and GUI
+        shell: pwsh
+        run: |
+          foreach ($edition in @("CLI", "GUI")) {
+            $doc = "./out/$edition/LEEME-CLI-LNR.txt"
+            if (-not (Test-Path $doc)) { throw "Missing CLI explanatory TXT in $edition" }
+            $content = Get-Content -LiteralPath $doc -Raw
+            foreach ($required in @("PSXPackager upstream", "nivel 3", "Progress: NN%", "GUI LNR", "Toolkit", "RupertAvery")) {
+              if (-not $content.Contains($required)) { throw "CLI README is missing explanation: $required" }
+            }
+          }
+          $bat = Get-Content "./LNR/Batch/LNR_CHD_A_PBP.bat" -Raw
+          if (-not $bat.Contains("1 - SEPARADOS: un PBP por CHD, nombre original conservado. [RECOMENDADO]")) {
+            throw "Toolkit default multidisc option must be marked recommended"
+          }
 
       - name: Create ZIP packages
         shell: pwsh
