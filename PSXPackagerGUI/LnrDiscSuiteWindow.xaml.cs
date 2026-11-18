@@ -1344,9 +1344,75 @@ namespace PSXPackagerGUI
                 throw new InvalidDataException("Cabecera CHD no reconocible.");
         }
 
-        private async Task ExecuteAsync(string exe, IEnumerable<string> arguments,
-                                        CancellationToken token)
+        private static readonly Regex SuitePercentage = new(
+            @"(?<!\d)(?<percent>\d{1,3}(?:[.,]\d+)?)\s*%",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private async Task<string> ReadSuiteStreamAsync(StreamReader reader,
+            DiscJob job, string phase, bool stderr)
         {
+            var last = new StringBuilder();
+            var lastLoggedQuarter = -1;
+            while (true)
+            {
+                var raw = await reader.ReadLineAsync();
+                if (raw == null) break;
+                var line = raw.Trim();
+                if (line.Length == 0) continue;
+
+                // Limit diagnostic buffers; some CHDMAN versions emit many
+                // updates and must not grow memory use with batch size.
+                if (last.Length > 2500)
+                    last.Remove(0, last.Length - 1300);
+                last.AppendLine(line);
+
+                if (job == null) continue;
+                var percent = SuitePercentage.Match(line);
+                if (percent.Success &&
+                    double.TryParse(percent.Groups["percent"].Value.Replace(',', '.'),
+                                    NumberStyles.Float, CultureInfo.InvariantCulture,
+                                    out var value) && value >= 0 && value <= 100)
+                {
+                    job.HasProgress = true;
+                    job.ProgressPercent = (int)Math.Round(value);
+                    var quarter = job.ProgressPercent / 25;
+                    if (quarter > lastLoggedQuarter && quarter > 0)
+                    {
+                        // Per-phase progress, not a whole-file percentage.
+                        lastLoggedQuarter = quarter;
+                        Log("Progreso " + job.DisplayName + ": " +
+                            job.ProgressPercent + "% · " + phase + ".");
+                    }
+                }
+                else if (line.StartsWith("Converting Disc", StringComparison.OrdinalIgnoreCase) ||
+                         line.StartsWith("Writing Disc", StringComparison.OrdinalIgnoreCase) ||
+                         line.StartsWith("Extracting Disc", StringComparison.OrdinalIgnoreCase) ||
+                         line.StartsWith("Decompressing file", StringComparison.OrdinalIgnoreCase))
+                {
+                    job.CurrentPhase = phase + " · " + line.Split(':')[0];
+                    job.HasProgress = false;
+                    lastLoggedQuarter = -1;
+                }
+                else if (stderr && (line.StartsWith("Error", StringComparison.OrdinalIgnoreCase) ||
+                                    line.StartsWith("Fatal", StringComparison.OrdinalIgnoreCase)))
+                {
+                    Log("MOTOR: " + line);
+                }
+            }
+            return last.ToString();
+        }
+
+        private async Task ExecuteAsync(string exe, IEnumerable<string> arguments,
+                                        CancellationToken token, DiscJob job = null,
+                                        string phase = null)
+        {
+            token.ThrowIfCancellationRequested();
+            if (job != null)
+            {
+                job.CurrentPhase = phase ?? "Procesando";
+                job.HasProgress = false;
+                job.ProgressPercent = 0;
+            }
             var start = new ProcessStartInfo(exe)
             {
                 UseShellExecute = false,
@@ -1357,19 +1423,20 @@ namespace PSXPackagerGUI
             };
             foreach (var arg in arguments) start.ArgumentList.Add(arg);
             using var proc = new Process { StartInfo = start };
-            _activeProcess = proc;
+            Task<string> stdout = null, stderr = null;
             try
             {
                 if (!proc.Start())
                     throw new InvalidOperationException("No se pudo iniciar: " + Path.GetFileName(exe));
-                var stdout = proc.StandardOutput.ReadToEndAsync(token);
-                var stderr = proc.StandardError.ReadToEndAsync(token);
+                _activeProcesses.Add(proc);
+                stdout = ReadSuiteStreamAsync(proc.StandardOutput, job, phase ?? "Procesando", false);
+                stderr = ReadSuiteStreamAsync(proc.StandardError, job, phase ?? "Procesando", true);
                 await proc.WaitForExitAsync(token);
-                var a = await stdout;
-                var b = await stderr;
+                var outputs = await Task.WhenAll(stdout, stderr);
+                token.ThrowIfCancellationRequested();
                 if (proc.ExitCode != 0)
                 {
-                    var detail = string.IsNullOrWhiteSpace(b) ? a : b;
+                    var detail = string.IsNullOrWhiteSpace(outputs[1]) ? outputs[0] : outputs[1];
                     detail = detail.Length > 900 ? detail.Substring(detail.Length - 900) : detail;
                     throw new InvalidOperationException(Path.GetFileName(exe) + " devolvió " +
                                                         proc.ExitCode + ": " + detail.Trim());
@@ -1377,27 +1444,51 @@ namespace PSXPackagerGUI
             }
             catch (OperationCanceledException)
             {
-                if (!proc.HasExited) proc.Kill(entireProcessTree: true);
+                try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); }
+                catch (InvalidOperationException) { }
+                try { await proc.WaitForExitAsync(); }
+                catch (InvalidOperationException) { }
                 throw;
             }
             finally
             {
-                _activeProcess = null;
+                _activeProcesses.Remove(proc);
+                // The child has exited (normally or by cancellation) before
+                // any staging directory can be cleaned by the caller.
+                if (stdout != null && stderr != null)
+                {
+                    try { await Task.WhenAll(stdout, stderr); }
+                    catch (IOException) { }
+                    catch (ObjectDisposedException) { }
+                }
             }
         }
 
         private void Cancel_OnClick(object sender, RoutedEventArgs e)
         {
+            if (!_running || _cancelRequested) return;
             _cancelRequested = true;
+            _pauseRequested = false;
+            _pauseComplete = false;
             _cancel?.Cancel();
+            _resumeGate?.TrySetResult(true);
             CancelButton.IsEnabled = false;
-            Log("Cancelación solicitada…");
-            try
+            RefreshConvertButton();
+            Log("CANCELANDO: deteniendo " + _activeProcesses.Count +
+                " motor(es) activo(s). Originales conservados.");
+            foreach (var process in _activeProcesses.ToArray())
             {
-                if (_activeProcess is { HasExited: false })
-                    _activeProcess.Kill(entireProcessTree: true);
+                try
+                {
+                    if (!process.HasExited)
+                        process.Kill(entireProcessTree: true);
+                }
+                catch (InvalidOperationException) { }
+                catch (Win32Exception ex)
+                {
+                    Log("AVISO: no se pudo detener un proceso: " + ex.Message);
+                }
             }
-            catch (InvalidOperationException) { }
         }
 
         private void BeginShutdownCountdown()
