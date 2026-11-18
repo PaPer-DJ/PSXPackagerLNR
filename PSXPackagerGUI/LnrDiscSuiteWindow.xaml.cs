@@ -274,56 +274,56 @@ namespace PSXPackagerGUI
         /// </summary>
         private void ResizeSuiteColumns()
         {
-            if (JobsList == null || JobsList.ActualWidth < 420 ||
-                JobsList.View is not GridView view || view.Columns.Count != 4 ||
+            if (JobsList == null || JobsList.ActualWidth < 550 ||
+                JobsList.View is not GridView view || view.Columns.Count != 7 ||
                 _settingColumnWidths)
                 return;
 
-            double TextWidth(string text, bool heading = false)
+            double TextWidth(string value, bool header = false)
             {
-                var label = new TextBlock
+                var probe = new TextBlock
                 {
-                    Text = text ?? "—",
+                    Text = value ?? "—",
                     FontFamily = JobsList.FontFamily,
                     FontSize = JobsList.FontSize,
-                    FontWeight = heading ? FontWeights.SemiBold : FontWeights.Normal
+                    FontWeight = header ? FontWeights.SemiBold : FontWeights.Normal
                 };
-                label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                return label.DesiredSize.Width;
+                probe.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                return probe.DesiredSize.Width;
             }
-            double Measured(string heading, Func<DiscJob, string> content, double minimum)
+            double Measured(string header, Func<DiscJob, string> content,
+                            double minimum, double maximum = 450)
             {
-                var longest = TextWidth(heading, true);
+                var longest = TextWidth(header, true);
                 foreach (var job in _jobs)
                     longest = Math.Max(longest, TextWidth(content(job)));
-                return Math.Max(minimum, Math.Ceiling(longest + 24));
+                return Math.Clamp(Math.Ceiling(longest + 24), minimum, maximum);
             }
-
-            var ideal = new double[4];
-            ideal[1] = Measured("Tamaño", j => j.SizeText, 95);
-            ideal[2] = Math.Max(165, Measured("Estado", j => j.Status, 0));
-            // Include the longest status even before any job reaches that state.
-            ideal[2] = Math.Max(ideal[2], Math.Ceiling(TextWidth("Saltado / Ya existe") + 26));
-            ideal[3] = Measured("Archivos producidos", j => j.OutputCount, 138);
+            var ideal = new double[7];
+            ideal[1] = Measured("Origen", j => j.SizeText, 86, 125);
+            ideal[2] = Measured("Salida", j => j.OutputSizeText, 86, 125);
+            ideal[3] = Measured("Variación", j => j.VariationText, 100, 138);
+            ideal[4] = Measured("Tiempo", j => j.ElapsedText, 70, 100);
+            ideal[5] = Measured("Archivos", j => j.OutputCount, 76, 100);
+            ideal[6] = Measured("Estado / Progreso", j => j.DisplayStatus, 196, 270);
 
             for (var index = 1; index < ideal.Length; index++)
                 if (_manuallySizedColumns.Contains(index))
                     ideal[index] = view.Columns[index].Width;
 
             var available = JobsList.ActualWidth - SystemParameters.VerticalScrollBarWidth - 8;
-            var longestName = Measured("Archivo origen", j => j.Name, 180);
+            var longestName = Measured("Archivo origen", j => j.DisplayName, 170, 1900);
             ideal[0] = _manuallySizedColumns.Contains(0)
                 ? view.Columns[0].Width
                 : Math.Max(longestName, Math.Floor(available - ideal.Skip(1).Sum()));
-
             _settingColumnWidths = true;
             try
             {
-                for (var index = 0; index < ideal.Length; index++)
+                for (var i = 0; i < ideal.Length; i++)
                 {
-                    if (_manuallySizedColumns.Contains(index)) continue;
-                    if (Math.Abs(view.Columns[index].Width - ideal[index]) > 0.5)
-                        view.Columns[index].Width = ideal[index];
+                    if (_manuallySizedColumns.Contains(i)) continue;
+                    if (Math.Abs(view.Columns[i].Width - ideal[i]) > 0.5)
+                        view.Columns[i].Width = ideal[i];
                 }
             }
             finally { _settingColumnWidths = false; }
