@@ -1183,9 +1183,11 @@ namespace PSXPackagerGUI
                 }
                 // One same-volume directory move publishes the ENTIRE group:
                 // never a CUE without its BIN or some discs without others.
+                var producedFiles = Directory.GetFiles(stage, "*", SearchOption.TopDirectoryOnly).Length;
                 Directory.Move(stage, finalFolder);
-                Log("OK: " + job.DiscCount + " disco(s) completos BIN/CUE, numerados Disc N.");
-                return job.DiscCount;
+                Log("OK: " + job.DiscCount + " disco(s) completos BIN/CUE, numerados Disc N; " +
+                    producedFiles + " archivo(s) generados.");
+                return producedFiles;
             }
             finally
             {
