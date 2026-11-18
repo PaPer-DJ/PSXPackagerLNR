@@ -536,6 +536,18 @@ namespace PSXPackagerGUI
             };
         }
 
+        private static void VerifyPbpMode1(PbpDiscEntry disc)
+        {
+            // The PBP's internal TOC distinguishes DATA from AUDIO but does
+            // not distinguish MODE1 from MODE2. Check both the track layout
+            // and representative decompressed sectors before planning ISO.
+            var singleDataTrack = disc.TOC != null && disc.TOC.Count == 1 &&
+                disc.TOC[0].TrackNo == 1 &&
+                disc.TOC[0].TrackType == PSXPackager.Common.TrackTypeEnum.Data;
+            using var rawDisc = disc.GetDiscStream();
+            LnrDataTrackIsoExporter.CheckPbpMode1Preflight(rawDisc, singleDataTrack);
+        }
+
         private void Scan()
         {
             if (_running) return;
@@ -579,19 +591,30 @@ namespace PSXPackagerGUI
                                     // Read the PBP's REAL internal disc table, not
                                     // alphabetic .cue filenames, to reserve outputs.
                                     using var input = File.OpenRead(path);
-                                    var discs = new PbpReader(input).Discs.Count;
+                                    var pbp = new PbpReader(input);
+                                    var discs = pbp.Discs.Count;
                                     if (discs is < 1 or > 5)
                                         throw new InvalidDataException("Cantidad de discos PBP inválida.");
                                     job.DiscCount = discs;
-                                    if (Mode == 2 && discs != 1)
-                                        job.PlanError = "ISO no admite PBP multidisco: usa BIN/CUE.";
+                                    if (Mode == 2)
+                                    {
+                                        if (discs != 1)
+                                            throw new InvalidDataException(
+                                                "El PBP tiene " + discs + " discos. " +
+                                                "ISO solo admite un disco MODE1; usa PBP → BIN/CUE.");
+                                        VerifyPbpMode1(pbp.Discs[0]);
+                                    }
+                                }
+                                catch (InvalidDataException ex) when (Mode == 2)
+                                {
+                                    // Mark unsupported discs BEFORE the user
+                                    // starts the batch. These jobs never invoke
+                                    // the converter; the rest still proceed.
+                                    job.PlanError = "ISO no compatible: " + ex.Message;
                                 }
                                 catch (Exception ex)
                                 {
-                                    // A corrupt or unsupported PBP is rejected as
-                                    // one failed job, never as a failure of the
-                                    // entire folder scan or another valid game.
-                                    job.PlanError = "No se pudieron leer los discos del PBP: " + ex.Message;
+                                    job.PlanError = "No se pudo analizar el PBP: " + ex.Message;
                                 }
                             }
                             if (job.PlanError == null)
@@ -625,12 +648,14 @@ namespace PSXPackagerGUI
                     }
                 }
                 var already = 0;
+                var incompatible = 0;
                 foreach (var job in _jobs)
                 {
                     if (job.PlanError != null)
                     {
                         job.Status = "ERROR";
-                        Log("AVISO: " + job.DisplayName + ": " + job.PlanError);
+                        incompatible++;
+                        Log("NO SE PROCESARÁ: " + job.DisplayName + ": " + job.PlanError);
                         continue;
                     }
                     if (job.PlannedOutputs.Any(target =>
@@ -643,7 +668,8 @@ namespace PSXPackagerGUI
 
                 CountLabel.Text = _jobs.Count + " archivo(s)" +
                     (_includeSubfolders ? " (incluidas subcarpetas)" : "") +
-                    (already > 0 ? " · " + already + " ya existen" : "");
+                    (already > 0 ? " · " + already + " ya existen" : "") +
+                    (incompatible > 0 ? " · " + incompatible + " no compatibles" : "");
                 ConvertButton.IsEnabled = _jobs.Count > 0;
                 OutputLabel.Text = "Salida: " + Path.Combine(root, OutputSubdirectory) +
                     (_includeSubfolders ? " (estructura de subcarpetas conservada)" : "") +
@@ -1187,8 +1213,8 @@ namespace PSXPackagerGUI
 
         /// <summary>
         /// Not a full-disc reconstruction: exports only 2048-byte user data
-        /// from single-track Mode1/Mode2 Form1 CDs. No CD-Audio, XA Form2
-        /// or multisession/multidisc content is silently discarded.
+        /// from single-track MODE1 CDs. MODE2, CD-Audio, XA Form2 and
+        /// multidisc content are rejected, not silently discarded.
         /// </summary>
         private async Task<int> PbpToIsoAsync(DiscJob job, string dest,
                                              CancellationToken token)
@@ -1205,10 +1231,22 @@ namespace PSXPackagerGUI
                 return 0;
             }
 
+            // Recheck immediately before running the CLI: the PBP may have
+            // changed since Analyze. This check is cheap (sampled sectors);
+            // the ISO exporter validates every sector after extraction.
+            using (var input = File.OpenRead(job.Source))
+            {
+                var pbp = new PbpReader(input);
+                if (pbp.Discs.Count != 1)
+                    throw new InvalidDataException(
+                        "PBP multidisco: ISO no recomendado. Usa PBP → BIN/CUE.");
+                VerifyPbpMode1(pbp.Discs[0]);
+            }
+
             var stage = NewStageFolder(dest);
             try
             {
-                Log("Comprobando si el PBP contiene un único disco y pista de datos: " + job.Name);
+                Log("Comprobado PBP MODE1 de un disco; extrayendo datos: " + job.Name);
                 await ExecuteAsync(cli, new[]
                 {
                     "-i", job.Source, "-o", stage, "-s", "-f", "%FILENAME%"
@@ -1675,7 +1713,8 @@ namespace PSXPackagerGUI
             public bool IsProgressIndeterminate => !HasProgress;
             public string DisplayStatus => Status == "Convirtiendo"
                 ? CurrentPhase + (HasProgress ? " " + ProgressPercent + "%" : "")
-                : Status;
+                : Status == "ERROR" && !string.IsNullOrWhiteSpace(PlanError)
+                    ? "ERROR: " + PlanError : Status;
 
             public long? OutputBytes
             {
