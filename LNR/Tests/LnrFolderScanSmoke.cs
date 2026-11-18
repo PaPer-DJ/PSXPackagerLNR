@@ -53,7 +53,32 @@ try
     catch (InvalidDataException) { rejected = true; }
     Assert(rejected, "A directory outside the root must be rejected");
 
-    Console.WriteLine("LNR recursive folder scan: flat, nested, duplicate basenames, PBP/.tools/staging exclusions, traversal validation passed.");
+    // Suite-specific output exclusions must not affect the original
+    // CHD->PBP scanner, which continues to use its original defaults.
+    var suiteRoot = Path.Combine(root, "SuiteSource");
+    Directory.CreateDirectory(suiteRoot);
+    foreach (var relative in new[] {
+        "Game.pbp", Path.Combine("RPG", "Game.pbp"),
+        Path.Combine("CHD", "DontRescan.pbp"),
+        Path.Combine("BIN_CUE", "DontRescan.pbp"),
+        Path.Combine("ISO", "DontRescan.pbp"),
+        Path.Combine("PBP", "DontRescan.pbp")
+    })
+    {
+        var path = Path.Combine(suiteRoot, relative);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, new byte[] { 1, 2, 3, 4 });
+    }
+    var suiteFolders = LnrChdFolderScanner.EnumerateFolders(
+        suiteRoot, true, null, new[] { "CHD", "BIN_CUE", "ISO", "PBP" });
+    var suitePbps = suiteFolders.SelectMany(path =>
+        LnrChdFolderScanner.FindFiles(path, ".pbp")).ToArray();
+    Assert(suiteFolders.Count == 2 && suitePbps.Length == 2,
+        "Suite recursion must only see root and RPG, never generated outputs");
+    Assert(LnrChdFolderScanner.FindFiles(suiteRoot, ".pbp").Count == 1,
+        "Flat Suite PBP scan must only see direct inputs");
+
+    Console.WriteLine("LNR recursive folder scan: flat, nested, duplicate basenames, PBP/.tools/staging exclusions, traversal validation, and Suite PBP/CHD output exclusions passed.");
 }
 finally
 {
