@@ -15,6 +15,7 @@ try
     TestPreflightRejectsMode2();
     TestPreflightRejectsMixedSectors();
     TestPreflightRejectsMultiTrack();
+    await TestUnsampledMode2IsRejectedDuringFullExportAsync();
     await ExpectRejectionAsync("AUDIO", 1, 0);
     await ExpectRejectionAsync("MODE2/2352", 2, 0x20);
     await TestMultipleTracksRejectedAsync();
@@ -78,6 +79,33 @@ void TestPreflightRejectsMixedSectors()
     data[15 * 2352 + 15] = 2;
     using var raw = new MemoryStream(data);
     ExpectPreflightRejection(raw, true, "MODE2");
+}
+
+async Task TestUnsampledMode2IsRejectedDuringFullExportAsync()
+{
+    // Sampling is fast but cannot prove that every sector is MODE1.
+    // Choose a sector that the preflight intentionally does NOT sample.
+    // The full export MUST still reject it before Suite publication.
+    var files = MakeDisc("mixedunsampled", "MODE1/2352", 1, 0);
+    var bytes = File.ReadAllBytes(files.bin);
+    bytes[9 * 2352 + 15] = 2;
+    File.WriteAllBytes(files.bin, bytes);
+    using (var raw = File.OpenRead(files.bin))
+        LnrDataTrackIsoExporter.CheckPbpMode1Preflight(raw, true);
+
+    var iso = Path.Combine(root, "mixedunsampled.iso");
+    try
+    {
+        await LnrDataTrackIsoExporter.ExportAsync(
+            files.cue, iso, CancellationToken.None);
+    }
+    catch (InvalidDataException)
+    {
+        // The Suite writes only to a temporary staging folder and deletes
+        // partial ISOs on error. This check exercises per-sector validation.
+        return;
+    }
+    throw new Exception("Full ISO export accepted MODE2 sector not seen by preflight");
 }
 
 void TestPreflightRejectsMultiTrack()
