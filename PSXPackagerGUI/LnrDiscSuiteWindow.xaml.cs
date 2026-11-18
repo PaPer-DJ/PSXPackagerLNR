@@ -335,7 +335,35 @@ namespace PSXPackagerGUI
             {
                 UpdateChdmanUi();
                 Scan();
+                SavePreferences();
             }
+        }
+
+        private void IncludeSubfolders_OnChanged(object sender, RoutedEventArgs e)
+        {
+            if (!IsLoaded || _running) return;
+            _includeSubfolders = IncludeSubfoldersCheck.IsChecked == true;
+            Scan();
+            SavePreferences();
+        }
+
+        private void FollowActive_OnChanged(object sender, RoutedEventArgs e)
+        {
+            if (!IsLoaded || !_running || FollowActiveCheck.IsChecked != true)
+                return;
+            var currentlyActive = _jobs.FirstOrDefault(job => job.Status == "Convirtiendo");
+            if (currentlyActive != null) FollowActive(currentlyActive);
+        }
+
+        private void FollowActive(DiscJob job)
+        {
+            if (FollowActiveCheck.IsChecked != true) return;
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            {
+                if (_running && FollowActiveCheck.IsChecked == true &&
+                    _jobs.Contains(job) && job.Status == "Convirtiendo")
+                    JobsList.ScrollIntoView(job);
+            }));
         }
 
         private void UpdateChdmanUi()
@@ -351,21 +379,33 @@ namespace PSXPackagerGUI
         {
             if (e.Key != Key.Enter || _running) return;
             Scan();
+            SavePreferences();
             e.Handled = true;
+        }
+
+        private void Source_OnLostKeyboardFocus(object sender,
+                                                KeyboardFocusChangedEventArgs e)
+        {
+            if (IsLoaded && !_running)
+            {
+                Scan();
+                SavePreferences();
+            }
         }
 
         private void Browse_OnClick(object sender, RoutedEventArgs e)
         {
-            var picker = new OpenFolderDialog
+            var picker = new LnrFolderPickerWindow(
+                SourceBox.Text, _includeSubfolders, SourceExtension, ExcludedSuiteFolders)
             {
-                Title = "Elige la carpeta con los archivos " + SourceExtension,
-                InitialDirectory = Directory.Exists(SourceBox.Text)
-                    ? SourceBox.Text
-                    : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+                Owner = this
             };
-            if (picker.ShowDialog(this) != true) return;
-            SourceBox.Text = picker.FolderName;
+            if (picker.ShowDialog() != true) return;
+            SourceBox.Text = picker.SelectedFolder;
+            _includeSubfolders = picker.SelectedIncludeSubfolders;
+            IncludeSubfoldersCheck.IsChecked = _includeSubfolders;
             Scan();
+            SavePreferences();
         }
 
         private static string ImportedChdmanPath => Path.Combine(
