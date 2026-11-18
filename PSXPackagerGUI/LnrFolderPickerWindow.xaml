@@ -17,9 +17,9 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="Selecciona la carpeta que contiene tus CHD"
+            <TextBlock x:Name="HeaderTitle" Text="Selecciona la carpeta que contiene tus CHD"
                        FontSize="20" FontWeight="SemiBold"/>
-            <TextBlock Text="Puedes navegar por carpetas y ver los juegos que contienen antes de confirmar. No necesitas seleccionar un juego individual."
+            <TextBlock x:Name="HeaderDescription" Text="Puedes navegar por carpetas y ver los juegos que contienen antes de confirmar. No necesitas seleccionar un juego individual."
                        TextWrapping="Wrap" Margin="0,6,0,0" Foreground="#FF506177"/>
         </StackPanel>
 
