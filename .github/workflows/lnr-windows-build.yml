@@ -483,6 +483,56 @@ jobs:
           dotnet run --project "./LNR/Tests/LnrSuiteNamingSmoke.csproj" -c Release
           if ($LASTEXITCODE -ne 0) { throw "Suite multidisc naming smoke failed" }
 
+      - name: Regression test - Dreamcast GDI, CHD metadata and read-only verification
+        shell: pwsh
+        run: |
+          $suite = Get-Content "./PSXPackagerGUI/LnrDiscSuiteWindow.xaml.cs" -Raw
+          $view = Get-Content "./PSXPackagerGUI/LnrDiscSuiteWindow.xaml" -Raw
+          $scanner = Get-Content "./PSXPackagerGUI/LnrChdFolderScanner.cs" -Raw
+          $picker = Get-Content "./PSXPackagerGUI/LnrFolderPickerWindow.xaml.cs" -Raw
+          $pref = Get-Content "./PSXPackagerGUI/LnrSuitePreferences.cs" -Raw
+          $validator = Get-Content "./PSXPackagerGUI/LnrDreamcastGdi.cs" -Raw
+          foreach ($tag in @(
+            'Tag="GDI2CHD"', 'Tag="CHD2GDI"', 'Tag="VERIFY_GDROM"'
+          )) {
+            if (-not $view.Contains($tag)) { throw "Dreamcast Suite mode missing: $tag" }
+          }
+          foreach ($marker in @(
+            'Mode == 5 ? ".gdi" : ".chd"',
+            'private async Task<int> GdiToChdAsync(',
+            'private async Task<int> ChdToGdiAsync(',
+            'private async Task<int> VerifyDreamcastChdAsync(',
+            'private async Task<string> CheckDreamcastChdAsync(',
+            'LnrDreamcastGdi.Validate(job.Source)',
+            'LnrDreamcastGdi.Validate(descriptor)',
+            'LnrDreamcastGdi.IsGdromMetadata(info)',
+            'new[] { "createcd", "-i", job.Source, "-o", provisional }',
+            'new[] { "extractcd", "-i", job.Source, "-o", descriptor }',
+            'new[] { "verify", "-i", job.Source }',
+            'new[] { "verify", "-i", provisional }',
+            'LnrSuiteDiscNaming.PublishChdGroup(',
+            'Directory.Move(stage, folder)',
+            'IsDreamcastVerify ? "Verificado" : "Completado"',
+            'if (IsDreamcastVerify)',
+            'VerifyChdHeader(source)',
+            'CHGD/CHGT'
+          )) {
+            if (-not $suite.Contains($marker)) { throw "Dreamcast Suite regression: $marker" }
+          }
+          if (-not $scanner.Contains('extension != ".gdi"') -or
+              -not $picker.Contains('sourceExtension != ".gdi"') -or
+              -not $pref.Contains('Mode <= 7') -or
+              -not $validator.Contains('FileAttributes.ReparsePoint') -or
+              -not $validator.Contains('Lba >= 45000')) {
+            throw "Dreamcast GDI safety validator or mode/picker integration missing"
+          }
+          if ($suite.Contains('new[] { "verify", "-i", job.Source, "-f" }') -or
+              $suite.Contains('new[] { "verify", "-i", job.Source, "--fix" }')) {
+            throw "Dreamcast verification must never modify the user's input CHD"
+          }
+          dotnet run --project "./LNR/Tests/LnrDreamcastGdiSmoke.csproj" -c Release
+          if ($LASTEXITCODE -ne 0) { throw "Dreamcast GDI safety smoke failed" }
+
       - name: Test data-only PBP to ISO safety (synthetic CD sectors)
         shell: pwsh
         run: |
