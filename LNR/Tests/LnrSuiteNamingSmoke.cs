@@ -93,6 +93,30 @@ try
            "publish all three validated CHDs");
     Assert(names.All(name => File.Exists(Path.Combine(dest, name))),
            "not all CHD outputs published");
+
+    // A final CHD failing verification must undo EVERY new output from
+    // that PBP, not leave a misleading partially published group.
+    var postStage = Path.Combine(root, "Verify-Stage");
+    var postDest = Path.Combine(root, "Verify-Destination");
+    Directory.CreateDirectory(postStage);
+    Directory.CreateDirectory(postDest);
+    var checkNames = LnrSuiteDiscNaming.ChdNames("Verify.pbp", 2);
+    foreach (var name in checkNames)
+        File.WriteAllBytes(Path.Combine(postStage, name), new byte[4096]);
+    var postFailed = false;
+    try
+    {
+        LnrSuiteDiscNaming.PublishChdGroup(postStage, postDest, checkNames,
+            path =>
+            {
+                if (path.EndsWith("(Disc 2).chd", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("Synthetic final verification failure");
+            });
+    }
+    catch (InvalidDataException) { postFailed = true; }
+    Assert(postFailed, "final verification error must propagate");
+    Assert(checkNames.All(name => !File.Exists(Path.Combine(postDest, name))),
+           "final validation failure left a partially published PBP group");
     Console.WriteLine("Suite multidisc smoke: ordered disc numbers, CUE/BIN references, audio tracks, " +
                       "skip on conflict, rollback, and 3-disc commit PASSED.");
 }
