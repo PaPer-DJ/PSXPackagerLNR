@@ -372,6 +372,12 @@ namespace PSXPackagerGUI
             ChdmanBox.IsEnabled = required && !_running;
             FindChdmanButton.IsEnabled = required && !_running;
             ImportChdmanButton.IsEnabled = required && !_running;
+            if (ShutdownCheck != null)
+            {
+                if (IsDreamcastVerify)
+                    ShutdownCheck.IsChecked = false;
+                ShutdownCheck.IsEnabled = !_running && !_shutdownPending && !IsDreamcastVerify;
+            }
         }
 
         private void Source_OnKeyDown(object sender, KeyEventArgs e)
@@ -736,7 +742,7 @@ namespace PSXPackagerGUI
             SourceBox.IsEnabled = !running;
             ChdmanBox.IsEnabled = !running && NeedsChdman;
             CancelButton.IsEnabled = running && !_cancelRequested;
-            ShutdownCheck.IsEnabled = !running && !_shutdownPending;
+            ShutdownCheck.IsEnabled = !running && !_shutdownPending && !IsDreamcastVerify;
             RefreshConvertButton();
         }
 
