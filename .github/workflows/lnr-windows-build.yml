@@ -398,6 +398,48 @@ jobs:
             throw "LNR batch GUI fallback compression default must be 3"
           }
 
+      - name: Regression test - Suite safe multidisc naming and concurrent controls
+        shell: pwsh
+        run: |
+          $suite = Get-Content "./PSXPackagerGUI/LnrDiscSuiteWindow.xaml.cs" -Raw
+          $xaml = Get-Content "./PSXPackagerGUI/LnrDiscSuiteWindow.xaml" -Raw
+          $naming = Get-Content "./PSXPackagerGUI/LnrSuiteDiscNaming.cs" -Raw
+          $prefs = Get-Content "./PSXPackagerGUI/LnrSuitePreferences.cs" -Raw
+          $picker = Get-Content "./PSXPackagerGUI/LnrFolderPickerWindow.xaml.cs" -Raw
+          foreach ($required in @(
+            'ParallelCombo', 'IncludeSubfoldersCheck',
+            'FollowActiveCheck', 'LnrPauseButtonTemplate',
+            'LnrPausingButtonTemplate', 'LnrSuiteVariationCell',
+            'LnrSuiteElapsedCell', 'EtaLabel'
+          )) {
+            if (-not $xaml.Contains($required)) { throw "Suite UI missing: $required" }
+          }
+          foreach ($required in @(
+            'ProcessAllAsync(', 'WorkerAsync()', 'WaitIfPausedAsync(',
+            'MarkPausedIfSafe()', 'TogglePause()', '_inFlightJobs',
+            'LnrChdFolderScanner.EnumerateFolders(', 'ExcludedSuiteFolders',
+            'LnrSuiteDiscNaming.ChdNames(', 'LnrSuiteDiscNaming.ExtractedCues(',
+            'LnrSuiteDiscNaming.PublishChdGroup(', 'LnrSuiteDiscNaming.NormalizeBinCue(',
+            'HashSet<Process>', '_activeProcesses.ToArray()', 'FollowActive(',
+            'ReadSuiteStreamAsync(', 'MeasureOutputBytes(', 'UpdateSuiteProgress(',
+            'Source_OnLostKeyboardFocus', 'SavePreferences()',
+            'using var input = File.OpenRead(path)', 'new PbpReader(input).Discs.Count'
+          )) {
+            if (-not $suite.Contains($required)) { throw "Suite safety regression: $required" }
+          }
+          if ($suite.Contains('private Process _activeProcess;')) {
+            throw "Suite must not regress to tracking only one subprocess"
+          }
+          if (-not $prefs.Contains('suite-preferencias.json') -or
+              -not $picker.Contains('sourceExtension = ".chd"')) {
+            throw "Suite isolated preferences / reusable folder picker regression"
+          }
+          if (-not $naming.Contains('File.Move(Path.Combine(stage, name), output)')) {
+            throw "Multidisc outputs must be published by explicit validated names"
+          }
+          dotnet run --project "./LNR/Tests/LnrSuiteNamingSmoke.csproj" -c Release
+          if ($LASTEXITCODE -ne 0) { throw "Suite multidisc naming smoke failed" }
+
       - name: Test data-only PBP to ISO safety (synthetic CD sectors)
         shell: pwsh
         run: |
