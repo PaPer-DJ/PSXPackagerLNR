@@ -408,7 +408,7 @@ jobs:
           $picker = Get-Content "./PSXPackagerGUI/LnrFolderPickerWindow.xaml.cs" -Raw
           $help = Get-Content "./PSXPackagerGUI/LnrSuiteHelpWindow.xaml" -Raw
           foreach ($required in @(
-            'ParallelCombo', 'IncludeSubfoldersCheck',
+            'ParallelCombo', 'BrowseButton',
             'FollowActiveCheck', 'LnrPauseButtonTemplate',
             'LnrPausingButtonTemplate', 'LnrSuiteVariationCell',
             'LnrSuiteElapsedCell', 'EtaLabel', 'SuiteLogPanelRow',
@@ -433,6 +433,20 @@ jobs:
           }
           if ($suite.Contains('private Process _activeProcess;')) {
             throw "Suite must not regress to tracking only one subprocess"
+          }
+          # Subfolder selection belongs ONLY to Ver carpetas...; its choice
+          # remains in Suite preferences and controls recursive scanning.
+          $pickerXaml = Get-Content "./PSXPackagerGUI/LnrFolderPickerWindow.xaml" -Raw
+          if ($xaml.Contains('IncludeSubfoldersCheck') -or
+              $xaml.Contains('Content="También subcarpetas"') -or
+              $suite.Contains('IncludeSubfoldersCheck')) {
+            throw "Suite main window must not duplicate the folder picker's subfolder checkbox"
+          }
+          if (-not $pickerXaml.Contains('x:Name="IncludeSubfoldersCheck"') -or
+              -not $suite.Contains('_includeSubfolders = picker.SelectedIncludeSubfolders;') -or
+              -not $suite.Contains('IncludeSubfolders = _includeSubfolders') -or
+              -not $suite.Contains('root, _includeSubfolders, Log, ExcludedSuiteFolders')) {
+            throw "Subfolder selection, persistence and recursive scan must remain functional"
           }
           if (-not $prefs.Contains('suite-preferencias.json') -or
               -not $picker.Contains('sourceExtension = ".chd"')) {
