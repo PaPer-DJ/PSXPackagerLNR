@@ -1155,59 +1155,34 @@ namespace PSXPackagerGUI
 
             var name = Path.GetFileNameWithoutExtension(job.Source);
             var finalFolder = Path.Combine(dest, name);
-            if (Directory.Exists(finalFolder))
+            if (Directory.Exists(finalFolder) || File.Exists(finalFolder))
             {
-                Log("SALTADO: existe carpeta BIN/CUE: " + name);
+                Log("SALTADO: existe salida BIN/CUE para " + name);
                 return 0;
             }
-
             var stage = NewStageFolder(dest);
             try
             {
-                Log("Extrayendo los discos y pistas de " + job.Name + " a BIN/CUE.");
-                await ExecuteAsync(cli, new[]
-                {
-                    "-i", job.Source, "-o", stage, "-s", "-f", "%FILENAME%"
-                }, token);
+                Log("Extrayendo " + job.DiscCount + " disco(s) y pistas BIN/CUE de " + job.DisplayName);
+                await ExecuteAsync(cli, new[] { "-i", job.Source, "-o", stage,
+                                                "-s", "-f", "%FILENAME%" }, token,
+                                   job, "Extrayendo BIN/CUE");
 
-                var cues = Directory.EnumerateFiles(stage, "*.cue", SearchOption.TopDirectoryOnly).ToArray();
-                var bins = Directory.EnumerateFiles(stage, "*.bin", SearchOption.TopDirectoryOnly).ToArray();
-                if (cues.Length == 0 || bins.Length == 0)
-                    throw new InvalidDataException(
-                        "El PBP no generó BIN/CUE completos; no se publicará la salida.");
-
-                foreach (var cue in cues)
-                {
-                    var cueText = File.ReadAllText(cue);
-                    var referenced = System.Text.RegularExpressions.Regex.Matches(
-                        cueText, "^\\s*FILE\\s+\\\"(?<name>[^\\\"]+)\\\"\\s+BINARY",
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase |
-                        System.Text.RegularExpressions.RegexOptions.Multiline);
-                    if (referenced.Count == 0)
-                        throw new InvalidDataException(
-                            "Falta el nombre del BIN asociado a " + Path.GetFileName(cue));
-
-                    foreach (System.Text.RegularExpressions.Match match in referenced)
-                    {
-                        var binName = match.Groups["name"].Value;
-                        if (binName != Path.GetFileName(binName) ||
-                            !binName.EndsWith(".bin", StringComparison.OrdinalIgnoreCase) ||
-                            !File.Exists(Path.Combine(stage, binName)) ||
-                            new FileInfo(Path.Combine(stage, binName)).Length < 2048)
-                            throw new InvalidDataException(
-                                "El CUE referencia un BIN ausente o inseguro: " + binName);
-                    }
-                }
-
-                if (Directory.Exists(finalFolder))
+                // The original extraction may name files "Game - Disc N".
+                // Rename by the actual internal disc order, rewrite ALL CUE
+                // FILE references and verify the resulting pairs in staging.
+                LnrSuiteDiscNaming.NormalizeBinCue(stage, job.Source, job.DiscCount);
+                token.ThrowIfCancellationRequested();
+                if (Directory.Exists(finalFolder) || File.Exists(finalFolder))
                 {
                     Log("SALTADO: la carpeta apareció durante la extracción: " + name);
                     return 0;
                 }
-                token.ThrowIfCancellationRequested();
+                // One same-volume directory move publishes the ENTIRE group:
+                // never a CUE without its BIN or some discs without others.
                 Directory.Move(stage, finalFolder);
-                Log($"OK: {cues.Length} disco(s) extraídos en BIN/CUE: " + name);
-                return cues.Length;
+                Log("OK: " + job.DiscCount + " disco(s) completos BIN/CUE, numerados Disc N.");
+                return job.DiscCount;
             }
             finally
             {
