@@ -481,9 +481,10 @@ presentes y publica la **carpeta completa de una sola vez**. Los índices
 se conservan dentro de su CUE.
 
 Un **CHD óptico contiene un solo disco**, aunque pueda tener muchas
-pistas; por eso CHD→BIN/CUE e ISO no inventan numeraciones. **PBP→ISO**
-sigue restringido a un único disco y pista de datos compatible, y no
-debe utilizarse como imagen íntegra de preservación de CD.
+pistas; por eso CHD→BIN/CUE e ISO no inventan numeraciones. **PBP→ISO
+[ No Recomendado ]** queda restringido a un único disco y una pista
+de datos MODE1: los PBP con MODE2, audio o multidisco se marcan con
+ERROR durante el análisis, se omiten y no se publican como ISO.
 
 ### Progreso, estadísticas y preferencias
 
@@ -518,15 +519,24 @@ Dispone de **cinco modos**:
 |---|---|---|
 | PBP → CHD | `CHD/Nombre.chd`, uno por disco PS1 | PSXPackager extrae temporalmente BIN/CUE y CHDMAN genera el CHD; no se recuperan subcanales ya perdidos |
 | PBP → BIN/CUE | `BIN_CUE/Juego/` con CUE/BIN de cada disco | PS1, sin CHDMAN; recupera pistas disponibles, pero no datos que ya se perdieron al crear el PBP |
-| PBP → ISO de datos | `ISO/Juego.iso` | Solo 1 disco y 1 pista MODE1/2048, MODE1/2352 o MODE2 Form1/2352; rechaza CD-Audio, XA Form2 y multidisco |
+| PBP → ISO de datos **[ No Recomendado ]** | `ISO/Juego.iso` | Solo 1 disco y 1 pista MODE1/2048 o MODE1/2352 compatible; rechaza MODE2, CD-Audio, XA y multidisco. `Analizar` marca los PBP detectados como incompatibles. |
 | CHD de CD → BIN/CUE | `BIN_CUE/Juego/Juego.cue` y `.bin` | PS1, Saturn y PS2 en CD; conserva las pistas de audio disponibles en el CHD |
 | CHD de DVD → ISO | `ISO/Juego.iso` | PS2 en DVD, no CD; usa `chdman extractdvd` |
 
-**PBP → ISO** NO es una reconstrucción fiel de un CD para grabar.
-Únicamente extrae los 2048 bytes útiles por sector cuando todo el disco
-es una sola pista de datos compatible. No conserva pistas CD-Audio,
-sectores Mode2 Form2/XA, subcanales ni protección; esos casos generan
-un error explícito para evitar ISOs engañosamente incompletos. Para
+**PBP → ISO [ No Recomendado ]** NO es una reconstrucción fiel
+de un CD para grabar. Solo extrae los 2048 bytes útiles de un disco
+con **una única pista de datos MODE1**; rechaza también MODE2 Form1,
+CD-Audio, XA, multidisco y formatos no identificados.
+
+Al pulsar **Analizar**, la Suite lee la tabla de pistas interna del PBP
+y examina varias muestras de sectores para detectar rápidamente
+juegos incompatibles. Se muestran como **ERROR con el motivo en
+«Estado / Progreso»** y se omiten automáticamente; los demás pueden
+convertirse con normalidad. La detección preliminar por muestras
+**no garantiza que todos los sectores sean MODE1**, así que durante
+la exportación se comprueba **cada sector**: si aparece uno incompatible,
+se descarta el ISO temporal y no se publica un resultado incompleto.
+Este modo tampoco conserva subcanales ni protecciones. Para
 juegos de PS1 que quieras conservar o grabar, utiliza **PBP → BIN/CUE**
 y comprueba las pistas. No hace falta instalar CHDMAN para ninguna
 de estas dos conversiones de PBP (BIN/CUE, ISO limitado).
