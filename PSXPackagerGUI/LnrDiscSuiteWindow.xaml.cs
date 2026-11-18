@@ -527,38 +527,136 @@ namespace PSXPackagerGUI
             new LnrHelpWindow { Owner = this }.ShowDialog();
         }
 
+        private IReadOnlyList<string> OutputTargets(DiscJob job, string root)
+        {
+            var dest = Path.Combine(root, OutputSubdirectory, job.RelativeFolder);
+            var baseName = Path.GetFileNameWithoutExtension(job.Source);
+            return Mode switch
+            {
+                0 => LnrSuiteDiscNaming.ChdNames(job.Source, job.DiscCount)
+                         .Select(name => Path.Combine(dest, name)).ToArray(),
+                1 => new[] { Path.Combine(dest, baseName) },
+                2 => new[] { Path.Combine(dest, baseName + ".iso") },
+                3 => new[] { Path.Combine(dest, baseName) },
+                _ => new[] { Path.Combine(dest, baseName + ".iso") }
+            };
+        }
+
         private void Scan()
         {
             if (_running) return;
             if (_shutdownPending)
                 CancelShutdownCountdown("Apagado automático cancelado al iniciar otro análisis.");
+
             _jobs.Clear();
+            _success = _skipped = _errors = 0;
+            _calibratedBytes = 0;
+            _calibratedSeconds = 0;
+            _batchClock = null;
+            _completedNormally = false;
+            _batchCanceled = false;
             BatchProgress.Value = 0;
             ProgressLabel.Text = "0/0 · sin iniciar";
+            EtaLabel.Text = "Tiempo restante: sin calcular";
             try
             {
-                var folder = Path.GetFullPath(SourceBox.Text.Trim().Trim('"'));
-                if (!Directory.Exists(folder))
+                var root = Path.GetFullPath(SourceBox.Text.Trim().Trim('"'));
+                if (!Directory.Exists(root))
                 {
                     CountLabel.Text = "Carpeta no encontrada";
                     ConvertButton.IsEnabled = false;
                     return;
                 }
 
-                foreach (var file in Directory.EnumerateFiles(folder)
-                         .Where(f => string.Equals(Path.GetExtension(f),
-                             SourceExtension, StringComparison.OrdinalIgnoreCase))
-                         .OrderBy(file => Path.GetFileName(file), StringComparer.CurrentCultureIgnoreCase))
+                foreach (var subfolder in LnrChdFolderScanner.EnumerateFolders(
+                             root, _includeSubfolders, Log, ExcludedSuiteFolders))
                 {
-                    var size = new FileInfo(file).Length;
-                    _jobs.Add(new DiscJob(file, (size / 1048576.0).ToString("N2", _es) + " MB"));
+                    var relativeFolder = LnrChdFolderScanner.RelativeFolder(root, subfolder);
+                    foreach (var path in LnrChdFolderScanner.FindFiles(subfolder, SourceExtension, Log))
+                    {
+                        try
+                        {
+                            var size = new FileInfo(path).Length;
+                            var job = new DiscJob(path, relativeFolder, size, Mode);
+                            if (Mode <= 2)
+                            {
+                                try
+                                {
+                                    // Read the PBP's REAL internal disc table, not
+                                    // alphabetic .cue filenames, to reserve outputs.
+                                    using var input = File.OpenRead(path);
+                                    var discs = new PbpReader(input).Discs.Count;
+                                    if (discs is < 1 or > 5)
+                                        throw new InvalidDataException("Cantidad de discos PBP inválida.");
+                                    job.DiscCount = discs;
+                                    if (Mode == 2 && discs != 1)
+                                        job.PlanError = "ISO no admite PBP multidisco: usa BIN/CUE.";
+                                }
+                                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                                           or InvalidDataException or ArgumentException
+                                                           or InvalidOperationException or Exception)
+                                {
+                                    job.PlanError = "No se pudieron leer los discos del PBP: " + ex.Message;
+                                }
+                            }
+                            if (job.PlanError == null)
+                                job.PlannedOutputs = OutputTargets(job, root).ToArray();
+                            _jobs.Add(job);
+                        }
+                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                                   or ArgumentException or NotSupportedException)
+                        {
+                            Log("AVISO: archivo inaccesible " + Path.GetFileName(path) + ": " + ex.Message);
+                        }
+                    }
                 }
 
-                CountLabel.Text = _jobs.Count + " archivos";
+                // Compare ACTUAL future target paths before starting workers.
+                // This prevents two PBP sources in the same folder from
+                // generating the same "Game (Disc N).chd" in parallel.
+                var reserved = new Dictionary<string, DiscJob>(StringComparer.OrdinalIgnoreCase);
+                foreach (var job in _jobs)
+                {
+                    if (job.PlanError != null) continue;
+                    foreach (var target in job.PlannedOutputs)
+                    {
+                        if (reserved.TryGetValue(target, out var existing) &&
+                            !ReferenceEquals(existing, job))
+                        {
+                            job.PlanError = "Conflicto de nombre de salida: " + target;
+                            existing.PlanError = "Conflicto de nombre de salida: " + target;
+                        }
+                        else reserved[target] = job;
+                    }
+                }
+                var already = 0;
+                foreach (var job in _jobs)
+                {
+                    if (job.PlanError != null)
+                    {
+                        job.Status = "ERROR";
+                        Log("AVISO: " + job.DisplayName + ": " + job.PlanError);
+                        continue;
+                    }
+                    if (job.PlannedOutputs.Any(target =>
+                            File.Exists(target) || Directory.Exists(target)))
+                    {
+                        job.Status = "Saltado / Ya existe";
+                        already++;
+                    }
+                }
+
+                CountLabel.Text = _jobs.Count + " archivo(s)" +
+                    (_includeSubfolders ? " (incluidas subcarpetas)" : "") +
+                    (already > 0 ? " · " + already + " ya existen" : "");
                 ConvertButton.IsEnabled = _jobs.Count > 0;
-                OutputLabel.Text = "Salida: " + Path.Combine(folder, OutputSubdirectory) +
-                                   " · todos los originales se conservarán.";
-                Log($"Analizados {_jobs.Count} archivos {SourceExtension} para {ModeBox.Text}.");
+                OutputLabel.Text = "Salida: " + Path.Combine(root, OutputSubdirectory) +
+                    (_includeSubfolders ? " (estructura de subcarpetas conservada)" : "") +
+                    " · originales intactos.";
+                Log($"Analizados {_jobs.Count} archivos {SourceExtension} para {ModeBox.Text}; " +
+                    $"subcarpetas {(_includeSubfolders ? "sí" : "no")}; " +
+                    $"procesos: {ParallelCount}; ya existentes: {already}.");
+                UpdateSuiteProgress();
                 ResizeSuiteColumns();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
@@ -578,11 +676,84 @@ namespace PSXPackagerGUI
             ImportChdmanButton.IsEnabled = !running && NeedsChdman;
             AnalyzeButton.IsEnabled = !running;
             ModeBox.IsEnabled = !running;
+            ParallelCombo.IsEnabled = !running;
+            IncludeSubfoldersCheck.IsEnabled = !running;
             SourceBox.IsEnabled = !running;
             ChdmanBox.IsEnabled = !running && NeedsChdman;
-            ConvertButton.IsEnabled = !running && _jobs.Count > 0;
-            CancelButton.IsEnabled = running;
+            CancelButton.IsEnabled = running && !_cancelRequested;
             ShutdownCheck.IsEnabled = !running && !_shutdownPending;
+            RefreshConvertButton();
+        }
+
+        private void RefreshConvertButton()
+        {
+            if (!_running)
+            {
+                ConvertButton.Content = "Convertir lote";
+                ConvertButton.ContentTemplate =
+                    (DataTemplate)FindResource("LnrConvertButtonTemplate");
+                ConvertButton.IsEnabled = _jobs.Count > 0;
+                return;
+            }
+            ConvertButton.Content = !_pauseRequested ? "Pausar" :
+                                    _pauseComplete ? "Reanudar" : "Pausando...";
+            ConvertButton.ContentTemplate =
+                (DataTemplate)FindResource(!_pauseRequested || _pauseComplete
+                    ? "LnrConvertButtonTemplate"
+                    : _pauseRequested && !_pauseComplete
+                        ? "LnrPausingButtonTemplate" : "LnrPauseButtonTemplate");
+            if (_running && !_pauseRequested)
+                ConvertButton.ContentTemplate = (DataTemplate)FindResource("LnrPauseButtonTemplate");
+            ConvertButton.IsEnabled = !_cancelRequested &&
+                                      (!_pauseRequested || _pauseComplete);
+        }
+
+        private void TogglePause()
+        {
+            if (!_running || _cancelRequested) return;
+            if (!_pauseRequested)
+            {
+                _pauseRequested = true;
+                _pauseComplete = false;
+                _resumeGate = new TaskCompletionSource<bool>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+                Log("PAUSANDO: no se asignarán nuevos archivos. Esperando a que terminen " +
+                    _inFlightJobs + " trabajo(s) activo(s) con todas sus operaciones.");
+                MarkPausedIfSafe();
+            }
+            else if (_pauseComplete)
+            {
+                _pauseRequested = false;
+                _pauseComplete = false;
+                _batchClock?.Start();
+                _resumeGate?.TrySetResult(true);
+                _resumeGate = null;
+                Log("REANUDADO: continúan los archivos pendientes.");
+            }
+            RefreshConvertButton();
+            UpdateSuiteProgress();
+        }
+
+        private void MarkPausedIfSafe()
+        {
+            if (!_pauseRequested || _pauseComplete || _inFlightJobs != 0)
+                return;
+            _pauseComplete = true;
+            _batchClock?.Stop();
+            Log("EN PAUSA: no queda ningún archivo, disco ni CHDMAN activo.");
+            RefreshConvertButton();
+            UpdateSuiteProgress();
+        }
+
+        private async Task WaitIfPausedAsync(CancellationToken token)
+        {
+            while (_pauseRequested)
+            {
+                token.ThrowIfCancellationRequested();
+                var gate = _resumeGate ??
+                    throw new InvalidOperationException("Falta la señal de reanudación.");
+                await gate.Task.WaitAsync(token);
+            }
         }
 
         private async void Convert_OnClick(object sender, RoutedEventArgs e)
