@@ -445,8 +445,10 @@ archivos **PBP o CHD** según la ruta escogida. Admite **Atrás, Entrar,
 doble clic, ↑/↓, Enter y Retroceso**, y al volver atrás mantiene
 seleccionada y enfocada la carpeta que acabas de abandonar.
 
-- **También subcarpetas**, desactivada por defecto, recorre las carpetas
-  seleccionadas omitiendo enlaces y directorios generados
+- **También subcarpetas** se configura **únicamente dentro de
+  «Ver carpetas…»**; no se repite en la ventana principal de la Suite.
+  Desactivada por defecto, recorre las carpetas seleccionadas omitiendo
+  enlaces y directorios generados
   (`PBP`, `CHD`, `BIN_CUE`, `ISO`, `.tools`, temporales).
 - La ruta de salida **reproduce el árbol relativo de entrada**. Por
   ejemplo, `Colección/RPG/Juego.pbp` → `Colección/CHD/RPG/Juego.chd`
