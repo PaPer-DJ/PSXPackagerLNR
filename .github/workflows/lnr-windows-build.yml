@@ -427,7 +427,9 @@ jobs:
             'Source_OnLostKeyboardFocus', 'SavePreferences()',
             'SuiteLogPanelRow.Height = new GridLength(',
             'new LnrSuiteHelpWindow { Owner = this }.ShowDialog()',
-            'using var input = File.OpenRead(path)', 'new PbpReader(input).Discs.Count'
+            'using var input = File.OpenRead(path)', 'var pbp = new PbpReader(input);',
+            'VerifyPbpMode1(pbp.Discs[0]);', 'ISO no compatible:',
+            'NO SE PROCESARÁ:', 'no compatibles'
           )) {
             if (-not $suite.Contains($required)) { throw "Suite safety regression: $required" }
           }
@@ -459,6 +461,22 @@ jobs:
               -not $help.Contains('Retroceso') -or -not $help.Contains('Pausar')) {
             throw "Dedicated Suite help must document all critical modes and controls"
           }
+          # The advanced PBP-to-ISO route is opt-in, not recommended.
+          # Invalid MODE2/audio/multitrack discs must be rejected during
+          # Analyze and checked AGAIN during export without blocking others.
+          $iso = Get-Content "./PSXPackagerGUI/LnrDataTrackIsoExporter.cs" -Raw
+          if (-not $xaml.Contains('PBP → ISO (PS1, SOLO CD de datos MODE1) [ No Recomendado ]') -or
+              -not $suite.Contains('private static void VerifyPbpMode1(') -or
+              -not $suite.Contains('LnrDataTrackIsoExporter.CheckPbpMode1Preflight(') -or
+              -not $suite.Contains('if (job.PlanError != null)') -or
+              -not $suite.Contains('NO SE PROCESARÁ:') -or
+              -not $suite.Contains('ISO no compatible:') -or
+              -not $iso.Contains('CheckPbpMode1Preflight(') -or
+              -not $iso.Contains('mode != "MODE1/2352" && mode != "MODE1/2048"') -or
+              $iso.Contains('mode == "MODE2/2352"')) {
+            throw "PBP ISO MODE1-only policy/preflight regression"
+          }
+
           dotnet run --project "./LNR/Tests/LnrSuiteNamingSmoke.csproj" -c Release
           if ($LASTEXITCODE -ne 0) { throw "Suite multidisc naming smoke failed" }
 
