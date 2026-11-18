@@ -13,12 +13,16 @@ namespace PSXPackagerGUI
     internal static class LnrChdFolderScanner
     {
         public static IReadOnlyList<string> EnumerateFolders(
-            string root, bool includeSubfolders, Action<string> warning = null)
+            string root, bool includeSubfolders, Action<string> warning = null,
+            IEnumerable<string> excludedDirectories = null)
         {
             var origin = Path.GetFullPath(root);
             if (!Directory.Exists(origin))
                 throw new DirectoryNotFoundException("No existe la carpeta: " + origin);
 
+            var excluded = excludedDirectories == null
+                ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(excludedDirectories, StringComparer.OrdinalIgnoreCase);
             var result = new List<string>();
             var stack = new Stack<string>();
             stack.Push(origin);
@@ -45,7 +49,8 @@ namespace PSXPackagerGUI
                              Path.GetFileName, StringComparer.OrdinalIgnoreCase))
                 {
                     var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(child));
-                    if (name.Equals("PBP", StringComparison.OrdinalIgnoreCase) ||
+                    if (excluded.Contains(name) ||
+                        name.Equals("PBP", StringComparison.OrdinalIgnoreCase) ||
                         name.Equals(".tools", StringComparison.OrdinalIgnoreCase) ||
                         name.StartsWith(".lnr_stage_", StringComparison.OrdinalIgnoreCase))
                         continue;
@@ -68,17 +73,24 @@ namespace PSXPackagerGUI
         }
 
         public static IReadOnlyList<string> FindChds(
-            string folder, Action<string> warning = null)
+            string folder, Action<string> warning = null) =>
+            FindFiles(folder, ".chd", warning);
+
+        public static IReadOnlyList<string> FindFiles(
+            string folder, string extension, Action<string> warning = null)
         {
+            if (extension != ".chd" && extension != ".pbp")
+                throw new ArgumentException("Solo se permiten archivos CHD o PBP.", nameof(extension));
             try
             {
-                return Directory.EnumerateFiles(folder, "*.chd", SearchOption.TopDirectoryOnly)
+                return Directory.EnumerateFiles(folder, "*" + extension, SearchOption.TopDirectoryOnly)
                     .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
                     .ToArray();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                warning?.Invoke("No se pudieron leer CHD de " + folder + ": " + ex.Message);
+                warning?.Invoke("No se pudieron leer archivos " + extension + " de " +
+                                folder + ": " + ex.Message);
                 return Array.Empty<string>();
             }
         }
