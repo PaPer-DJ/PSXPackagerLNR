@@ -594,6 +594,29 @@ namespace PSXPackagerGUI
                         {
                             var size = new FileInfo(path).Length;
                             var job = new DiscJob(path, relativeFolder, size, Mode);
+                            if (Mode == 5)
+                            {
+                                try
+                                {
+                                    // Sum the descriptor and the actual GD-ROM
+                                    // track files. The tiny GDI text length
+                                    // alone is not a meaningful input size.
+                                    var gdi = LnrDreamcastGdi.Validate(path);
+                                    job = new DiscJob(path, relativeFolder, gdi.InputBytes, Mode);
+                                }
+                                catch (Exception ex)
+                                {
+                                    job.PlanError = "GDI Dreamcast incompatible: " + ex.Message;
+                                }
+                            }
+                            if (Mode is 6 or 7)
+                            {
+                                try { VerifyChdHeader(path); }
+                                catch (Exception ex)
+                                {
+                                    job.PlanError = "CHD no válido: " + ex.Message;
+                                }
+                            }
                             if (Mode <= 2)
                             {
                                 try
@@ -681,9 +704,11 @@ namespace PSXPackagerGUI
                     (already > 0 ? " · " + already + " ya existen" : "") +
                     (incompatible > 0 ? " · " + incompatible + " no compatibles" : "");
                 ConvertButton.IsEnabled = _jobs.Count > 0;
-                OutputLabel.Text = "Salida: " + Path.Combine(root, OutputSubdirectory) +
-                    (_includeSubfolders ? " (estructura de subcarpetas conservada)" : "") +
-                    " · originales intactos.";
+                OutputLabel.Text = IsDreamcastVerify
+                    ? "Solo análisis y verificación CHD de Dreamcast · sin crear archivos."
+                    : "Salida: " + Path.Combine(root, OutputSubdirectory) +
+                      (_includeSubfolders ? " (estructura de subcarpetas conservada)" : "") +
+                      " · originales intactos.";
                 Log($"Analizados {_jobs.Count} archivos {SourceExtension} para {ModeBox.Text}; " +
                     $"subcarpetas {(_includeSubfolders ? "sí" : "no")}; " +
                     $"procesos: {ParallelCount}; ya existentes: {already}.");
