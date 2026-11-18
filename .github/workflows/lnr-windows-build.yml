@@ -406,11 +406,13 @@ jobs:
           $naming = Get-Content "./PSXPackagerGUI/LnrSuiteDiscNaming.cs" -Raw
           $prefs = Get-Content "./PSXPackagerGUI/LnrSuitePreferences.cs" -Raw
           $picker = Get-Content "./PSXPackagerGUI/LnrFolderPickerWindow.xaml.cs" -Raw
+          $help = Get-Content "./PSXPackagerGUI/LnrSuiteHelpWindow.xaml" -Raw
           foreach ($required in @(
             'ParallelCombo', 'IncludeSubfoldersCheck',
             'FollowActiveCheck', 'LnrPauseButtonTemplate',
             'LnrPausingButtonTemplate', 'LnrSuiteVariationCell',
-            'LnrSuiteElapsedCell', 'EtaLabel'
+            'LnrSuiteElapsedCell', 'EtaLabel', 'SuiteLogPanelRow',
+            'Text="{Binding DisplayName}"'
           )) {
             if (-not $xaml.Contains($required)) { throw "Suite UI missing: $required" }
           }
@@ -423,6 +425,8 @@ jobs:
             'HashSet<Process>', '_activeProcesses.ToArray()', 'FollowActive(',
             'ReadSuiteStreamAsync(', 'MeasureOutputBytes(', 'UpdateSuiteProgress(',
             'Source_OnLostKeyboardFocus', 'SavePreferences()',
+            'SuiteLogPanelRow.Height = new GridLength(',
+            'new LnrSuiteHelpWindow { Owner = this }.ShowDialog()',
             'using var input = File.OpenRead(path)', 'new PbpReader(input).Discs.Count'
           )) {
             if (-not $suite.Contains($required)) { throw "Suite safety regression: $required" }
@@ -436,6 +440,10 @@ jobs:
           }
           if (-not $naming.Contains('File.Move(Path.Combine(stage, name), output)')) {
             throw "Multidisc outputs must be published by explicit validated names"
+          }
+          if (-not $help.Contains('PBP → CHD') -or -not $help.Contains('PBP → ISO') -or
+              -not $help.Contains('Retroceso') -or -not $help.Contains('Pausar')) {
+            throw "Dedicated Suite help must document all critical modes and controls"
           }
           dotnet run --project "./LNR/Tests/LnrSuiteNamingSmoke.csproj" -c Release
           if ($LASTEXITCODE -ne 0) { throw "Suite multidisc naming smoke failed" }
