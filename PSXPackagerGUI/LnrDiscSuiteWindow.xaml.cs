@@ -99,6 +99,8 @@ namespace PSXPackagerGUI
             if (_preferences.WindowHeight >= MinHeight &&
                 _preferences.WindowHeight <= SystemParameters.WorkArea.Height)
                 Height = _preferences.WindowHeight;
+            if (_preferences.LogPanelHeight >= 100 && _preferences.LogPanelHeight <= 450)
+                SuiteLogPanelRow.Height = new GridLength(_preferences.LogPanelHeight);
             var localChdman = Path.Combine(AppContext.BaseDirectory, "chdman.exe");
             var importedChdman = ImportedChdmanPath;
             ChdmanBox.Text = File.Exists(localChdman) ? localChdman
@@ -135,7 +137,7 @@ namespace PSXPackagerGUI
                     AutoScroll = AutoScrollCheck.IsChecked == true,
                     WindowWidth = ActualWidth,
                     WindowHeight = ActualHeight,
-                    LogPanelHeight = LogBox.ActualHeight
+                    LogPanelHeight = SuiteLogPanelRow.ActualHeight
                 });
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
