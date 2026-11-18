@@ -414,7 +414,7 @@ convertir sin espacio libre inicial**. Tampoco garantiza que la
 ocupación final sea menor que la inicial: dependerá de si tus PBP
 son más pequeños o grandes que sus CHD correspondientes.
 
-## 6.1. Novedades de la Suite de discos en beta.32 (en desarrollo)
+## 6.1. Mejoras de la Suite de discos en v1.0.0
 
 La Suite reutiliza las ideas validadas en el conversor principal, pero
 con las protecciones que corresponden a **sus cinco rutas**.
@@ -441,7 +441,7 @@ con las protecciones que corresponden a **sus cinco rutas**.
 ### Explorador y carpetas de salida
 
 La Suite dispone del mismo explorador de la GUI principal, ahora para
-archivos **PBP o CHD** según la ruta escogida. Admite **Atrás, Entrar,
+archivos **PBP, CHD o GDI** según la ruta escogida. Admite **Atrás, Entrar,
 doble clic, ↑/↓, Enter y Retroceso**, y al volver atrás mantiene
 seleccionada y enfocada la carpeta que acabas de abandonar.
 
@@ -449,7 +449,7 @@ seleccionada y enfocada la carpeta que acabas de abandonar.
   «Ver carpetas…»**; no se repite en la ventana principal de la Suite.
   Desactivada por defecto, recorre las carpetas seleccionadas omitiendo
   enlaces y directorios generados
-  (`PBP`, `CHD`, `BIN_CUE`, `ISO`, `.tools`, temporales).
+  (`PBP`, `CHD`, `BIN_CUE`, `ISO`, `GDI`, `.tools`, temporales).
 - La ruta de salida **reproduce el árbol relativo de entrada**. Por
   ejemplo, `Colección/RPG/Juego.pbp` → `Colección/CHD/RPG/Juego.chd`
   para un disco; o `Colección/CHD/RPG/Juego (Disc 2).chd` para el
@@ -504,8 +504,7 @@ ERROR durante el análisis, se omiten y no se publican como ISO.
   separadas de las del conversor principal. Apagado y eliminación
   de originales **nunca** se activan por restaurar preferencias.
 
-**Estado:** beta.32 de desarrollo. Las pruebas automatizadas no
-sustituyen la validación práctica de todas las conversiones en Windows.
+**v1.0.0:** primera release estable del fork. Las pruebas automatizadas no sustituyen la validación práctica de todos los formatos en Windows, especialmente las nuevas rutas Dreamcast.
 
 ---
 
@@ -513,7 +512,7 @@ sustituyen la validación práctica de todas las conversiones en Windows.
 
 La suite se amplía en beta.8 y aparece mediante **Suite CD / CHD / ISO**
 en el conversor y como entrada independiente en el menú principal.
-Dispone de **cinco modos**:
+Dispone de **siete conversiones** y un modo de **verificación de GD-ROM**:
 
 | Dirección | Salida | Limitaciones |
 |---|---|---|
@@ -522,6 +521,9 @@ Dispone de **cinco modos**:
 | PBP → ISO de datos **[ No Recomendado ]** | `ISO/Juego.iso` | Solo 1 disco y 1 pista MODE1/2048 o MODE1/2352 compatible; rechaza MODE2, CD-Audio, XA y multidisco. `Analizar` marca los PBP detectados como incompatibles. |
 | CHD de CD → BIN/CUE | `BIN_CUE/Juego/Juego.cue` y `.bin` | PS1, Saturn y PS2 en CD; conserva las pistas de audio disponibles en el CHD |
 | CHD de DVD → ISO | `ISO/Juego.iso` | PS2 en DVD, no CD; usa `chdman extractdvd` |
+| **Dreamcast GDI → CHD** | `CHD/Juego.chd` | El GDI debe tener todas sus pistas. CHDMAN crea el CHD y lo verifica; el original GDI y sus pistas permanecen intactos |
+| **Dreamcast CHD → GDI** | `GDI/Juego/Juego.gdi` y sus pistas | Solo CHD con metadatos GD-ROM CHGD/CHGT; extrae y valida todas las pistas antes de publicar la carpeta completa |
+| **Dreamcast: Verificar CHD** | Sin salida | `chdman info` y `chdman verify` sin opción de reparación. Solo GD-ROM, lectura sin modificar originales |
 
 **PBP → ISO [ No Recomendado ]** NO es una reconstrucción fiel
 de un CD para grabar. Solo extrae los 2048 bytes útiles de un disco
@@ -574,6 +576,38 @@ de estas dos conversiones de PBP (BIN/CUE, ISO limitado).
 6. Se limpian automáticamente los temporales de cada juego; no se
    borran archivos de salida completados antes de un error/cancelación.
 
+
+### Dreamcast: GDI, CHD y comprobación de integridad
+
+La Suite admite los **GD-ROM de Sega Dreamcast** mediante tres opciones:
+
+1. **GDI → CHD:** selecciona la carpeta que contiene los archivos
+   `.gdi`. Un GDI es un descriptor y no funciona sin los archivos de
+   pista (por ejemplo `track01.bin`, `track02.raw`, `track03.bin`).
+   Durante `Analizar`, la Suite valida el recuento de pistas, las
+   referencias, las rutas y los tamaños; rechaza pistas ausentes,
+   sectores truncados o rutas que escapen del directorio original.
+   Al convertir, CHDMAN crea un CHD provisional, comprueba sus
+   metadatos GD-ROM y ejecuta `verify` antes de publicarlo.
+2. **CHD → GDI:** selecciona CHD con metadatos `CHGD`/`CHGT`, no
+   imágenes convencionales de CD (`CHCD`/`CHT2`). CHDMAN genera
+   una carpeta temporal con descriptor y pistas; la Suite comprueba
+   todas las referencias y solo después publica la carpeta completa.
+   Las carpetas existentes se omiten y nunca se sobrescriben.
+3. **Verificar CHD GD-ROM:** muestra metadatos útiles, incluyendo
+   compresión y SHA-1 cuando los comunica CHDMAN, y utiliza
+   `chdman verify -i` sin `-f` ni reparación. No crea archivos,
+   no modifica el CHD y no ofrece apagado automático.
+
+Las tres funciones requieren un `chdman.exe` compatible, aportado
+por el usuario. CHDMAN no se redistribuye dentro de la Suite. La
+reconstrucción `CHD → GDI` **no garantiza recuperar exactamente los
+nombres, los pregaps o los hashes de un volcado GDI antiguo**, ni
+los datos que ya se perdieron al partir de una imagen recortada.
+El formato DiscJuggler `.cdi` no se convierte directamente en
+esta versión. Para archivar una colección, conserva copias de
+los archivos originales y verifica los resultados con un emulador
+o una imagen de referencia fiable.
 
 **PBP → CHD no es una conversión directa sin intermediarios**: para
 reconstruir un PBP se necesita extraer BIN/CUE en una carpeta temporal,
