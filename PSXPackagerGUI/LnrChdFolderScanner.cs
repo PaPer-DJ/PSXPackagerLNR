@@ -79,8 +79,8 @@ namespace PSXPackagerGUI
         public static IReadOnlyList<string> FindFiles(
             string folder, string extension, Action<string> warning = null)
         {
-            if (extension != ".chd" && extension != ".pbp")
-                throw new ArgumentException("Solo se permiten archivos CHD o PBP.", nameof(extension));
+            if (extension != ".chd" && extension != ".pbp" && extension != ".gdi")
+                throw new ArgumentException("Solo se permiten archivos CHD, PBP o GDI.", nameof(extension));
             try
             {
                 return Directory.EnumerateFiles(folder, "*" + extension, SearchOption.TopDirectoryOnly)
