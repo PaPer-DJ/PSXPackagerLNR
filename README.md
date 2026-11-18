@@ -63,6 +63,38 @@ Los selectores de **Multidisco**, **Compresión** y **Conversiones simultáneas*
 
 **Estado:** beta.30 validada por el autor en Windows con build 513 antes de la publicación pública. Se mantiene .NET 8 autocontenido, el acceso directo aprobado y el nivel de compresión 3. La beta.29 publicada permanece sin cambios.
 
+## Beta.32 en desarrollo — Suite de discos ampliada
+
+La **Suite de discos** incorpora en la rama de desarrollo las mejoras del
+conversor CHD → PBP principal: **1, 2, 3, 4, 6, 8 o Auto conversiones
+simultáneas**, **pausa segura entre archivos**, **reanudación**, cancelación
+de todos los procesos activos, progreso por archivo/fase, tamaños de entrada
+y salida, variación, tiempo, ETA orientativa y seguimiento del archivo activo.
+
+La Suite también reutiliza el **navegador CHD/PBP** mejorado (Atrás,
+Entrar, ↑/↓, Enter y Retroceso) y permite buscar en **subcarpetas**
+sin entrar en los directorios de salida, conservando las rutas relativas
+en `CHD`, `BIN_CUE` o `ISO`. Sus preferencias de ventana y selección se
+guardan separadas de las del conversor principal.
+
+En **PBP multidisco → CHD**, los resultados se llaman automáticamente
+`Juego (Disc 1).chd`, `Juego (Disc 2).chd`, etc., utilizando el índice
+real del disco dentro del PBP; un PBP de un solo disco conserva su
+nombre original. El PBP multidisco cuenta como **una sola tarea**.
+Cada CHD se comprueba en staging y se verifica con CHDMAN antes de
+publicar el grupo; si un destino ya existe, se omite el grupo completo.
+La publicación de BIN/CUE también es conjunta, renombra sus pares con
+`(Disc N)`, actualiza las referencias del CUE y evita archivos huérfanos.
+Un CHD sigue representando **un solo disco**, no se divide por pistas.
+
+Se conservan las limitaciones por formato: **PBP → ISO** solo admite un
+disco con datos compatibles; no es una reconstrucción completa de un CD.
+La Suite **nunca borra originales** y no redistribuye CHDMAN.
+
+**Estado: beta.32 de desarrollo.** Estas funciones requieren las pruebas de
+Windows y la validación del autor antes de publicación. La última descarga
+pública sigue siendo la **[beta.31](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.31)**.
+
 ## Beta.31 — Toolkit paralelo y explorador de carpetas mejorado
 
 El **Toolkit sin interfaz gráfica** incorpora el procesamiento concurrente de juegos PS1 CHD → PBP: un proceso CLI independiente por juego y un selector **1, 2, 3, 4, 6, 8 o Auto**. El valor inicial es **4 (HDD)**, con **8 (SSD)** como sugerencia para equipos con recursos suficientes. Cada juego multidisco sigue siendo una única tarea y los originales se conservan.
