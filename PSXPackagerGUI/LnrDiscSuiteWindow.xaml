@@ -148,7 +148,6 @@
                               ToolTip="Solo un disco y una pista de datos MODE1. El análisis marca incompatibles y los omite. ISO no conserva el CD original completo; para PS1 se recomienda BIN/CUE."/>
                 <ComboBoxItem Content="CHD → BIN/CUE (CD: PS1, Saturn y PS2 CD)" Tag="CHD2CUE"/>
                 <ComboBoxItem Content="CHD → ISO (DVD: PS2 DVD)" Tag="CHD2ISO"/>
-                <Separator/>
                 <ComboBoxItem Content="Dreamcast · GDI → CHD (GD-ROM)" Tag="GDI2CHD"
                               ToolTip="Comprime un conjunto GDI con todas sus pistas mediante CHDMAN; verifica el CHD nuevo."/>
                 <ComboBoxItem Content="Dreamcast · CHD → GDI (GD-ROM)" Tag="CHD2GDI"
