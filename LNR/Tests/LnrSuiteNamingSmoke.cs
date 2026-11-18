@@ -82,6 +82,13 @@ try
     Assert(Directory.Exists(blocker), "a pre-existing directory was removed");
     Directory.Delete(blocker);
 
+    // A rolled-back CHD is intentionally DELETED (never put back into a
+    // possibly incomplete staging tree). Recreate the synthetic input for
+    // the independent successful-commit scenario.
+    foreach (var name in names)
+        if (!File.Exists(Path.Combine(chdStage, name)))
+            File.WriteAllBytes(Path.Combine(chdStage, name), new byte[4096]);
+
     Assert(LnrSuiteDiscNaming.PublishChdGroup(chdStage, dest, names),
            "publish all three validated CHDs");
     Assert(names.All(name => File.Exists(Path.Combine(dest, name))),
