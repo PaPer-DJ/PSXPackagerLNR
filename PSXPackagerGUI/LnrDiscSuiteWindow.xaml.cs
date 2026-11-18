@@ -866,6 +866,17 @@ namespace PSXPackagerGUI
                       "Los PBP MODE2, audio, multidisco o no compatibles se marcan como ERROR " +
                       "en el análisis y no se convierten; el resto del lote continúa. " +
                       "Se verifica cada sector al exportar. Para preservar un juego PS1 utiliza BIN/CUE."
+                    : Mode == 5
+                    ? "Dreamcast GDI → CHD: se validan el descriptor GDI y todas sus pistas, " +
+                      "se crea un CHD en staging y se comprueban sus metadatos de GD-ROM e integridad. " +
+                      "No se eliminan los GDI ni las pistas originales."
+                    : Mode == 6
+                    ? "Dreamcast CHD → GDI: únicamente se extraen CHD con metadatos GD-ROM " +
+                      "(CHGD/CHGT). La carpeta final incluye el descriptor GDI y todas sus pistas."
+                    : Mode == 7
+                    ? "Dreamcast · VERIFICACIÓN: consulta información y ejecuta CHDMAN verify " +
+                      "sin escribir ningún archivo ni corregir datos de origen. " +
+                      "Solo acepta CHD con metadatos GD-ROM."
                     : "Comprueba que has escogido el tipo de soporte correcto (CD o DVD).") +
                 "\n\n¿Iniciar el lote?";
             if (MessageBox.Show(this, confirmation, "Confirmar lote de la suite",
@@ -873,7 +884,7 @@ namespace PSXPackagerGUI
                 != MessageBoxResult.Yes)
                 return;
 
-            var shutdownRequested = ShutdownCheck.IsChecked == true;
+            var shutdownRequested = !IsDreamcastVerify && ShutdownCheck.IsChecked == true;
             if (shutdownRequested)
             {
                 var response = MessageBox.Show(this,
@@ -1028,7 +1039,11 @@ namespace PSXPackagerGUI
                     1 => await PbpToCueAsync(job, dest, token),
                     2 => await PbpToIsoAsync(job, dest, token),
                     3 => await ChdToCueAsync(job, dest, chdman, token),
-                    _ => await ChdToIsoAsync(job, dest, chdman, token)
+                    4 => await ChdToIsoAsync(job, dest, chdman, token),
+                    5 => await GdiToChdAsync(job, dest, chdman, token),
+                    6 => await ChdToGdiAsync(job, dest, chdman, token),
+                    7 => await VerifyDreamcastChdAsync(job, chdman, token),
+                    _ => throw new InvalidOperationException("Modo de conversión no válido.")
                 };
 
                 if (made == 0)
@@ -1040,17 +1055,21 @@ namespace PSXPackagerGUI
                 else
                 {
                     _success++;
-                    job.OutputCount = made.ToString(CultureInfo.InvariantCulture);
-                    job.OutputBytes = MeasureOutputBytes(job);
+                    job.OutputCount = IsDreamcastVerify
+                        ? "0" : made.ToString(CultureInfo.InvariantCulture);
+                    job.OutputBytes = IsDreamcastVerify ? null : MeasureOutputBytes(job);
                     job.ProgressPercent = 100;
-                    job.Status = "Completado";
+                    job.Status = IsDreamcastVerify ? "Verificado" : "Completado";
                     _calibratedBytes += job.SourceBytes;
                     _calibratedSeconds += Math.Max(0.1,
                         _activeClocks.TryGetValue(job, out var clock)
                             ? clock.Elapsed.TotalSeconds : 0.1);
-                    Log("OK: " + job.DisplayName + " | Origen " + FormatSize(job.SourceBytes) +
-                        " → Salida " + job.OutputSizeText + " | variación " +
-                        job.VariationText + ".");
+                    if (IsDreamcastVerify)
+                        Log("VERIFICADO: " + job.DisplayName + " | GD-ROM CHD íntegro, sin modificaciones.");
+                    else
+                        Log("OK: " + job.DisplayName + " | Origen " + FormatSize(job.SourceBytes) +
+                            " → Salida " + job.OutputSizeText + " | variación " +
+                            job.VariationText + ".");
                 }
             }
             catch (OperationCanceledException)
@@ -1791,6 +1810,7 @@ namespace PSXPackagerGUI
                     // An ISO omits CD-specific information, so never present
                     // its smaller size as a compression benefit.
                     if (Mode == 2) return "No comparable";
+                    if (Mode == 7) return "—";
                     if (!Difference.HasValue) return "—";
                     var value = Difference.Value;
                     return (value > 0 ? "+" : "") + FormatSize(value);
@@ -1798,6 +1818,7 @@ namespace PSXPackagerGUI
             }
             public string VariationTooltip => Mode == 2
                 ? "ISO extrae solo datos compatibles; no es un formato completo de preservación del CD."
+                : Mode == 7 ? "Verificar GD-ROM no crea ninguna salida y conserva el CHD sin modificaciones."
                 : "Tamaño de salida menos tamaño de origen. No implica mayor calidad ni compatibilidad.";
             public System.Windows.Media.Brush VariationBrush => Mode == 2
                 ? System.Windows.Media.Brushes.DimGray
