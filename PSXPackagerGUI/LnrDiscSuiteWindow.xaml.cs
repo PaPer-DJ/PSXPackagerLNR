@@ -1488,9 +1488,9 @@ namespace PSXPackagerGUI
             return last.ToString();
         }
 
-        private async Task ExecuteAsync(string exe, IEnumerable<string> arguments,
-                                        CancellationToken token, DiscJob job = null,
-                                        string phase = null)
+        private async Task<string> ExecuteAsync(string exe, IEnumerable<string> arguments,
+                                                CancellationToken token, DiscJob job = null,
+                                                string phase = null)
         {
             token.ThrowIfCancellationRequested();
             if (job != null)
@@ -1527,6 +1527,9 @@ namespace PSXPackagerGUI
                     throw new InvalidOperationException(Path.GetFileName(exe) + " devolvió " +
                                                         proc.ExitCode + ": " + detail.Trim());
                 }
+                // Exposes CHDMAN info text for read-only GD-ROM type checking.
+                // Legacy conversion callers can ignore the returned string.
+                return outputs[0] + Environment.NewLine + outputs[1];
             }
             catch (OperationCanceledException)
             {
