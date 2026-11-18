@@ -1678,6 +1678,7 @@ namespace PSXPackagerGUI
                     _status = value;
                     Notify(nameof(Status));
                     Notify(nameof(DisplayStatus));
+                    Notify(nameof(StatusBrush));
                 }
             }
             public string CurrentPhase
@@ -1713,6 +1714,10 @@ namespace PSXPackagerGUI
                 }
             }
             public bool IsProgressIndeterminate => !HasProgress;
+            public System.Windows.Media.Brush StatusBrush => Status == "ERROR"
+                ? System.Windows.Media.Brushes.Firebrick
+                : Status == "Completado" ? System.Windows.Media.Brushes.ForestGreen
+                : System.Windows.Media.Brushes.DimGray;
             public string DisplayStatus => Status == "Convirtiendo"
                 ? CurrentPhase + (HasProgress ? " " + ProgressPercent + "%" : "")
                 : Status == "ERROR" && !string.IsNullOrWhiteSpace(PlanError)
