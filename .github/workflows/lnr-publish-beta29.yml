@@ -1,0 +1,65 @@
+name: Finalize verified PSXPackagerLNR beta.29 public release
+
+on:
+  push:
+    branches:
+      - lnr/windows-chd-build
+    paths:
+      - ".github/workflows/lnr-publish-beta29.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lnr-release-beta29
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'PaPer-DJ/PSXPackagerLNR'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify frozen draft release and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo='PaPer-DJ/PSXPackagerLNR'
+          rid=448060186
+          tag='v0.1.0-beta.29'
+          pinned='69dce2b57330ff3cdb2b1bec78d337500026796d'
+          endpoint="repos/$repo/releases/$rid"
+          metadata="$(gh api "$endpoint")"
+          test "$(jq -r '.id' <<< "$metadata")" = "$rid"
+          test "$(jq -r '.tag_name' <<< "$metadata")" = "$tag"
+          test "$(jq -r '.target_commitish' <<< "$metadata")" = "$pinned"
+          test "$(jq -r '.prerelease' <<< "$metadata")" = 'true'
+
+          names="$(jq -r '.assets[].name' <<< "$metadata")"
+          test "$(jq '.assets | length' <<< "$metadata")" = '4'
+          for name in \
+            'PSXPackagerLNR-v0.1.0-beta.29-b466-GUI-win-x64.zip' \
+            'PSXPackagerLNR-v0.1.0-beta.29-b466-CLI-win-x64.zip' \
+            'PSXPackagerLNR-v0.1.0-beta.29-b466-Toolkit-win-x64.zip' \
+            'SHA256SUMS.txt'
+          do
+            grep -Fxq "$name" <<< "$names" || { echo "Missing asset $name" >&2; exit 1; }
+          done
+          echo "Verified four frozen binary assets and SHA manifest"
+          if [ "$(jq -r '.draft' <<< "$metadata")" = 'true' ]; then
+            echo "Publishing GitHub release $tag without touching master"
+            gh api -X PATCH "$endpoint" -F draft=false -F prerelease=true > /tmp/published.json
+          fi
+
+          after="$(gh api "$endpoint")"
+          test "$(jq -r '.draft' <<< "$after")" = 'false'
+          test "$(jq -r '.prerelease' <<< "$after")" = 'true'
+          test "$(jq -r '.assets | length' <<< "$after")" = '4'
+          actual="$(gh api "repos/$repo/git/ref/tags/$tag" --jq '.object.sha')"
+          test "$actual" = "$pinned"
+          url="$(jq -r '.html_url' <<< "$after")"
+          echo "PUBLIC RELEASE VERIFIED: $url"
+          echo "### PSXPackagerLNR beta.29 public pre-release" >> "$GITHUB_STEP_SUMMARY"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tag: $tag; commit: $pinned; 4 assets (GUI / CLI / Toolkit / SHA256)" >> "$GITHUB_STEP_SUMMARY"

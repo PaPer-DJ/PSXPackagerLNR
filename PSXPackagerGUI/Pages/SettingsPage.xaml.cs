@@ -37,7 +37,10 @@ namespace PSXPackagerGUI.Pages
                 IsFirstRun = true;
                 settings = new SettingsModel
                 {
-                    CompressionLevel = 5,
+                    // LNR default for fresh installations: validated on actual PSP hardware.
+                    // Preserve settings already saved by the user on later launches.
+                    CompressionLevel = 3,
+                    FileNameFormat = "%FILENAME%",
                     Batch = new BatchSettingsModel()
                     {
                         IsBinChecked = true,
@@ -60,7 +63,7 @@ namespace PSXPackagerGUI.Pages
 
             if (string.IsNullOrEmpty(settings.FileNameFormat))
             {
-                settings.FileNameFormat = "%GAMEID%\\EBOOT";
+                settings.FileNameFormat = "%FILENAME%";
             }
 
             if (string.IsNullOrEmpty(settings.CustomResourcesFormat))

@@ -1,0 +1,162 @@
+name: Refresh beta.29 public release screenshots
+
+on:
+  push:
+    branches:
+      - lnr/windows-chd-build
+    paths:
+      - ".github/workflows/lnr-update-public-notes-beta29.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lnr-beta29-notes-edit
+  cancel-in-progress: false
+
+jobs:
+  update-release:
+    if: github.repository == 'PaPer-DJ/PSXPackagerLNR'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify screenshot, update compression comparison, preserve release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo='PaPer-DJ/PSXPackagerLNR'
+          rid=448060186
+          tag='v0.1.0-beta.29'
+          pinned='69dce2b57330ff3cdb2b1bec78d337500026796d'
+          shot_path='docs/images/psxpackagerlnr-niveles-compresion-actua-soccer3.png'
+          shot_sha='e4160824c5d71320ce28e9c10191143e0e5008e7'
+          gui_shot_path='docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes.png'
+          gui_shot_sha='42753e6f38e427574b8d480c313a69dae631feb6'
+          endpoint="repos/$repo/releases/$rid"
+          before="$(gh api "$endpoint")"
+          test "$(jq -r '.tag_name' <<< "$before")" = "$tag"
+          test "$(jq -r '.target_commitish' <<< "$before")" = "$pinned"
+          test "$(jq -r '.draft' <<< "$before")" = 'false'
+          test "$(jq -r '.prerelease' <<< "$before")" = 'true'
+          test "$(jq '.assets | length' <<< "$before")" = '4'
+          test "$(gh api "repos/$repo/git/ref/tags/$tag" --jq '.object.sha')" = "$pinned"
+          actual_sha="$(gh api "repos/$repo/contents/$shot_path?ref=$GITHUB_SHA" --jq '.sha')"
+          test "$actual_sha" = "$shot_sha"
+          test "$(gh api "repos/$repo/contents/$gui_shot_path?ref=$GITHUB_SHA" --jq '.sha')" = "$gui_shot_sha"
+          original_assets="$(jq -c '[.assets[] | {id, name, size}] | sort_by(.id)' <<< "$before")"
+          jq -r '.body' <<< "$before" > /tmp/release-notes.md
+
+          cat > /tmp/corrected-section.md <<'LNR_SECTION_EOF'
+          ## Por qué el nivel 3 de Compresión es el predeterminado LNR
+          
+          LaNaveRETRO realizó **pruebas propias en una PSP original** y observó
+          que, en determinados juegos y momentos de carga, los PBP comprimidos
+          en **niveles 1–3 cargaban antes que los comprimidos en niveles 4–5**.
+          Por eso, **3 — Equilibrada (LNR)** es la elección por defecto del fork:
+          prioriza un equilibrio entre tiempo de creación del PBP, tamaño
+          y la experiencia observada en hardware modesto. No es una garantía
+          universal de mejor velocidad o FPS.
+          
+          ### Prueba real con Actua Soccer 3 (Europe)
+          
+          Esta captura muestra **cuatro PBP del mismo juego**, además de sus
+          archivos BIN, CHD y CUE, con los tamaños que presenta Windows:
+          
+          | Archivo | Tamaño según el Explorador de Windows |
+          | --- | ---: |
+          | BIN (imagen de CD) | **429.709 KB** |
+          | CHD | **235.208 KB** |
+          | PBP — nivel 1 | **277.808 KB** |
+          | **PBP — nivel 3 (LNR)** | **276.892 KB** |
+          | PBP — nivel 5 | **274.137 KB** |
+          | PBP — nivel 9 | **274.000 KB** |
+          | CUE (archivo auxiliar) | 1 KB |
+          
+          ![Prueba original de LaNaveRETRO: Actua Soccer 3 (Europe) en niveles de compresión PBP 1, 3, 5 y 9, con tamaños BIN y CHD](SCREENSHOT_URL_PLACEHOLDER)
+          
+          *Captura original aportada por LaNaveRETRO. Se transcriben los **KB
+          redondeados por el Explorador de Windows**, no tamaños exactos
+          en bytes. La prueba de tamaños no mide por sí sola la carga en PSP.*
+          
+          **Resultados y conclusiones de esta muestra:**
+          
+          - **1 → 3:** el PBP se reduce **916 KB** (aprox. **0,33 %**).
+          - **3 → 5:** se ahorran **2.755 KB** (aprox. **0,99 %**).
+          - **5 → 9:** apenas **137 KB** (aprox. **0,05 %**); las medidas
+            precisas anotadas previamente para 5 y 9 difieren **140.880 bytes**.
+          - El **PBP nivel 3** es aproximadamente **35,56 % menor que el BIN**,
+            pero **17,72 % mayor que el CHD**. En esta prueba, CHD comprime
+            más; PBP interesa por su uso en PSP y emuladores compatibles.
+          
+          Así, la diferencia de tamaño entre nivel **3 y 5** es pequeña
+          en este título y, **por encima de 5**, el ahorro resulta
+          prácticamente irrelevante para las prioridades de LaNaveRETRO.
+          Esto **no demuestra** que todos los juegos tengan idénticos
+          resultados ni que el nivel de compresión, por sí solo,
+          explique el tiempo de carga en cada dispositivo.
+          
+          **Nota técnica:** el motor utiliza DEFLATE con SharpZipLib 1.4.2:
+          niveles 1–4 aplican una estrategia de compresión rápida
+          y 5–9 una más exhaustiva **al generar el PBP en el PC**.
+          El descompresor de la PSP no repite las búsquedas del compresor.
+          El nivel 3 sigue siendo una **recomendación práctica**, no
+          un óptimo demostrado para todos los juegos, tarjetas y emuladores.
+          
+          [Explicación y parámetros técnicos de compresión](https://github.com/PaPer-DJ/PSXPackagerLNR/blob/lnr/windows-chd-build/README.md#anexo-tecnico-lnr-nivel-3).
+          LNR_SECTION_EOF
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+          path=Path('/tmp/release-notes.md')
+          body=path.read_text(encoding='utf-8')
+          names=[
+            '## Por qué el nivel 3 es el predeterminado LNR',
+            '## Por qué el nivel 3 de Compresión es el predeterminado LNR'
+          ]
+          present=[name for name in names if name in body]
+          assert len(present)==1, f'Expected one existing heading, got {present}'
+          start=body.index(present[0])
+          marker='## Captura real: PSXPackagerLNR convirtiendo por lotes'
+          assert body.count(marker)==1 and body.index(marker)>start
+          end=body.index(marker)
+          section=Path('/tmp/corrected-section.md').read_text(encoding='utf-8')
+          screenshot='https://raw.githubusercontent.com/'+os.environ['GITHUB_REPOSITORY']+'/'+os.environ['GITHUB_SHA']+'/docs/images/psxpackagerlnr-niveles-compresion-actua-soccer3.png'
+          section=section.replace('SCREENSHOT_URL_PLACEHOLDER',screenshot)
+          assert section.count(screenshot)==1
+          updated=body[:start]+section+'\n'+body[end:]
+          # The public release points at immutable image revisions; repin
+          # the GUI screenshot to the uploaded original image from this commit.
+          gui_path='docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes.png'
+          base_url='https://raw.githubusercontent.com/'+os.environ['GITHUB_REPOSITORY']+'/'
+          gui_url=base_url+os.environ['GITHUB_SHA']+'/'+gui_path
+          gui_pattern=re.compile(r'(?m)(?<=\()https://raw\.githubusercontent\.com/PaPer-DJ/PSXPackagerLNR/[0-9a-f]{40}/docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes\.png(?=\))')
+          updated,links=gui_pattern.subn(lambda match:gui_url,updated)
+          assert links==1, f'Expected one GUI screenshot link, got {links}'
+          before_count='**272 PBP previstos, 95 terminados (35 %) en el instante de la imagen**'
+          after_count='**272 PBP previstos, 170 completados (62 %)**'
+          if before_count in updated:
+              updated=updated.replace(before_count,after_count,1)
+              updated=updated.replace('con un juego procesándose y su progreso individual visible',
+                                      'con variaciones positivas y negativas CHD/PBP, progreso individual, registro y ETA global',1)
+          else:
+              assert after_count in updated, 'Unrecognized GUI screenshot caption; abort'
+
+          assert updated.count('## Captura real: PSXPackagerLNR convirtiendo por lotes')==1
+          assert updated.count('## Por qué el nivel 3 de Compresión es el predeterminado LNR')==1
+          assert '276.892 KB' in updated and '429.709 KB' in updated
+          path.write_text(updated,encoding='utf-8')
+          PY
+
+          gh release edit "$tag" --repo "$repo" --notes-file /tmp/release-notes.md
+          after="$(gh api "$endpoint")"
+          test "$(jq -c '[.assets[] | {id, name, size}] | sort_by(.id)' <<< "$after")" = "$original_assets"
+          test "$(jq -r '.draft' <<< "$after")" = 'false'
+          test "$(jq -r '.prerelease' <<< "$after")" = 'true'
+          test "$(gh api "repos/$repo/git/ref/tags/$tag" --jq '.object.sha')" = "$pinned"
+          jq -r '.body' <<< "$after" | grep -Fq "$GITHUB_SHA/$shot_path"
+          jq -r '.body' <<< "$after" | grep -Fq "$GITHUB_SHA/$gui_shot_path"
+          echo "Updated both original screenshots and captions; release assets and tag unchanged."
+          jq -r '.html_url' <<< "$after"

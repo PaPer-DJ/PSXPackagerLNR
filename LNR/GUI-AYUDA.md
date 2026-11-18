@@ -1,0 +1,664 @@
+# PSXPackagerLNR — Manual de uso de la interfaz gráfica
+
+> Edición LNR comunitaria del software **PSXPackager**. El motor original y la
+> licencia MIT pertenecen a sus autores: copyright 2020 David Khristepher
+> Santos; repositorio mantenido por RupertAvery y colaboradores. LaNaveRETRO
+> aporta la experiencia de uso, automatización y funciones añadidas, **no
+> reclama la creación del programa original**.
+
+## 1. Objetivo de esta edición
+
+Hacer que una colección de juegos de PlayStation 1 almacenados en archivos
+`.CHD` pueda convertirse por lotes a `.PBP` **directamente**, sin tener
+que abrir una consola de comandos, extraer previamente imágenes `.BIN/.CUE`,
+instalar CHDMAN ni utilizar múltiples herramientas a mano. La conversión
+CHD→PBP utiliza el lector CHD ya presente en el código de PSXPackager y no
+necesita generar archivos BIN/CUE intermedios.
+
+La interfaz permite seleccionar una carpeta, comprobar los juegos, convertir,
+consultar estadísticas, cancelar y abrir los resultados. Los juegos y
+firmware/BIOS **no** están incluidos.
+
+### Captura real de una conversión por lotes
+
+![Interfaz PSXPackagerLNR beta.29: 170 de 272 conversiones y variaciones CHD a PBP positivas y negativas](../docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes.png)
+
+*Ejemplo real de LaNaveRETRO, **beta.29 build 465**: **170 de 272 trabajos completados (62 %)**. La tabla muestra **variación negativa** (PBP menor que CHD) y positiva (PBP mayor que CHD); también figuran juego activo, tiempo por juego, registro, progreso global y ETA. La build pública de beta.29 es la **466**.*
+
+## 2. Cómo abrir PSXPackagerLNR (Windows)
+
+Al descargar y descomprimir el paquete **GUI-win-x64**, encontrarás
+la aplicación gráfica y su acceso directo específico para LNR:
+
+- **`#PSXPackagerLNR.lnk` (recomendado)**: acceso directo nativo de
+  Windows, con icono estándar del sistema. Abre directamente
+  **`PSXPackagerGUI.exe --lnr-batch`**, la ventana
+  **CHD → PBP por lotes**, con las herramientas LNR y la Suite.
+- **`PSXPackagerGUI.exe`**: abre la interfaz clásica de PSXPackager;
+  también permite acceder a las herramientas añadidas por LNR.
+- **`psxpackager.exe`**: CLI original compilada y utilizada
+  internamente por la GUI LNR. No es un segundo lanzador gráfico.
+
+**Extrae todo el ZIP y conserva juntos el acceso directo, la GUI, la
+CLI y la carpeta de recursos.** No hace falta instalador ni un EXE
+lanzador adicional. El acceso directo de beta.29 es el método probado
+por LaNaveRETRO: no lo modifiques o muevas fuera de la carpeta.
+La conversión CHD→PBP no precisa CHDMAN; algunas operaciones de
+la Suite sí lo requieren.
+
+## 2.1. Seleccionar carpeta y analizar
+
+- **Ver carpetas...** muestra subcarpetas y una vista previa de CHD con tamaños.
+  Pulsa **Usar esta carpeta** para confirmarla.
+- La lista de juegos se actualiza al seleccionar una carpeta, restaurar la
+  última utilizada, introducir una ruta y pulsar Intro, o cambiar el modo
+  multidisco.
+- **Analizar** fuerza una actualización manual. Solo se inspeccionan CHD
+  directamente dentro de la carpeta, no las subcarpetas.
+- **Nombre PBP, Discos, Origen, CHD, PBP, Variación, Tiempo y Estado** muestran
+  nombre de destino, número de discos, método de agrupación, tamaño de entrada,
+  tamaño de salida, diferencia de espacio y duración por juego.
+- **Saltado / Ya existe** significa que ya hay un PBP con ese nombre: no se
+  sobreescribe ni se elimina su CHD de origen.
+
+### Navegador de carpetas: Atrás, Entrar y «También subcarpetas» (beta.31)
+
+El navegador incorporado mantiene la vista previa de CHD y muestra los controles
+**Atrás**, **Entrar** y **Explorar Windows…**. **Atrás** sube a la carpeta superior,
+**deja seleccionada la carpeta de la que acabas de salir y devuelve el foco a la lista**.
+También puedes utilizar **Retroceso (Backspace)** para volver al directorio superior:
+funciona como «Atrás», conserva la selección y el foco, excepto cuando
+estás escribiendo una ruta en el cuadro superior (ahí borra caracteres).
+Puedes moverte por las subcarpetas con **↑/↓** y pulsar **Enter** para acceder a la
+seleccionada sin utilizar el ratón. El botón **Entrar** y el doble clic también
+abren la carpeta elegida; si has pegado una ruta distinta arriba, prevalece
+la ruta escrita. La opción **«También subcarpetas»** está junto al
+aviso de análisis, desactivada por defecto para conservar el comportamiento
+original. Su selección se recuerda entre aperturas.
+
+- **Desmarcada:** solo se procesan los CHD de la carpeta seleccionada.
+- **Marcada:** se procesan también los CHD en subcarpetas y se muestra el
+  recuento total, incluso si la carpeta principal no contiene CHD.
+- **Salida organizada:** `Origen/Subcarpeta/Juego.chd` se convierte en
+  `Origen/PBP/Subcarpeta/Juego.pbp`. Los juegos directamente en el origen
+  siguen saliendo a `Origen/PBP/Juego.pbp`. Así se pueden tener juegos
+  con el mismo nombre en subcarpetas distintas sin sobrescritura.
+- En modo **Unidos (M3U)**, cada lista y serie numerada se procesa
+  únicamente dentro de su subcarpeta de origen; no se agrupan discos
+  que estén en subcarpetas diferentes.
+- Se omiten carpetas llamadas **PBP** y **.tools**, temporales
+  `.lnr_stage_*` y enlaces/junciones de directorio para no reimportar
+  resultados ni salir de la ruta seleccionada.
+- Los PBP ya existentes se saltan; los CHD y las listas M3U de origen
+  permanecen intactos salvo que el usuario active explícitamente la
+  opción destructiva de CHD, con todas sus confirmaciones.
+
+
+## Conversiones simultáneas — beta.30
+
+El selector **«Conversiones simultáneas»** permite procesar varios juegos PS1 CHD → PBP al mismo tiempo: **1 (secuencial), 2, 3, 4, 6, 8 o Auto**. El valor inicial sigue siendo **4 — Recomendado (HDD)**. La opción **8 — Recomendado (SSD)** está pensada para equipos con SSD y recursos suficientes. Se trata de **orientaciones**, no límites: en HDD lentos, con varios accesos aleatorios o con poca RAM puede convenir usar 1 o 2; en SSD de alto rendimiento puede probarse 8. Auto utiliza hasta cuatro conversiones según el número de procesadores lógicos del equipo.
+
+Cada conversión usa un proceso CLI separado, con su propio directorio provisional dentro de la salida `PBP`. El resultado solo se mueve a su ubicación definitiva después de una comprobación básica. Un PBP **multidisco** siempre se gestiona como **una sola tarea**. La compresión del interior de cada PBP sigue siendo secuencial; aquí se paralelizan los **juegos diferentes**, no los bloques de un mismo archivo.
+
+**Mediciones reales del autor del fork:** ejecutando **4 conversiones** en Windows, el procesamiento global fue **casi cuatro veces más rápido** que el modo secuencial en su colección de prueba, sin saturación apreciable de procesador ni SSD. En el Administrador de tareas observó aproximadamente **17 MB/s de escritura y 10,5 MB/s de lectura por conversión**. Estas medidas se obtuvieron con su equipo y archivos concretos; no garantizan la misma aceleración en otros equipos. El valor **8 para SSD** se recomienda para probar aprovechando el margen observado con 4, **no porque se haya medido una mejora de ocho veces**.
+
+**Importante:** aumentar conversiones simultáneas no multiplica necesariamente la velocidad: dependerá de CPU, RAM y velocidad de lectura/escritura. Aumenta el consumo simultáneo de recursos y el espacio temporal necesario. Los progresos de cada juego siguen describiendo la fase de la CLI; la estimación global es orientativa. Cancelar detiene los procesos activos, deja pendientes sin procesar y conserva los CHD no completados. Las condiciones de seguridad del borrado opcional de originales no cambian.
+
+### Pausar y reanudar el lote sin interrumpir archivos (beta.30)
+
+El mismo botón de acción cambia automáticamente según el estado del lote:
+
+1. **Convertir** (icono verde ▶): inicia el procesamiento y muestra la confirmación habitual.
+2. **Pausar** (icono ámbar ‖): deja de asignar nuevos juegos a los trabajadores. **No termina ni congela los procesos activos**.
+3. **Pausando...** (reloj ámbar): el botón queda desactivado mientras los juegos activos terminan normalmente, validan sus PBP y concluyen las operaciones de salida y, solo si se había autorizado, el borrado de CHD.
+4. **En pausa** (indicado en el estado inferior): no queda ninguna conversión ni operación de finalización activa. El botón pasa a **Reanudar** (icono verde ▶).
+5. **Reanudar**: reactiva los trabajadores y continúa desde los juegos pendientes **sin reconvertir los ya completados**. No solicita de nuevo la confirmación inicial ni modifica las opciones del lote.
+
+**Diferencia con Cancelar:** Pausar **espera a un punto seguro entre juegos**, por lo que puede tardar lo que necesite el juego activo; sus archivos no se dejan deliberadamente a medias. **Cancelar** sí detiene los procesos y termina el lote, incluso si está pausado. No hay opción de recuperar un lote cancelado desde el mismo botón de Reanudar.
+
+Mientras se muestra **En pausa** se detiene el contador de duración activa; al reanudar continúa. La barra global conserva los juegos completados y el estado de cada fila. Si se activó «Apagar equipo al finalizar el lote», **no se apaga mientras está en pausa**; solo se evalúa al terminar el lote de forma normal y con todas las salvaguardas originales.
+
+Los tres selectores **Multidisco, Compresión y Conversiones simultáneas** aparecen en **una única línea**, justo antes de los botones Analizar y Convertir. El aviso sobre uso de recursos se conserva como ayuda emergente del selector, no como texto permanente de la ventana.
+
+El usuario ha verificado estas mejoras en Windows con la beta.30 build 513. La beta.29 previa permanece disponible con procesamiento secuencial.
+
+## 3. Multidisco
+
+- **Separados (1:1)** genera un PBP por CHD, manteniendo su nombre original.
+- **Unidos (M3U)** intenta generar un solo PBP por juego multidisco,
+  priorizando las listas M3U y detectando algunas series de discos numerados.
+  Una lista M3U incompleta o incorrecta no debe convertirse a ciegas.
+- **El cambio de disco depende del emulador**: no todos los dispositivos
+  admiten los PBP multidisco. Prueba antes de convertir colecciones grandes.
+- Las listas `.m3u` y archivos `.sbi` permanecen en la carpeta original.
+
+## 4. Compresión PBP y justificación técnica del nivel 3
+
+PSXPackagerLNR recomienda **3 — Equilibrada (LNR)** como selección inicial,
+especialmente para preparar colecciones destinadas a consolas modestas.
+Es un **compromiso práctico entre tamaño y velocidad de creación del PBP**:
+no se ha demostrado que sea siempre el nivel más rápido al reproducir.
+
+- **1 — Ligera (rápida)**: minimiza el esfuerzo al comprimir, pero a
+  menudo produce archivos mayores; útil si prima el tiempo de conversión.
+- **3 — Equilibrada (LNR, predeterminada)**: pertenece al grupo de
+  búsqueda rápida 1–4 de SharpZipLib 1.4.2; preferido en esta edición
+  por su equilibrio práctico de tiempo de creación y tamaño. El 4
+  también usa búsqueda rápida, pero no garantiza comprimir mejor que 3.
+- **5 — Estándar original**: nivel predeterminado del motor PSXPackager,
+  emplea búsqueda más exhaustiva durante la compresión.
+- **9 — Máxima**: búsqueda de coincidencias más costosa al comprimir;
+  no garantiza producir siempre el archivo más pequeño para cada juego.
+
+### Prueba con tamaños reales: Actua Soccer 3 (Europe)
+
+![Captura ordenada de Actua Soccer 3: BIN, PBP niveles 1/3/5/9, CHD y CUE con tamaños reales mostrados por Windows](../docs/images/psxpackagerlnr-niveles-compresion-actua-soccer3.png)
+
+*Captura original ordenada, con tamaños en KB redondeados por Windows. Acredita las diferencias de tamaño, no tiempos de carga.*
+
+| Formato / compresión | Tamaño visible en Windows |
+| --- | ---: |
+| BIN | 429.709 KB |
+| CHD | 235.208 KB |
+| PBP nivel 1 | 277.808 KB |
+| **PBP nivel 3 (LNR)** | **276.892 KB** |
+| PBP nivel 5 | 274.137 KB |
+| PBP nivel 9 | 274.000 KB |
+| CUE (archivo auxiliar) | 1 KB |
+
+*Valores visibles en el Explorador de Windows; están redondeados a KB.*
+En este juego, pasar de nivel **3 a 5** ahorró unos **2.755 KB
+(0,99 %)**; de **5 a 9**, solo **137 KB (0,05 %)**. El PBP de nivel
+3 fue un **35,56 % más pequeño que el BIN**, pero **17,72 % mayor
+que el CHD**. Esta imagen prueba tamaños, **no mide velocidades de
+carga ni garantiza conservación idéntica de pistas o subcanales**.
+LaNaveRETRO observó en **otras pruebas prácticas con PSP original**
+cargas más cortas en determinados juegos con niveles 1–3 frente a
+4–5, motivo adicional para seleccionar el nivel 3 por defecto.
+
+### Lo que está comprobado en el código
+
+El fork usa **SharpZipLib 1.4.2** y llama a
+`new Deflater(level, true)` para comprimir los sectores.
+La tabla de funciones `COMPR_FUNC` de esa versión asigna:
+
+| Nivel | Función del compresor | Consecuencia directa |
+|---|---|---|
+| 1, 2, 3 y 4 | `DEFLATE_FAST` | Búsqueda rápida de coincidencias al crear el archivo |
+| 5, 6, 7, 8 y 9 | `DEFLATE_SLOW` | Búsqueda más exhaustiva al crear el archivo |
+
+**Ojo con la diferencia entre implementaciones:** en **zlib clásico**
+el cambio a `deflate_slow` sucede en el **nivel 4**, mientras que en
+**SharpZipLib 1.4.2** (la biblioteca usada aquí) sucede en el **5**.
+Por tanto, el resumen que atribuye ese salto al 4 no describe
+exactamente el motor de esta aplicación.
+
+**La búsqueda de coincidencias, la evaluación perezosa (*lazy match*),
+las cadenas de hashes y el esfuerzo exhaustivo pertenecen al
+COMPRESOR que ejecuta PSXPackager en el PC.** Cuando la consola lee
+un PBP, su emulador solo interpreta el resultado de DEFLATE: no vuelve
+a probar esas cadenas de coincidencias. En la
+[especificación RFC 1950](https://www.rfc-editor.org/rfc/rfc1950),
+los indicadores de intensidad de compresión tampoco son necesarios
+para descomprimir. No se deduce de ahí ningún aumento automático de CPU,
+caída de FPS o microtirones entre niveles 3, 5 y 9.
+
+El tiempo de lectura real puede cambiar según **distribución de los
+bloques comprimidos, acceso a la microSD, caché, emulador y hardware**,
+pero hay que medirlo en la consola. El nivel 3 es una elección
+sensata de partida, no el mejor nivel universal demostrado. Tampoco
+es correcto prometer que 5–9 solo ahorran 1–2 %: depende del juego;
+algunas imágenes PBP incluso pueden ocupar más que sus CHD de origen.
+
+**Fuentes técnicas verificadas:**
+
+- [Código de compresión de este fork](../Popstation/Compression.cs).
+- [Versión SharpZipLib utilizada](../Popstation/Popstation.csproj).
+- [Tabla `COMPR_FUNC` de SharpZipLib 1.4.2](https://github.com/icsharpcode/SharpZipLib/blob/v1.4.2/src/ICSharpCode.SharpZipLib/Zip/Compression/DeflaterConstants.cs).
+- [Tabla de estrategias del zlib clásico](https://github.com/madler/zlib/blob/develop/deflate.c).
+- [RFC 1950 — indicadores de nivel de compresión](https://www.rfc-editor.org/rfc/rfc1950).
+
+### Pruebas en PSP original realizadas por LaNaveRETRO
+
+En pruebas prácticas con una **PSP original**, comparando juegos de PS1
+convertidos a PBP con distintos niveles, **los niveles 1 a 3 han mostrado
+menores pausas de carga que los niveles 4 o 5 en determinados momentos**.
+Se trata de una observación directa sobre el dispositivo real,
+no de una deducción a partir de `DEFLATE_FAST` o `DEFLATE_SLOW`.
+
+En los juegos evaluados, al pasar del **nivel 4 al 5** se obtuvieron
+**solo algunos megabytes adicionales de reducción**; entre los niveles
+**5 y 9** el tamaño final cambió muy poco. Esta diferencia puede variar
+según el contenido del juego; no representa una media estadística
+de todo el catálogo de PS1 ni garantiza un tamaño determinado.
+
+**Elección LNR: nivel 3 por defecto**, especialmente como punto de
+partida para PBP destinados a PSP original. Se recomienda probar
+también 1 o 2 si algún juego sigue mostrando pausas. El nivel 3
+**no garantiza mejores FPS** ni elimina necesariamente problemas
+propios del emulador, la tarjeta de memoria o la consola.
+
+Desde esta edición, los valores predeterminados son **3 en la GUI
+clásica, 3 en la GUI por lotes y 3 en la CLI del fork LNR**.
+Se siguen respetando los ajustes ya guardados por cada usuario;
+seleccionar manualmente 1, 5 o 9 sigue siendo posible.
+**El proyecto original de RupertAvery permanece intacto y conserva
+su valor por defecto de 5**: el cambio a 3 es exclusivo del fork LNR.
+
+## 5. Convertir y resultados
+
+1. Revisa los juegos y el modo elegido.
+2. Deja **Eliminar .CHD convertidos** desactivado para la opción segura.
+3. Pulsa **Convertir** y acepta el resumen mostrado.
+4. Los PBP aparecen en la subcarpeta `PBP` de la carpeta seleccionada.
+5. Un **✔ verde** confirma que se creó el PBP, un **✖ rojo** indica error,
+   y un **aviso amarillo** indica un PBP existente que se ha respetado.
+
+El porcentaje de la fila es el de la **fase** de conversión, no el de todo
+el juego. La barra inferior indica cuántos juegos del lote se han
+procesado y ofrece un tiempo restante **aproximado**, calibrado tras
+una conversión válida. **Copiar registro** facilita informar errores;
+**Limpiar registro** (situado antes de **Copiar registro**) vacía el panel **Actividad y resultados** y el
+historial en memoria desde la última limpieza, de modo que **Copiar registro**
+solo copia los mensajes nuevos. **No borra informes TXT ya guardados**,
+los CHD ni los PBP, y no detiene ninguna conversión. Si hay un lote en
+marcha, sus siguientes mensajes continuarán apareciendo en el panel.
+**Abrir carpeta PBP** abre los resultados. Puedes ampliar el registro
+arrastrando el separador y desmarcar **Seguir actividad** para consultarlo.
+
+### Columnas, progreso de fase y duración total (beta.10)
+
+El reparto de espacio inicial también se ha mejorado: **Actividad y
+resultados** empieza a **200 px** en lugar de 300, por lo que
+**Juegos CHD detectados** ocupa una superficie mayor, similar al diseño
+de referencia. El separador sigue siendo arrastrable. La primera
+apertura de beta.10 migra el antiguo valor guardado de 300 px; si habías
+elegido otro tamaño, se conserva.
+
+En la tabla, **Nombre PBP** permanece alineado a la izquierda; las columnas
+**Discos, Origen, CHD, PBP, Variación, Tiempo y Estado/Progreso** se centran.
+Los anchos de las columnas de datos se calculan con el texto visible y
+la columna de estado aprovecha el espacio restante. En ventanas estrechas
+se mantiene un desplazamiento horizontal en vez de comprimir la barra.
+Durante cada conversión, la barra verde se extiende hasta justo antes
+del porcentaje. El porcentaje es **de la fase**, no del juego completo.
+
+Al finalizar, la barra inferior indica **«Lote Finalizado · Tiempo total:
+mm:ss»** o, si ha durado una hora o más, **hh:mm:ss**. También se informa
+si el lote ha sido cancelado o ha terminado con errores. El tiempo
+cuenta desde el comienzo de la conversión del lote hasta su finalización,
+incluidos los archivos saltados.
+
+### Apagar equipo al finalizar (beta.10)
+
+- La casilla **Apagar equipo al finalizar el lote** aparece en la parte
+  inferior derecha, desmarcada por defecto. **Nunca se recuerda marcada.**
+- Requiere confirmación antes de empezar; se considera una acción
+  independiente de la opción de borrado de CHD.
+- Solo se programa si **al menos un juego se ha convertido** y todos los
+  trabajos terminan sin error ni cancelación ni advertencias de borrado.
+  Si todo se salta porque ya existe, **no apaga el equipo**.
+- Después del lote empieza una **cuenta atrás local de 60 segundos** en
+  la GUI. Se puede anular con **Cancelar apagado programado**. Cerrar la
+  aplicación durante la cuenta atrás también cancela el apagado.
+- Al terminar la cuenta atrás, Windows recibe una solicitud de apagado
+  **normal y sin forzar aplicaciones** (`shutdown.exe /s /t 0`).
+  Windows puede aplazarlo o impedirlo si hay documentos sin guardar.
+- No se usa `shutdown /t 60`, porque en Windows los retardos positivos
+  llevan implícito un cierre forzado de programas, con posible pérdida
+  de datos. El apagado depende de que la GUI siga abierta durante su
+  cuenta atrás; no se agenda en segundo plano.
+
+**Importante:** comprueba que los trabajos ajenos al conversor están
+guardados y que no hay otras tareas importantes en ejecución antes de
+activar esta opción. Es una función avanzada y no está habilitada por
+defecto.
+
+## 6. Eliminar CHD convertidos — función avanzada
+
+### ¿Para qué existe esta opción?
+
+Esta función está pensada especialmente para quien necesita **convertir
+colecciones muy grandes de juegos PS1 de CHD a PBP en el mismo disco
+duro, sin tener espacio libre para conservar simultáneamente los dos
+catálogos completos**.
+
+En una conversión normal, los CHD originales siguen ocupando espacio
+y se van acumulando los PBP creados. Al finalizar, quedan **ambas
+colecciones** en el disco: si los PBP tienen un tamaño parecido al de
+sus CHD de origen, la ocupación puede acercarse al doble; incluso
+puede superarlo cuando los PBP son mayores que los CHD.
+
+Activando **Eliminar .CHD convertidos**, tras **cada conversión nueva
+terminada correctamente y con las comprobaciones básicas superadas**,
+la aplicación elimina los CHD que se hayan convertido, **liberando su
+espacio antes de comenzar a acumular el resto del lote**. De este
+modo no es necesario reservar espacio para mantener *toda* la colección
+en CHD **y** *toda* la colección en PBP al mismo tiempo.
+
+**Ejemplo orientativo:** si una colección CHD ocupa 100 GB y los PBP
+generados terminan ocupando 110 GB, **sin borrar** se necesitarían
+aproximadamente **210 GB** para conservar ambas colecciones. Con
+la eliminación activada, los CHD de los trabajos correctos se van
+sustituyendo progresivamente por sus PBP; no se acumulan las dos
+colecciones completas. El espacio máximo necesario dependerá de los
+tamaños reales y del orden de procesamiento.
+
+**Si quieres conservar tus CHD originales, NO actives esta casilla.**
+Es una opción voluntaria para ahorrar espacio, **desactivada en cada
+inicio y en cada lote; nunca se recuerda activada**. Su uso requiere
+otra confirmación porque el borrado es irreversible.
+
+### ¿Y si después necesito volver a tener mis juegos en CHD?
+
+La propia **Suite CD / CHD / ISO** de PSXPackagerLNR incluye el modo
+**PBP → CHD (PS1)**, que permite procesar lotes y reconstruir
+un CHD por disco, incluso a partir de PBP multidisco. Este modo
+necesita CHDMAN y utiliza BIN/CUE temporales.
+
+Esto ofrece una **vía práctica de vuelta a CHD** si en el futuro
+cambias de consola o de emulador. **Sin embargo, no equivale a
+restaurar exactamente el CHD original ni garantiza una conversión
+reversible sin pérdidas en todos los casos**: un PBP puede no conservar
+ciertos datos de subcanal, información de protección, metadatos o
+detalles de la imagen original. Lo que no haya quedado almacenado
+en el PBP no puede recuperarse recreando un CHD. Los archivos SBI
+que se hayan conservado deben guardarse también si son necesarios.
+
+**Para una copia de preservación fiel del disco original, guarda
+los CHD aparte**. La conversión inversa sirve para obtener un CHD
+utilizable a partir del contenido disponible en el PBP, no para
+garantizar una imagen idéntica bit a bit.
+
+### Cómo funciona el borrado y qué comprueba
+
+Al activarla, la aplicación solicita una **confirmación adicional**
+de borrado definitivo. Tras una conversión nueva, el programa:
+
+1. Comprueba que se generó un único PBP, que tiene una longitud mínima
+   y que empieza por la firma reconocible `00 50 42 50`.
+2. Mueve el PBP provisional a su ubicación final en la misma unidad
+   y vuelve a comprobar su tamaño y firma.
+3. Conserva los archivos auxiliares M3U y SBI. Si falla la copia
+   de algún SBI correspondiente al juego, no elimina sus CHD.
+4. Comprueba que el CHD de origen no ha cambiado desde el análisis
+   y que no es un enlace simbólico; **solo entonces intenta borrarlo**.
+
+**Nunca elimina** los CHD de trabajos saltados porque el PBP ya
+existía, ni de conversiones fallidas o canceladas. Los archivos
+borrados **no pasan por la Papelera de Windows**.
+
+**Límite de seguridad:** verificar el tamaño y la cabecera del PBP
+**no garantiza** que todos los sectores se lean correctamente ni
+que el juego funcione en tu PSP u otro emulador. Si pretendes borrar
+los originales, prueba antes varios juegos representativos, incluyendo
+multidisco, pistas CD-Audio y juegos que utilicen SBI.
+
+### ¿Cuánto espacio libre necesito al convertir?
+
+La conversión principal CHD → PBP **no crea archivos BIN/CUE
+intermedios**, pero **sí necesita escribir por completo el PBP
+del juego actual antes de eliminar sus CHD de origen**. Por ello,
+el disco necesita espacio libre para ese PBP, y especialmente
+para el PBP de mayor tamaño que tenga que generar (por ejemplo,
+un juego multidisco unido).
+
+El PBP provisional se crea dentro de una carpeta temporal de
+`PBP`, en el **mismo volumen de destino**, y después se mueve a
+su nombre definitivo sin copiar íntegramente el archivo de nuevo.
+Tras cada borrado correcto se libera espacio que podrá utilizarse
+en las siguientes conversiones.
+
+**Esta función reduce la acumulación de espacio, pero no permite
+convertir sin espacio libre inicial**. Tampoco garantiza que la
+ocupación final sea menor que la inicial: dependerá de si tus PBP
+son más pequeños o grandes que sus CHD correspondientes.
+
+## 6.1. Mejoras de la Suite de discos en v1.0.0
+
+La Suite reutiliza las ideas validadas en el conversor principal, pero
+con las protecciones que corresponden a **sus cinco rutas**.
+
+### Convertir varios archivos a la vez y pausar sin interrumpir discos
+
+- **Simultáneas:** elige **1, 2, 3, 4, 6, 8 o Auto**. Auto utiliza entre
+  1 y 4 según la CPU. El rendimiento depende del modo y del soporte:
+  PBP→CHD con CHDMAN utiliza más recursos y temporales que CHD→PBP
+  directo. Las recomendaciones HDD/SSD son orientativas, no garantías.
+- **Convertir lote → Pausar → Pausando… → Reanudar** usa un solo botón
+  contextual. Una pausa solicitada no congela ni mata procesos, **no
+  inicia nuevos archivos** y espera hasta terminar y comprobar todos
+  los discos y operaciones de cada PBP/CHD actualmente asignado.
+  Solo entonces anuncia **EN PAUSA**.
+- **Cancelar** es distinto: finaliza los procesos CLI/CHDMAN activos,
+  evita iniciar nuevas tareas y limpia sus carpetas temporales.
+  No elimina los originales ni los resultados completos de trabajos
+  anteriores.
+- El apagado automático opcional se conserva, **nunca actúa durante
+  una pausa** y solo se solicita tras finalizar normalmente sin errores,
+  con conversiones nuevas y una cuenta atrás local cancelable de 60 s.
+
+### Explorador y carpetas de salida
+
+La Suite dispone del mismo explorador de la GUI principal, ahora para
+archivos **PBP, CHD o GDI** según la ruta escogida. Admite **Atrás, Entrar,
+doble clic, ↑/↓, Enter y Retroceso**, y al volver atrás mantiene
+seleccionada y enfocada la carpeta que acabas de abandonar.
+
+- **También subcarpetas** se configura **únicamente dentro de
+  «Ver carpetas…»**; no se repite en la ventana principal de la Suite.
+  Desactivada por defecto, recorre las carpetas seleccionadas omitiendo
+  enlaces y directorios generados
+  (`PBP`, `CHD`, `BIN_CUE`, `ISO`, `GDI`, `.tools`, temporales).
+- La ruta de salida **reproduce el árbol relativo de entrada**. Por
+  ejemplo, `Colección/RPG/Juego.pbp` → `Colección/CHD/RPG/Juego.chd`
+  para un disco; o `Colección/CHD/RPG/Juego (Disc 2).chd` para el
+  segundo disco de un PBP multidisco.
+- Los juegos con nombres idénticos en subcarpetas diferentes se
+  mantienen separados. Se detectan previamente colisiones de destino,
+  incluso entre varios PBP que compartan nombres de discos.
+
+### Regla transparente de numeración multidisco
+
+El número e índice de cada disco se leen de la estructura del PBP:
+
+| Entrada | Resultado |
+|---|---|
+| `Juego.pbp` (un solo disco) | `Juego.chd` |
+| `Juego.pbp` (tres discos) | `Juego (Disc 1).chd`, `Juego (Disc 2).chd`, `Juego (Disc 3).chd` |
+| `Juego.pbp` (varios discos, BIN/CUE) | `BIN_CUE/Juego/` con los pares `Juego (Disc N).bin/.cue` |
+
+**PBP→CHD** crea y comprueba todos los CHD, incluido `chdman verify`,
+antes de publicarlos. Si uno de los nombres ya existe, se omite el
+**PBP completo**, sin sobrescribirlo ni generar un grupo incompleto.
+Si se produce un fallo durante su publicación se revierten únicamente
+los nuevos archivos que acababan de crearse.
+
+**PBP→BIN/CUE** renombra los BIN y CUE dentro de una carpeta provisional,
+actualiza las referencias FILE de los CUE, comprueba que los BIN sigan
+presentes y publica la **carpeta completa de una sola vez**. Los índices
+`Disc N` describen discos, no pistas de audio; las pistas de cada disco
+se conservan dentro de su CUE.
+
+Un **CHD óptico contiene un solo disco**, aunque pueda tener muchas
+pistas; por eso CHD→BIN/CUE e ISO no inventan numeraciones. **PBP→ISO
+[ No Recomendado ]** queda restringido a un único disco y una pista
+de datos MODE1: los PBP con MODE2, audio o multidisco se marcan con
+ERROR durante el análisis, se omiten y no se publican como ISO.
+
+### Progreso, estadísticas y preferencias
+
+- La lista presenta **Origen, Salida, Variación, Tiempo, Archivos y
+  Estado / Progreso**. Los porcentajes se leen de CLI/CHDMAN cuando los
+  motores los proporcionan; cuando no existen porcentajes fiables,
+  se muestra un indicador de actividad sin inventar cifras.
+- El exportador ISO puede informar del avance real según sectores
+  procesados. La barra inferior solo cuenta **trabajos completados**,
+  y la ETA por tamaño/concurrencia es orientativa.
+- En **PBP→ISO** se indica que los tamaños **no son comparables**
+  como ganancia de compresión, porque ISO omite información del CD.
+- El seguimiento automático del archivo activo se realiza **cuando
+  empieza un trabajo**, no cada vez que cambia el porcentaje.
+- Las preferencias no destructivas de esta ventana se guardan en
+  `%LOCALAPPDATA%\\PSXPackagerLNR\\suite-preferencias.json`,
+  separadas de las del conversor principal. Apagado y eliminación
+  de originales **nunca** se activan por restaurar preferencias.
+
+**v1.0.0:** primera release estable del fork. Las pruebas automatizadas no sustituyen la validación práctica de todos los formatos en Windows, especialmente las nuevas rutas Dreamcast.
+
+---
+
+## 7. Conversión inversa y formatos de disco: alcance de la suite
+
+La suite se amplía en beta.8 y aparece mediante **Suite CD / CHD / ISO**
+en el conversor y como entrada independiente en el menú principal.
+Dispone de **siete conversiones** y un modo de **verificación de GD-ROM**:
+
+| Dirección | Salida | Limitaciones |
+|---|---|---|
+| PBP → CHD | `CHD/Nombre.chd`, uno por disco PS1 | PSXPackager extrae temporalmente BIN/CUE y CHDMAN genera el CHD; no se recuperan subcanales ya perdidos |
+| PBP → BIN/CUE | `BIN_CUE/Juego/` con CUE/BIN de cada disco | PS1, sin CHDMAN; recupera pistas disponibles, pero no datos que ya se perdieron al crear el PBP |
+| PBP → ISO de datos **[ No Recomendado ]** | `ISO/Juego.iso` | Solo 1 disco y 1 pista MODE1/2048 o MODE1/2352 compatible; rechaza MODE2, CD-Audio, XA y multidisco. `Analizar` marca los PBP detectados como incompatibles. |
+| CHD de CD → BIN/CUE | `BIN_CUE/Juego/Juego.cue` y `.bin` | PS1, Saturn y PS2 en CD; conserva las pistas de audio disponibles en el CHD |
+| CHD de DVD → ISO | `ISO/Juego.iso` | PS2 en DVD, no CD; usa `chdman extractdvd` |
+| **Dreamcast GDI → CHD** | `CHD/Juego.chd` | El GDI debe tener todas sus pistas. CHDMAN crea el CHD y lo verifica; el original GDI y sus pistas permanecen intactos |
+| **Dreamcast CHD → GDI** | `GDI/Juego/Juego.gdi` y sus pistas | Solo CHD con metadatos GD-ROM CHGD/CHGT; extrae y valida todas las pistas antes de publicar la carpeta completa |
+| **Dreamcast: Verificar CHD** | Sin salida | `chdman info` y `chdman verify` sin opción de reparación. Solo GD-ROM, lectura sin modificar originales |
+
+**PBP → ISO [ No Recomendado ]** NO es una reconstrucción fiel
+de un CD para grabar. Solo extrae los 2048 bytes útiles de un disco
+con **una única pista de datos MODE1**; rechaza también MODE2 Form1,
+CD-Audio, XA, multidisco y formatos no identificados.
+
+Al pulsar **Analizar**, la Suite lee la tabla de pistas interna del PBP
+y examina varias muestras de sectores para detectar rápidamente
+juegos incompatibles. Se muestran como **ERROR con el motivo en
+«Estado / Progreso»** y se omiten automáticamente; los demás pueden
+convertirse con normalidad. La detección preliminar por muestras
+**no garantiza que todos los sectores sean MODE1**, así que durante
+la exportación se comprueba **cada sector**: si aparece uno incompatible,
+se descarta el ISO temporal y no se publica un resultado incompleto.
+Este modo tampoco conserva subcanales ni protecciones. Para
+juegos de PS1 que quieras conservar o grabar, utiliza **PBP → BIN/CUE**
+y comprueba las pistas. No hace falta instalar CHDMAN para ninguna
+de estas dos conversiones de PBP (BIN/CUE, ISO limitado).
+
+**Funcionamiento de la suite (beta experimental):**
+
+1. Selecciona uno de los cinco modos de conversión en la lista desplegable.
+2. Indica la carpeta de origen. Pulsa **Analizar** y revisa los archivos.
+3. Para **PBP→CHD y CHD→BIN/CUE o ISO** consigue una copia legítima de **CHDMAN**.
+   **PBP→BIN/CUE y PBP→ISO de datos no la necesitan.** La fuente preferida es
+   [MAME oficial](https://www.mamedev.org/release.html).
+   También hay ZIP prácticos en
+   [Recalbox](https://wiki.recalbox.com/es/tutorials/utilities/rom-conversion/chdman)
+   y [OnionUI](https://onionui.github.io/docs/advanced/chdman).
+   La versión incluida en el enlace de OnionUI es 0.251 y puede ser
+   anterior a la versión oficial actual.
+4. Pulsa **Importar ZIP...**: se abrirá una ventana con enlaces
+   clicables a **Recalbox**, **OnionUI** y **MAME**. Los enlaces
+   abren las fuentes en el navegador sin cerrar el aviso; así puedes
+   descargar el paquete **antes** de responder. Después pulsa
+   **Sí, importar ZIP** para seleccionar el ZIP ya descargado, o
+   **No** para cancelar. Abrir un enlace no descarga ni ejecuta nada
+   automáticamente.
+   LNR extraerá únicamente `chdman.exe` a
+   `%LOCALAPPDATA%\\PSXPackagerLNR\\Tools` y lo reconocerá
+   automáticamente en las siguientes sesiones; no tienes que copiar
+   archivos manualmente. En la importación se comprueba una cabecera
+   de ejecutable Windows y se registra SHA-256, pero esto NO garantiza
+   autenticidad ni ausencia de malware: usa únicamente paquetes fiables.
+   Alternativamente puedes poner `chdman.exe` junto a la GUI o
+   pulsar **Localizar...** para usar uno ya instalado. El ZIP de LNR
+   no redistribuye el ejecutable de MAME.
+5. Pulsa **Convertir lote** y confirma. El programa conserva **todos**
+   los originales y no sobrescribe los destinos existentes.
+6. Se limpian automáticamente los temporales de cada juego; no se
+   borran archivos de salida completados antes de un error/cancelación.
+
+
+### Dreamcast: GDI, CHD y comprobación de integridad
+
+La Suite admite los **GD-ROM de Sega Dreamcast** mediante tres opciones:
+
+1. **GDI → CHD:** selecciona la carpeta que contiene los archivos
+   `.gdi`. Un GDI es un descriptor y no funciona sin los archivos de
+   pista (por ejemplo `track01.bin`, `track02.raw`, `track03.bin`).
+   Durante `Analizar`, la Suite valida el recuento de pistas, las
+   referencias, las rutas y los tamaños; rechaza pistas ausentes,
+   sectores truncados o rutas que escapen del directorio original.
+   Al convertir, CHDMAN crea un CHD provisional, comprueba sus
+   metadatos GD-ROM y ejecuta `verify` antes de publicarlo.
+2. **CHD → GDI:** selecciona CHD con metadatos `CHGD`/`CHGT`, no
+   imágenes convencionales de CD (`CHCD`/`CHT2`). CHDMAN genera
+   una carpeta temporal con descriptor y pistas; la Suite comprueba
+   todas las referencias y solo después publica la carpeta completa.
+   Las carpetas existentes se omiten y nunca se sobrescriben.
+3. **Verificar CHD GD-ROM:** muestra metadatos útiles, incluyendo
+   compresión y SHA-1 cuando los comunica CHDMAN, y utiliza
+   `chdman verify -i` sin `-f` ni reparación. No crea archivos,
+   no modifica el CHD y no ofrece apagado automático.
+
+Las tres funciones requieren un `chdman.exe` compatible, aportado
+por el usuario. CHDMAN no se redistribuye dentro de la Suite. La
+reconstrucción `CHD → GDI` **no garantiza recuperar exactamente los
+nombres, los pregaps o los hashes de un volcado GDI antiguo**, ni
+los datos que ya se perdieron al partir de una imagen recortada.
+El formato DiscJuggler `.cdi` no se convierte directamente en
+esta versión. Para archivar una colección, conserva copias de
+los archivos originales y verifica los resultados con un emulador
+o una imagen de referencia fiable.
+
+**PBP → CHD no es una conversión directa sin intermediarios**: para
+reconstruir un PBP se necesita extraer BIN/CUE en una carpeta temporal,
+crear el CHD con CHDMAN y comprobarlo con `chdman verify`. El usuario
+no tiene que gestionar manualmente esos archivos, pero necesita suficiente
+espacio libre para la extracción temporal. En un PBP multidisco, se
+generan varios CHD independientes.
+
+**CHD → BIN/CUE no graba físicamente ningún disco.** Produce las
+imágenes que puedes abrir en un programa de grabación compatible con
+pistas múltiples. Para PS2 DVD, genera ISO y utiliza un DVD adecuado.
+La grabación física, posibles protecciones, subcanales y compatibilidad
+con el hardware original dependen de las imágenes y del dispositivo.
+
+Las operaciones con CHDMAN están **separadas** de la función directa
+CHD→PBP, que sigue funcionando **sin CHDMAN**. Fuentes oficiales:
+<https://www.mamedev.org/release.html> y
+<https://docs.mamedev.org/tools/chdman.html>.
+
+Un `.PBP` de PS1 no es un formato para Saturn ni PS2. Los `.CHD` de
+DVD deben restaurarse como ISO y grabarse, si procede, en soporte DVD,
+no en CD. No todos los juegos con protecciones/subcanales pueden
+reconstruirse a partir de una conversión previa a PBP.
+
+## 8. Créditos y responsabilidad
+
+PSXPackagerLNR es una adaptación comunitaria, no una edición oficial
+avalada por el autor original. Se mantiene su licencia MIT y se
+distribuye el código fuente con los créditos. LaNaveRETRO no garantiza
+compatibilidad con todas las consolas ni integridad de todos los
+resultados en cualquier entorno. Usa las herramientas solo con imágenes
+que tengas derecho a copiar o respaldar.
+
+- Proyecto original: <https://github.com/RupertAvery/PSXPackager>
+- Fork LNR: <https://github.com/PaPer-DJ/PSXPackagerLNR>
+- Documentación técnica CHDMAN: <https://docs.mamedev.org/tools/chdman.html>
+
+### Anexo técnico del fork: compresión PBP nivel 3
+
+Para quienes quieran conocer el motivo detallado de esta decisión,
+hemos añadido al final de la parte LNR del
+[README del fork](../README.md#anexo-tecnico-lnr-nivel-3)
+un análisis con las **pruebas realizadas por LaNaveRETRO en PSP
+original**, los parámetros exactos de SharpZipLib 1.4.2 para los
+niveles 1 a 9 y la explicación de LZ77, Huffman, greedy/lazy match
+y cadenas hash.
+
+Es importante distinguir **las pausas de carga observadas en PSP**
+del **trabajo de compresión que realiza el PC**. Los parámetros
+de búsqueda de coincidencias no se vuelven a calcular durante
+la descompresión, y las pruebas no constituyen una medición aislada
+del consumo de CPU de la PSP. El nivel 3 se mantiene como
+**recomendación práctica de LNR**, no como promesa universal de
+rendimiento superior para todos los juegos.

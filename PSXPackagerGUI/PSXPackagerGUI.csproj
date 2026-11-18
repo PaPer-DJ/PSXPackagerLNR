@@ -16,6 +16,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<None Remove="Branding\lnr-mod-logo.png" />
+		<None Remove="Branding\lnr-mod-logo-header.png" />
 		<None Remove="Resources\battery.png" />
 		<None Remove="Resources\disc.png" />
 		<None Remove="Resources\Editor\back.png" />
@@ -53,6 +55,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Resource Include="Branding\lnr-mod-logo.png" />
+		<Resource Include="Branding\lnr-mod-logo-header.png" />
 		<Resource Include="Resources\battery.png" />
 		<Resource Include="Resources\disc.png" />
 		<Resource Include="Resources\Editor\NewRodin Pro DB.otf">

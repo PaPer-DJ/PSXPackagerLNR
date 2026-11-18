@@ -1,0 +1,81 @@
+PSXPackagerLNR 1.0.0 — LEEME DEL MOTOR CLI PARA WINDOWS x64
+===========================================================
+Fork y distribución LNR: PaPer-DJ / LaNaveRETRO
+Motor original: PSXPackager, RupertAvery y colaboradores
+Repositorio original: https://github.com/RupertAvery/PSXPackager
+Fork: https://github.com/PaPer-DJ/PSXPackagerLNR
+Licencia: MIT (consulta LICENSE). No se atribuye a LaNaveRETRO la creación
+del motor original.
+
+QUÉ ES ESTE ZIP
+---------------
+Es el motor de línea de comandos «psxpackager.exe», con sus archivos
+necesarios y documentación. Funciona de forma autónoma en Windows x64:
+compilado con .NET 8 y publicado autocontenido; no requiere instalar .NET
+para usar este paquete.
+
+CAMBIOS ESPECÍFICOS DE LA EDICIÓN LNR FRENTE AL CLI ORIGINAL
+-------------------------------------------------------------
+1. Nivel predeterminado de compresión:
+   - PSXPackager upstream: nivel 5.
+   - PSXPackagerLNR: nivel 3, también reflejado en --help.
+   - Se puede elegir otro nivel explícitamente con -l.
+
+   Motivo: pruebas del autor del fork, incluyendo una PSP original,
+   mostraron que el nivel 3 ofrecía un buen equilibrio entre tamaño,
+   velocidad y tiempos de carga. No implica que sea óptimo para todo
+   juego, equipo o emulador.
+
+2. Uso con salida redirigida o sin consola visible:
+   - Se evita depender de las funciones de posicionamiento y visibilidad
+     del cursor, que podían fallar cuando el motor se lanzaba desde
+     interfaces gráficas sin una consola estándar.
+   - Se emite un mensaje «Progress: NN%» para los porcentajes de progreso
+     al redirigir la salida, de modo que la GUI LNR pueda seguir las
+     conversiones y sus fases.
+   - Al ejecutar el CLI desde una consola normal se mantiene el progreso
+     interactivo.
+
+3. Distribución LNR:
+   - ZIP portátil y autocontenido win-x64 sobre .NET 8, con base de datos
+     gameInfo.db y documentación del fork.
+   - Esto es una elección del paquete compilado por LNR. No se debe
+     interpretar como una nueva característica del algoritmo CHD/PBP.
+
+QUÉ NO SE HA CAMBIADO EN EL MOTOR
+---------------------------------
+- El núcleo original de procesamiento CHD/PBP y las funciones
+  habituales de conversión, extracción y opciones disponibles.
+- No se añade CHDMAN al ZIP ni es necesario para CHD → PBP directo.
+- No se han integrado dentro del EXE del CLI los procesos simultáneos,
+  el botón Pausar/Reanudar de la GUI, el explorador de carpetas,
+  ni las funciones de la Suite de Discos para Saturn/PS2/Dreamcast.
+
+Estas capacidades pertenecen a las herramientas que ORQUESTAN el CLI:
+  * GUI LNR: convierte lotes con procesos independientes simultáneos,
+    pausa cooperativa, estadísticas y controles visuales.
+  * Toolkit BAT/PowerShell: automatiza el procesado de carpetas,
+    selección multidisco, simultaneidad, pausa y cancelación.
+
+EJEMPLOS DE USO
+---------------
+Mostrar todas las opciones actuales:
+  psxpackager.exe --help
+
+Convertir CHD a PBP con nivel 3:
+  psxpackager.exe -i "C:\Juegos\Ejemplo.chd" -o "C:\Juegos\PBP" -l 3 -s
+
+Extraer un PBP mediante el CLI original:
+  psxpackager.exe -i "C:\Juegos\Ejemplo.pbp" -o "C:\Juegos\Extraidos" -s -f "%FILENAME%"
+
+Utiliza siempre carpetas con espacio suficiente y conserva una copia de
+los archivos originales. El comportamiento de los PBP en una PSP,
+emuladores o sistemas concretos puede variar.
+
+VERIFICACIÓN Y DISTRIBUCIÓN
+---------------------------
+La release oficial contiene SHA256SUMS.txt para verificar los paquetes ZIP.
+Este documento no transforma el CLI en un conversor específico de
+Dreamcast: las funciones GDI/CHD de la Suite utilizan CHDMAN, que el
+usuario debe aportar por su cuenta. Los ZIP históricos y el proyecto
+original del autor no se modifican por distribuir este fork.

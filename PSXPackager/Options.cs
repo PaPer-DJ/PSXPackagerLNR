@@ -10,7 +10,7 @@ namespace PSXPackager
         [Option('o', "output", Required = false, HelpText = "The output path where the converted file(s) will be written.")]
         public string OutputPath { get; set; }
 
-        [Option('l', "level", Required = false, HelpText = "Set compression level 0-9, default 5.", Default = 5)]
+        [Option('l', "level", Required = false, HelpText = "Set compression level 0-9, default 3 in PSXPackagerLNR (upstream defaults to 5).", Default = 3)]
         public int CompressionLevel { get; set; }
 
         [Option('r', "recursive", HelpText = "Recurse subdirectories")]

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
@@ -19,6 +20,31 @@ namespace PSXPackagerGUI
         {
             this.DispatcherUnhandledException += OnDispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
+        }
+
+        /// <summary>
+        /// PSXPackagerLNR.exe is a tiny native launcher. It runs the existing
+        /// full PSXPackagerGUI.exe with --lnr-batch, so the GUI/.NET runtime
+        /// is shipped only once. Direct calls to PSXPackagerGUI.exe retain
+        /// the original classic interface.
+        /// </summary>
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
+            var directLnr = e.Args.Any(argument =>
+                string.Equals(argument, "--lnr-batch", StringComparison.OrdinalIgnoreCase));
+
+            // Also support the full executable-name copy shipped in beta.16.
+            // Existing users can continue launching that older variant.
+            var executableName = Path.GetFileName(Environment.ProcessPath ?? "");
+            directLnr |= string.Equals(
+                executableName, "PSXPackagerLNR.exe", StringComparison.OrdinalIgnoreCase);
+
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
+            Window window = directLnr ? new LnrBatchWindow() : new MainWindow();
+            MainWindow = window;
+            window.Show();
         }
 
         private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs e)

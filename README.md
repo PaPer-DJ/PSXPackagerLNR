@@ -1,391 +1,104 @@
-# PSXPackager
+# PSXPackagerLNR — LaNaveRETRO Edition
 
-PSXPackager is a tool for converting PlayStation 1 Disc images to the EBOOT.PBP format and back.
+**Convierte colecciones de PlayStation 1 de CHD a PBP directamente, por lotes, con una interfaz gráfica portátil para Windows.** Incluye conversiones simultáneas, pausa segura, organización multidisco y una Suite de Discos para PS1, Saturn, PS2 y Dreamcast.
 
-EBOOT.PBP is a Sony Playstation file format for PS1 Classics on the PSP and PS3 Playstation emulators. The format is also supported by PS1 emulators such as ePSXe, PCSX, Beetle PSX (Mednafen/RetroArch) and DuckStation.
+> **Fork independiente de [PSXPackager de RupertAvery y colaboradores](https://github.com/RupertAvery/PSXPackager).** El motor original, su autoría y su licencia MIT se respetan. **PaPer-DJ / LaNaveRETRO** ha desarrollado las herramientas, automatizaciones y mejoras de la edición LNR. El proyecto original no se modifica.
 
-There is a command-line executable (Windows/Linux/OSX) and a Windows-only GUI available.
+**Versión pública más reciente: [v1.0.0 — release estable del fork](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v1.0.0)** · Windows x64 · .NET 8 autocontenido · Sin instalador.
 
-The GUI allows you to select and process several images in a queue (Batch mode).
+## Descargar
 
-Feel free to take the Popstation library and use it as you like.
+| Edición | Para qué sirve | Descarga |
+|---|---|---|
+| **GUI — recomendada** | Interfaz CHD → PBP, procesamiento por lotes y Suite de Discos. Incluye el motor CLI y el acceso directo portátil. | [**GUI v1.0.0 (ZIP)**](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/download/v1.0.0/PSXPackagerLNR-v1.0.0-b786-GUI-win-x64.zip) |
+| **Toolkit** | Menú BAT/PowerShell para convertir lotes CHD → PBP desde la consola, sin abrir la GUI. | [Toolkit v1.0.0 (ZIP)](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/download/v1.0.0/PSXPackagerLNR-v1.0.0-b786-Toolkit-win-x64.zip) |
+| **CLI** | Motor de PSXPackager por línea de comandos con los ajustes específicos LNR. | [CLI v1.0.0 (ZIP)](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/download/v1.0.0/PSXPackagerLNR-v1.0.0-b786-CLI-win-x64.zip) |
 
-The Popstation library was ported from the `popstation-md` C source code to C#.
+[**SHA256SUMS.txt**](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/download/v1.0.0/SHA256SUMS.txt) · [Todas las versiones y betas anteriores](https://github.com/PaPer-DJ/PSXPackagerLNR/releases) · [Historial de cambios](CHANGELOG-LNR.md)
 
-Looking for the Windows-only GUI README? See [PSXPackagerGUI](PSXPackagerGUI/README.md)
+### Primeros pasos con la GUI
 
-# Download
+1. Descarga y **extrae el ZIP de la GUI completo**.
+2. Abre **`#PSXPackagerLNR.lnk`**, el acceso directo portátil que inicia la interfaz LNR de conversión por lotes. **No lo muevas fuera de su carpeta**: debe permanecer junto al ejecutable y los recursos.
+3. Selecciona la carpeta de juegos CHD, escoge multidisco, compresión y simultaneidad. Puedes incluir subcarpetas desde el explorador.
+4. Revisa la lista, las opciones y el destino antes de comenzar. Los PBP se guardan en la carpeta `PBP`; por defecto se **conservan los originales**.
 
-* [Latest Release](https://github.com/RupertAvery/PSXPackager/releases)
+También puedes abrir `PSXPackagerGUI.exe` para utilizar la interfaz clásica heredada del proyecto original. Para CHD → PBP directo **no necesitas CHDMAN**.
 
-Not sure what to download?
+## Qué aporta el fork LNR
 
-* command line tool - psxpackager-win-x64.zip
-* Windows GUI - PsxPackagerGUI.zip
+- **CHD → PBP directo y por lotes:** evita generar previamente archivos BIN/CUE intermedios, incluso al procesar colecciones grandes.
+- **Simultaneidad configurable:** **1, 2, 3, 4, 6, 8 o Auto** procesos independientes. La GUI recomienda 4 para HDD y propone 8 para SSD, según los recursos disponibles.
+- **Pausa segura:** al pulsar Pausar, deja terminar los juegos ya activos antes de detener la cola; permite reanudar los pendientes sin repetir los completados. Cancelar es una operación diferente.
+- **Multidisco:** discos separados o agrupados, con lectura de M3U y control del orden de los discos.
+- **Explorador mejorado:** Atrás / Entrar, flechas, Enter, Retroceso y casilla «También subcarpetas». Conserva el árbol de carpetas al generar los resultados.
+- **Seguimiento:** progreso por juego, tamaño CHD/PBP, variación, duración, estimación orientativa y registro de actividad.
+- **Protección de archivos:** no sobrescribe PBP existentes. La eliminación de CHD de origen en la **GUI principal** es opcional, desactivada por defecto, irreversible y exige doble confirmación.
 
-# Features
+### Procesamiento real de una colección
 
-* Convert .BIN + .CUE or .IMG to .PBP
-* Extract .PBP to .BIN + .CUE file 
-* Supports conversion of .7z, .zip, .rar files to .PBP
-* Supports merging of single-disc, multi-track .BIN + .CUE into one .BIN + .CUE
-* Supports writing multi-track CUE information to PBP for audio 
-* PBP Compression levels from 0 to 9
-* Supports writing multi-disc PBP using .m3u files
-* Supports extracting multi-disc PBP
-* Windows/Linux/OSX CLI
-* GUI with PSX2PSP-like interface and batch processing
+![Procesamiento por lotes real de PSXPackagerLNR: cola de 272 juegos CHD, progreso y tamaños CHD/PBP](docs/images/psxpackagerlnr-beta29-procesamiento-por-lotes.png)
 
-# Requirements
+*Captura real de LaNaveRETRO en Windows durante una prueba de la beta.29: 272 juegos previstos y 170 completados en ese momento. Las cifras reflejan esa sesión, no un límite de la aplicación.*
 
-* PSXPackager requires the [.NET 8.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
-* PSXPackagerGUI requires the [.NET Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
+## Suite de Discos
 
-# Usage
+La Suite amplía las conversiones disponibles sin convertir por ello los juegos de Saturn, PS2 o Dreamcast a PBP de PS1. Sus procesos pueden trabajar en paralelo, con pausa segura, análisis de carpetas y salidas protegidas.
 
-The basic usage of PSXPackager accepts a file or path to convert.
+| Sistema / origen | Conversión | Observaciones |
+|---|---|---|
+| PS1 · PBP | **PBP → CHD** | Genera un CHD por disco. Para multidisco utiliza automáticamente `Juego (Disc 1).chd`, `Juego (Disc 2).chd`, etc. |
+| PS1 · PBP | **PBP → BIN/CUE** | Conserva las pistas disponibles y ajusta las referencias CUE de cada disco. |
+| PS1 · PBP | **PBP → ISO [No recomendado]** | Solo un disco y una pista de datos **MODE1** compatible. Rechaza MODE2, audio, XA y multidisco. No es una copia completa del CD. |
+| PS1 / Saturn / PS2 CD | **CHD → BIN/CUE** | Para discos CD compatibles y sus pistas. |
+| PS2 DVD | **CHD → ISO** | Extracción de imágenes de DVD compatibles. |
+| Dreamcast GD-ROM | **GDI → CHD** | Valida descriptor y pistas; comprime y verifica el nuevo CHD. |
+| Dreamcast GD-ROM | **CHD → GDI** | Reconstruye descriptor GDI y pistas en una carpeta, solo desde CHD con metadatos GD-ROM. |
+| Dreamcast GD-ROM | **Verificar CHD** | Consulta información y ejecuta la verificación de CHDMAN **sin modificar el archivo**. |
 
-```
-psxpackager -i <input_path_or_file> [-o <output_path_or_file>]
-```
+**Importante:** algunas rutas de la Suite requieren **`chdman.exe` de MAME**, que el usuario debe aportar y que no se redistribuye aquí. CHD → PBP directo, PBP → BIN/CUE y PBP → ISO limitado no lo necesitan.
 
-The `-i` or `input` parameter is required. It specifies a path to a file, or a directory and a wildcard expression. If a wildcard expression is used, it will process all matching files in the directory.
+**Dreamcast:** los modos GD-ROM incluyen comprobaciones automatizadas con datos sintéticos, pero **todavía deben validarse con imágenes reales**. Extraer un CHD a GDI no garantiza recuperar exactamente los nombres, *pregaps* o hashes de un volcado anterior. No se incluyen conversiones de imágenes `.cdi` de DiscJuggler.
 
-The application will assume that you want to convert any image to a PBP, and any PBP to a .BIN + .CUE.
+[Manual detallado de la GUI y Suite de Discos](LNR/GUI-AYUDA.md) · [Registro de novedades y seguridad](CHANGELOG-LNR.md)
 
-The command:
+## Toolkit y CLI
 
-```
-psxpackager -i "Final Fantasy VII - Disc 1.cue"
-```
+**Toolkit (BAT/PowerShell).** Incluye instrucciones iniciales y las opciones de compresión y concurrencia del fork. La elección multidisco **«1 - SEPARADOS» está marcada [RECOMENDADO]**; también puedes unir juegos mediante M3U. Durante la ejecución: **P** pausa de forma segura, **R** reanuda y **C** cancela. **Nunca borra los CHD de origen.**
 
-will process `Final Fantasy VII - Disc 1.bin` and `Final Fantasy VII - Disc 1.cue` and output `Final Fantasy VII - Disc 1.pbp`.
+**CLI.** Conserva el motor original, con dos adaptaciones funcionales principales: **nivel 3 por defecto** (en lugar del nivel 5 upstream) y **progreso compatible con salida redirigida o GUI sin consola**, por ejemplo `Progress: 25%`. El paralelismo y la pausa pertenecen a la GUI/Toolkit: no son hilos nuevos dentro del ejecutable CLI.
 
+[Manual del Toolkit](LNR/Batch/README.md) · [LEEME-CLI-LNR.txt — diferencias con el CLI original](LNR/LEEME-CLI-LNR.txt)
 
-The `-o` or `output` parameter is optional. It specifies the folder where the the converted or extracted files will be placed. If not specified, the folder specified in the input is used.
+## Por qué usamos compresión nivel 3
 
-If the input is a file and the output is also a file, the output will be renamed, instead of reusing the input filename.
+LaNaveRETRO eligió **3 — Equilibrada (LNR)** tras comparar tamaños y realizar pruebas prácticas de carga con juegos PS1 en una PSP original. En determinados juegos, los niveles 1–3 mostraron esperas menores en algunos momentos que 4–5; eso **no demuestra una ventaja universal** para todos los títulos o dispositivos.
 
-## Options
+En la prueba documentada de *Actua Soccer 3 (Europe)*, Windows mostró **276.892 KB** para el PBP de nivel 3, **274.137 KB** para el nivel 5 y **274.000 KB** para el nivel 9. Son diferencias relativamente pequeñas en esa muestra, no una regla aplicable a todo el catálogo.
 
-```
-  -i, --input                (Group: input) The input file or path to convert. The filename may contain wildcards.
+![Comparativa original de LaNaveRETRO: BIN, CHD y PBP de Actua Soccer 3 con distintos niveles de compresión](docs/images/psxpackagerlnr-niveles-compresion-actua-soccer3.png)
 
-  -o, --output               The output path where the converted file(s) will be written.
+*Comparativa real de tamaños en Windows. La imagen no mide tiempos de carga ni demuestra que un nivel de compresión sea siempre el mejor.*
 
-  -l, --level                (Default: 5) Set compression level 0-9, default 5.
+[Estudio completo, pruebas PSP y explicación técnica del nivel 3](https://github.com/PaPer-DJ/PSXPackagerLNR/blob/v1.0.0/README.md#por-qué-el-nivel-3-de-compresión-es-el-predeterminado-lnr) · [Ayuda de compresión](LNR/GUI-AYUDA.md)
 
-  -r, --recursive            Recurse subdirectories
+## Documentación y versiones
 
-  -d, --discs                A comma-separated list of disc numbers to extract from a PBP.
+| Recurso | Contenido |
+|---|---|
+| [Manual completo LNR](LNR/GUI-AYUDA.md) | Opciones, seguridad, formatos admitidos, CHDMAN y uso de la Suite. |
+| [Historial de cambios](CHANGELOG-LNR.md) | Novedades de cada versión del fork, pruebas y limitaciones. |
+| [Manual del Toolkit](LNR/Batch/README.md) | BAT, carpetas, multidisco, controles y concurrencia. |
+| [Guía del CLI LNR](LNR/LEEME-CLI-LNR.txt) | Diferencias frente al CLI upstream y ejemplos. |
+| [Documentación LNR ampliada de v1.0.0](https://github.com/PaPer-DJ/PSXPackagerLNR/blob/v1.0.0/README.md) | Referencia histórica detallada, mediciones y anexos técnicos. |
+| [Releases anteriores](https://github.com/PaPer-DJ/PSXPackagerLNR/releases) | Betas previas, sus paquetes e historial de distribución. |
 
-  -v, --verbosity            (Default: 3) Set level of output messages. 1 = Files, Errors and Warnings only, 2 = No
-                             Info-level messages, 3 = All messages (default), 4 = Include timestamps
+## Información del proyecto original
 
-  -x                         If specified, overwrite a file if it exists, otherwise ask confirmation.
+**PSXPackager** es un proyecto de **[RupertAvery y sus colaboradores](https://github.com/RupertAvery/PSXPackager)**. Su motor, la biblioteca Popstation y las capacidades originales de conversión tienen sus propios autores. **PSXPackagerLNR es un fork comunitario independiente:** reconoce esa procedencia y añade interfaces y automatizaciones para el uso práctico en grandes colecciones.
 
-  -s, --skip                 If specified, will skip existing files.
+- **[README y documentación oficial del proyecto original](https://github.com/RupertAvery/PSXPackager#readme)** — versión mantenida por sus autores.
+- **[Información original completa conservada en este fork](docs/README-PROYECTO-ORIGINAL.md)** — contenido que tenía la portada de `master` antes de incorporar LNR.
+- **[Licencia MIT](LICENSE)** — licencia y avisos de copyright del software original.
 
-  -f, --format               (Default: %FILENAME%) Specify the filename format e.g. [%GAMEID%] [%MAINGAMEID%] %TITLE%
-                             (%REGION%) or %FILENAME%
-
-  -g, --log                  If specified, log messages to a file.
-
-  --extract                  If specified, extract resources using the path specified by resource-format. See README for
-                             more details.
-
-  --import                   If specified, import resources using the path specified by resource-format. See README for
-                             more details.
-
-  --generate                 If specified, create empty resources folder specified by resource-format. See README for
-                             more details.
-
-  --resource-format          The format to use with extract/import/generate. See README for more details.
-
-  --resource-root            The path where resource folders will be located. If not specified, the path will be the
-                             same as the input file
-
-  --help                     Display this help screen.
-
-  --version                  Display version information.
-```
-
-## Convert a .BIN, .CUE, .ISO, .IMG, .CHD or archive to a .PBP
-
-PSXPackager supports several input formats. Simply pass the path to the archive, CUE sheet, or image with the `-i` parameter.
-
-```
-psxpackager -i <path_to_file> [-o <output_path>] [-l <compression_level>] [-y]
-```
-
-The output path is optional. If not specified, the path of the input file will be used.
-
-PSXPackager will prompt if a file exists before overwriting it. Use the `-x` argument to overwrite all files in the output directory.
-
-Set the compression level to a value from 0 to 9, with 0 being no compression and 9 being the highest compression level. If not specified, it will default to 5.
-
-PSXPackager can automatically extract files from compressed files (archives) and convert the contents into a PBP. The following formats are supported:
-
-* .zip
-* .7z
-* .rar
-* .tar
-* .gz
-
-Archives will be decompressed to a temporary folder in `%TEMP%\PSXPackager`, and will be cleaned up on exit.
-
-### Sector formats
-
-PlayStation discs store 2352 bytes per sector, and a PBP expects the disc data in that raw form. Images come in two flavours:
-
-* **Raw** images (usually `.bin`, sometimes `.img`) hold the complete 2352-byte sectors.
-* **Cooked** images (usually `.iso`) hold only the 2048 bytes of user data per sector, discarding the sync pattern, header, subheader and the EDC/ECC error correction fields.
-
-PSXPackager works out which one you have from the contents of the file rather than from its extension, so a `.iso` that is really a raw image, and a `.bin` that is really cooked, are both handled correctly. A cooked image is expanded back to Mode 2 Form 1 sectors as it is read, regenerating the sync pattern, the MSF header, the subheader and the EDC/ECC fields.
-
-> **Prefer `.bin` / `.cue` where you have the choice.** A cooked `.iso` cannot store CD-XA subheaders, and an XA sector holds 2324 bytes of data where a `.iso` keeps only 2048. Streaming audio and FMV therefore cannot be rebuilt from a `.iso`, and games that use them will lose that audio and video. PSXPackager warns you when it converts a cooked image. The game data itself is reconstructed exactly.
-
-### CHD images
-
-A `.chd` (Compressed Hunks of Data) holds a whole disc, audio tracks and all, in one compressed file. PSXPackager reads them directly - there is no need to run `chdman` first, and nothing is written out to a temporary `.bin`.
-
-The disc is rebuilt as it is read: the padding CHD inserts between tracks is skipped, pregaps that were never stored are regenerated, and audio, which a CHD holds in the opposite byte order from a `.bin`, is swapped back. The track list comes from the CHD's own metadata, so a game with CD audio gets a PBP with the right table of contents without you supplying a cue sheet.
-
-Versions 3, 4 and 5 are supported, with the `zlib`, `lzma`, `zstd`, `cdzl`, `cdlz`, `cdfl` and `cdzs` codecs. Two things are not supported:
-
-* **Delta CHDs**, which store only the difference from a parent file. PSXPackager will tell you if it meets one.
-* **Subcode data**, which is discarded. A PBP has nowhere to keep it.
-
-CHDs made from a `.bin` / `.cue` are lossless, so the PBP you get is the same one you would get by extracting the CHD to a `.bin` / `.cue` first. A CHD made from a `.iso` carries the same limitation the `.iso` did.
-
-## Extract a .PBP to a .BIN + .CUE
-
-PSXPackager checks the file extension to decide whether to extract or convert, so the syntax remains the same. The output will always be a `.bin` + `.cue`.
-
-Extracting from Multi-disc PBPs are supported. Specify the discs to extract with the `-d` or `--disc` option, which takes a comma-separated list of disc numbers to extract, e.g. `-d 1,2`. If this option is not specified, all discs will be extracted.
-
-```
-psxpackager -i <path_to_pbp> [-o <output_path>] [-d <list_of_discs>]
-```
-
-## Filename formatting
-
-Use the `-f` or `format` option to specify the format of the output filename based on the information found on the disc (Sony GameID) and the `gameInfo.db` file.
-
-This allows you to generate standardized output filenames that can include the GameID e.g SCUS-94163, the region (NTSC/PAL) and the game name.  
-
-By default, it will use `%FILENAME%`, i.e. the input filename as the output filename.
-
-See [Formatting](#formatting) for more info.
-
-## Merging Multi-Track Games
-
-Some games such as Tomb Raider have additional digital audio tracks on the CD, for use as background music.
-
-These audio tracks are usually extracted by disc rippers as separate `.BIN` files. They usually are named `<Game Name> - Track nn.bin` or similar, where `nn` is a 2-digit number. They usually come with a `.CUE` file which is an index for all the related `.BIN` files.
-
-Usually you would need to use CDMage or some other tool to merge multi-track discs.
-
-With PSXPackager, all you need to do is pass in the `.CUE` file as the input file and it will automatically merge multi-track discs before converting to PBP as long as  
-
-The resulting PBP file will contain the audio tracks as disc tracks and you will be able to play your game on your PSP or emulator with music.
-
-## Creating Multi-disc PBPs
-
-The PBP format can contain more than one disc, and this is supported by PSXPackager. This allows you to merge a multi-disc game such as Final Fantasy VII (3 discs) into a single PBP. 
-
-To do this from the command line, first create an `.m3u` file containing a list of the discs in the order you wish them to appear in the PBP.
-
-For example, create a text file with the following contents and save as `Final Fantasy VIII.m3u`
-
-```
-Final Fantasy VIII - Disc 1.cue
-Final Fantasy VIII - Disc 2.cue
-Final Fantasy VIII - Disc 3.cue
-```
-
-Call `psxpackager` with the `.m3u` as the input file.
-
-```
-psxpackager -i "Final Fantasy VIII.m3u" [-o <output_path>]
-```
-
-The file  `Final Fantasy VIII.PBP` will be created which contains the three discs in one file.
-
-## Batch Conversion
-
-Wildcards are now supported using the `-i` argument
-
-```
-psxpackager -i <path_containing_files>\<wildcard_filter> [-o <output_path>]
-```
-
-This will process all supported files in the folder `C:\Roms`. Use with caution, as you may be overwriting files that exist.
-
-```
-psxpackager -i "C:\Roms\*.*"
-```
-
-This will extract all PBP files in the folder `C:\Roms` to BIN+CUE.
-
-```
-psxpackager -i "C:\Roms\*.PBP"
-```
-
-This will convert all files matching `Legend of Dragoon - Disc ?.bin` in the folder `C:\Roms` to PBP.
-
-```
-psxpackager -i "C:\Roms\Legend of Dragoon - Disc ?.bin"
-```
-
-If you want faster batch conversion, use the GUI, as it supports multi-threaded processing.
-
-# Customizing PBPs with Resources
-
-Resource files are PBP-specific embedded resources that are normally used by the PSP, PSVita or PS3 to display an image or play audio on the XMB when the game is selected. These files usually named ICON0.PNG, PIC0.PNG, PIC1.PNG and SND0.AT3.
-
-PSXPackager can extract (`--extract`) or embed (`--import`) resource files for a single conversion or batch conversion. To do the latter, the resource files must be located in a specific location.
-
-There are two options that let you set how and where the resource files are found.
-
-The `--resource-format` option lets you match a folder based on filename, gameid and other formats. See [Formatting](#formatting). omitting this option defaults the format to `%FILENAME%`, meaning the input filename without the extension will be used.
-
-The `--resource-root` option sets the root path of your resource folders. This allows you to separate your disc images from your resource folders.  You can omit this option to use the same folder as the input file as the root path of your resource folder.
-
-## Extract Resources
-
-Extracts resources from a PBP.
-
-```
-psxpackager -i <path_to_file> --extract [--resource-format <resource format>] [--resource-root <resource root folder>] [-o <output_path>]
-```
-
-`--resource-format` - the format of the folder name to extract the embedded resources to. See [Formatting](#formatting).  If not specified, the default value will be `%FILENAME%\%RESOURCE%.%EXT%`
-
-`--resource-root` - the root folder where to place the resource folders. Do not specify to place the resource folder next to the input file.
-
-For example, if you extract the resources from a `Final Fantasy VII (DISC 1).PBP` file using the commande below:
-
-```
-psxpackager -i "Final Fantasy VII (DISC 1).PBP" --extract --resource-path %GAMEID%\%RESOURCE%.%EXT%
-```
-
-You would have extracted the following files:
-
-```
-SCUS-94163\ICON0.PNG
-SCUS-94163\PIC0.PNG
-SCUS-94163\PIC1.PNG
-```
-
-## Import Resources
-
-Imports custom resources into PBP.
-
-```
-psxpackager -i <path_to_file> --import [--resource-format <resource format>] [--resource-folder <resource root folder>] [-o <output_path>]
-```
-
-`--resource-format` - the format of the folder name to import the embedded resources from. See [Formatting](#formatting).  If not specified, the default value will be `%FILENAME%\%RESOURCE%.%EXT%`
-
-`--resource-root` - the root folder where to start searching for the resource folders. Do not specify to look for the resource folder next to the input file.
-
-For example, if you want to build a PBP from a BIN+CUE file and you have the resources next to the file in a folder such as below:
-
-```
-Final Fantasy VII (Disc-1).bin
-Final Fantasy VII (Disc-1).cue
-SCUS-94163\ICON0.PNG
-SCUS-94163\PIC0.PNG
-SCUS-94163\PIC1.PNG
-```
-
-You can build your PBP using the following command:
-
-```
-psxpackager -i "Final Fantasy VII (Disc-1).cue" --import --resource-path %GAMEID%\%RESOURCE%.%EXT%
-```
-
-## Generate Resource Folders
-
-This option is provided for the following scenario:
-
-You have a bunch of images you want to convert to PBP, and you want to customize all of them.  To do this, you will need to generate resource folders, where you will later place the icons and backgrounds you want.
-
-This option will create empty folders using the specified format.
-
-```
-psxpackager -i <path_to_file> --generate [--resource-format <resource format>] [--resource-folder <resource root folder>]
-```
-
-`--resource-format` - the format of the folder name to generate. See [Formatting](#formatting).  If not specified, the default value will be `%FILENAME%`
-
-For example, this will generate the empty folder `SCUS-94163`:
-
-```
-psxpackager -i "Final Fantasy VII (Disc-1).cue" --generate --resource-path %GAMEID%
-```
-
-# Formatting
-
-```
-%FILENAME%   - The input filename
- 
-%GAMEID%     - The GAMEID of the disc. For multi-disc games, each disc will have a differnt GAMEID. 
-
-%MAINGAMEID% - The GAMEID of the first disc in a multi-disc game.
-
-%TITLE%      - The Disc Title of the game. This will contain the Disc number or other identifier in a mult-disc game.
-
-%MAINTITLE%  - The Main title of the game. This will be the actual title of the game.
-
-%REGION%     - The game region, i.e. NTSC or PAL.
-
-%RESOURCE%   - The resource type. (ICON0, ICON1, PIC0, PIC1, SND0). Only used for resource files
-
-%EXT%        - The resource extension. (PNG, AT3). Only used for resource files
-
-```
-
-For example, processing `Final Fantasy VIII - Disc 1.iso` with the following format:
-
-```
-[%GAMEID%] %TITLE% (%REGION%)
-```
-
-will generate the filename
-
-```
-[SLUS00892] Final Fantasy VIII - Disc 1 (NTSC).pbp
-```
-
-Note that when extracting from a multi-disc PBP PSXPackager will append the disc number to the file format.
-
-
-# FAQ
-
-### Does PSXPackager support audio tracks? 
-
-Yes, but only as the original audio (no compression).
-
-### How can I convert a game with audio tracks into a PBP? 
-
-If you have a `.CUE` file with multiple `.BIN` files, pass the `.CUE` file as the input file and PSXPackager will automatically merge the `.BIN` files into a single file in a temporary folder.
-
-A new CUE sheet will also be created with all tracks under the merged `.BIN`, and index positions will be updated.
-
-This merged `.CUE` file will be used to create a TOC (Table of Contents) for the PBP ISO. This allows audio tracks to be correctly read from the PBP.
-
-Temporary files will be deleted when conversion is complete, if the conversion is cancelled, or if an error occurs.
-
-The temporary folder location is `%TEMP%\PSXPackager`.
-
-# Buy me a beer?
-
-Hey programming is fun, but it's also tiring. I mean I could have just been drinking a beer. If you saved yourself a week of converting stuff, why not consider...
-
-* [Buy me a nice beer](https://www.paypal.me/rupertavery/5.00?locale.x=en_US)
-* [Buy me a good beer](https://www.paypal.me/rupertavery/2.50?locale.x=en_US)
-* [Buy me a decent beer](https://www.paypal.me/rupertavery/1.50?locale.x=en_US)
-
-and I will raise one to you! Much appreciated!
+Publicar nuevas versiones en este fork **no modifica el repositorio de RupertAvery**. Gracias a sus autores por compartir el proyecto y permitir que otros puedan ampliarlo.

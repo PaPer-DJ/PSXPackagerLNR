@@ -1,0 +1,88 @@
+name: Finalize validated PSXPackagerLNR beta.30 public release
+
+on:
+  push:
+    branches:
+      - lnr/windows-chd-build
+    paths:
+      - ".github/workflows/lnr-publish-beta30.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lnr-release-beta30
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'PaPer-DJ/PSXPackagerLNR'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify existing beta.30 draft and publish without replacing assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo='PaPer-DJ/PSXPackagerLNR'
+          rid=448159817
+          tag='v0.1.0-beta.30'
+          pinned='d738ef6fb05f1318bcc14dc08425eab6518f35cc'
+          oldtag='69dce2b57330ff3cdb2b1bec78d337500026796d'
+          master='453c0e7b11fa46d78fa1939473923699894fde03'
+          prefix='PSXPackagerLNR-v0.1.0-beta.30-b523'
+          endpoint="repos/$repo/releases/$rid"
+
+          # The previous verified workflow downloaded the successful b523
+          # CI artifact, tested all three original ZIPs, generated and
+          # verified SHA256SUMS.txt, and created this exact draft. GitHub
+          # intentionally hides draft releases from the by-tag lookup, so
+          # inspect the fixed release ID here instead.
+          draft="$(gh api "$endpoint")"
+          test "$(jq -r '.id' <<< "$draft")" = "$rid"
+          test "$(jq -r '.tag_name' <<< "$draft")" = "$tag"
+          test "$(jq -r '.target_commitish' <<< "$draft")" = "$pinned"
+          test "$(jq -r '.draft' <<< "$draft")" = 'true'
+          test "$(jq -r '.prerelease' <<< "$draft")" = 'true'
+          test "$(jq '.assets | length' <<< "$draft")" = '4'
+          names="$(jq -r '.assets[].name' <<< "$draft")"
+          for name in \
+            "$prefix-CLI-win-x64.zip" \
+            "$prefix-GUI-win-x64.zip" \
+            "$prefix-Toolkit-win-x64.zip" \
+            'SHA256SUMS.txt'
+          do
+            grep -Fxq "$name" <<< "$names" || { echo "Missing $name" >&2; exit 1; }
+            test "$(jq --arg name "$name" '[.assets[] | select(.name == $name and .size > 0)] | length' <<< "$draft")" = '1'
+          done
+          # Verify sizes independently from the GitHub artifact upload.
+          test "$(jq -r --arg name "$prefix-GUI-win-x64.zip" '.assets[]|select(.name==$name)|.size' <<< "$draft")" = '106571599'
+          test "$(jq -r --arg name "$prefix-CLI-win-x64.zip" '.assets[]|select(.name==$name)|.size' <<< "$draft")" = '32854490'
+          test "$(jq -r --arg name "$prefix-Toolkit-win-x64.zip" '.assets[]|select(.name==$name)|.size' <<< "$draft")" = '32881718'
+          test "$(jq -r '.assets[]|select(.name=="SHA256SUMS.txt")|.size' <<< "$draft")" = '355'
+          test "$(jq -r '.body' <<< "$draft" | grep -c 'Pausar')" -gt 0
+          test "$(jq -r '.body' <<< "$draft" | grep -c '8 — Recomendado (SSD)')" -gt 0
+          test "$(gh api "repos/$repo/git/ref/tags/$tag" --jq '.object.sha')" = "$pinned"
+          test "$(gh api "repos/$repo/git/ref/tags/v0.1.0-beta.29" --jq '.object.sha')" = "$oldtag"
+          test "$(gh api "repos/$repo/branches/master" --jq '.commit.sha')" = "$master"
+
+          original_assets="$(jq -c '[.assets[] | {id,name,size}] | sort_by(.id)' <<< "$draft")"
+          gh api -X PATCH "$endpoint" -F draft=false -F prerelease=true >/dev/null
+
+          # By-tag lookup is now valid only because the release is public.
+          after="$(gh api "repos/$repo/releases/tags/$tag")"
+          test "$(jq -r '.id' <<< "$after")" = "$rid"
+          test "$(jq -r '.draft' <<< "$after")" = 'false'
+          test "$(jq -r '.prerelease' <<< "$after")" = 'true'
+          test "$(jq -r '.target_commitish' <<< "$after")" = "$pinned"
+          test "$(jq -c '[.assets[] | {id,name,size}] | sort_by(.id)' <<< "$after")" = "$original_assets"
+          test "$(gh api "repos/$repo/git/ref/tags/$tag" --jq '.object.sha')" = "$pinned"
+          test "$(gh api "repos/$repo/git/ref/tags/v0.1.0-beta.29" --jq '.object.sha')" = "$oldtag"
+          test "$(gh api "repos/$repo/branches/master" --jq '.commit.sha')" = "$master"
+
+          url="$(jq -r '.html_url' <<< "$after")"
+          echo "PUBLIC BETA.30 VERIFIED: $url"
+          echo "### PSXPackagerLNR beta.30 public pre-release" >> "$GITHUB_STEP_SUMMARY"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Build 523 / pinned $pinned · four original assets intact" >> "$GITHUB_STEP_SUMMARY"
