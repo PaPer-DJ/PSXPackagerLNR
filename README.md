@@ -87,8 +87,11 @@ La publicación de BIN/CUE también es conjunta, renombra sus pares con
 `(Disc N)`, actualiza las referencias del CUE y evita archivos huérfanos.
 Un CHD sigue representando **un solo disco**, no se divide por pistas.
 
-Se conservan las limitaciones por formato: **PBP → ISO** solo admite un
-disco con datos compatibles; no es una reconstrucción completa de un CD.
+Se conservan las limitaciones por formato: **PBP → ISO [ No Recomendado ]**
+solo admite un disco y una pista de datos **MODE1**; no reconstruye
+completamente el CD. Una comprobación rápida durante el análisis marca
+PBP MODE2/audio/multidisco como incompatibles; la extracción vuelve
+a verificar todos los sectores.
 La Suite **nunca borra originales** y no redistribuye CHDMAN.
 
 **Estado: beta.32 de desarrollo.** Estas funciones requieren las pruebas de
@@ -331,10 +334,14 @@ realizar conversiones por lotes:
   multidisco, tras extracción temporal automatizada a BIN/CUE.
 - **PBP → BIN/CUE (PS1)**: extrae pistas de uno o varios discos a BIN/CUE
   desde PBP sin CHDMAN, conservando la estructura disponible.
-- **PBP → ISO (PS1)**: solo una pista de datos MODE1 o MODE2 Form1 de
-  2048 bytes por sector. Rechaza audio CD, XA Form2, multidisco y demás
-  casos que perderían información. Para conservación y grabación de PS1,
-  **usa BIN/CUE** en vez de ISO.
+- **PBP → ISO (PS1) [ No Recomendado ]**: solo **un disco con una
+  pista de datos MODE1**; admite sectores MODE1/2352 o MODE1/2048
+  compatibles y **rechaza MODE2**, pistas CD-Audio, XA y multidisco.
+  Durante **Analizar** examina la tabla de pistas del PBP y muestras
+  de sectores; los no compatibles aparecen con **ERROR** en la lista
+  y se omiten sin detener los demás trabajos. La exportación comprueba
+  **todos los sectores** antes de publicar el ISO. Para conservar juegos
+  de PS1 y sus pistas, **usa PBP → BIN/CUE**.
 - **CHD → BIN/CUE (CD)**: imágenes para aplicaciones de grabación de CD,
   con pistas CD-Audio cuando se encuentren en la imagen original.
   Dirigido a PS1, Saturn y PS2 publicado en CD.
