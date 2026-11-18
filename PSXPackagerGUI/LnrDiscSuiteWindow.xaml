@@ -169,7 +169,6 @@
                 <ColumnDefinition Width="105"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="120"/>
-                <ColumnDefinition Width="185"/>
             </Grid.ColumnDefinitions>
             <TextBlock Text="Carpeta origen" VerticalAlignment="Center"/>
             <TextBox Grid.Column="1" x:Name="SourceBox" MinHeight="31"
@@ -177,13 +176,8 @@
                      LostKeyboardFocus="Source_OnLostKeyboardFocus"
                      ToolTip="Carpeta que contiene los archivos PBP o CHD"/>
             <Button Grid.Column="2" x:Name="BrowseButton" Content="Ver carpetas..."
-                    Margin="9,0,0,0" Click="Browse_OnClick"/>
-            <CheckBox Grid.Column="3" x:Name="IncludeSubfoldersCheck"
-                      Content="También subcarpetas" IsChecked="False"
-                      Checked="IncludeSubfolders_OnChanged"
-                      Unchecked="IncludeSubfolders_OnChanged"
-                      Margin="12,0,0,0" VerticalAlignment="Center"
-                      ToolTip="Analiza PBP o CHD también en subcarpetas. Omite las carpetas de salida CHD/BIN_CUE/ISO y enlaces. La estructura se conserva en el destino."/>
+                    Margin="9,0,0,0" Click="Browse_OnClick"
+                    ToolTip="Abre el explorador LNR: allí puedes activar «También subcarpetas» para incluir carpetas anidadas."/>
         </Grid>
 
         <Grid Grid.Row="3" Margin="0,0,0,13">
