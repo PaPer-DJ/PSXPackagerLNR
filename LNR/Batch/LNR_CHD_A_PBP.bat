@@ -46,7 +46,7 @@ echo Se guardara un informe de actividad en .tools\LNR_CHD_A_PBP\LOGS.
 echo.
 echo MODO MULTIDISCO:
 echo.
-echo   1 - SEPARADOS: un PBP por CHD, nombre original conservado.
+echo   1 - SEPARADOS: un PBP por CHD, nombre original conservado. [RECOMENDADO]
 echo   2 - UNIDOS: un PBP por juego; prioridad a los M3U existentes.
 echo       El cambio de disco dependera del emulador.
 echo.
