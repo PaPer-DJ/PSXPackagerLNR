@@ -9,6 +9,8 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using Popstation.Pbp;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -31,6 +33,25 @@ namespace PSXPackagerGUI
         private readonly HashSet<int> _manuallySizedColumns = new();
         private bool _settingColumnWidths;
         private bool _cancelRequested;
+        private bool _includeSubfolders;
+        private readonly LnrSuitePreferences _preferences;
+        private readonly HashSet<Process> _activeProcesses = new();
+        private readonly Dictionary<DiscJob, Stopwatch> _activeClocks = new();
+        private readonly DispatcherTimer _progressTimer = new()
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        private Stopwatch _batchClock;
+        private bool _pauseRequested;
+        private bool _pauseComplete;
+        private TaskCompletionSource<bool> _resumeGate;
+        private int _inFlightJobs;
+        private int _workers = 1;
+        private int _success, _skipped, _errors;
+        private long _calibratedBytes;
+        private double _calibratedSeconds;
+        private bool _completedNormally;
+        private bool _batchCanceled;
         // Countdown is local to this window; Windows gets no scheduled command.
         private readonly DispatcherTimer _shutdownCountdown = new()
         {
@@ -39,7 +60,6 @@ namespace PSXPackagerGUI
         private bool _shutdownPending;
         private int _shutdownSecondsRemaining;
         private CancellationTokenSource _cancel;
-        private Process _activeProcess;
         private bool _running;
         private readonly CultureInfo _es = CultureInfo.GetCultureInfo("es-ES");
 
@@ -50,12 +70,35 @@ namespace PSXPackagerGUI
             JobsList.ItemsSource = _jobs;
             TrackManualColumnResizing();
             _shutdownCountdown.Tick += ShutdownCountdown_OnTick;
+            _progressTimer.Tick += (sender, e) => UpdateSuiteProgress();
             ShutdownCheck.IsChecked = false; // Never restored from preferences.
-            ModeBox.SelectedIndex = 0;
-            var prefs = LnrGuiPreferences.Load();
-            SourceBox.Text = Directory.Exists(prefs.LastSourceFolder)
-                ? prefs.LastSourceFolder
-                : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            _preferences = LnrSuitePreferences.Load();
+            ModeBox.SelectedIndex = _preferences.ValidatedMode;
+            var mainPrefs = LnrGuiPreferences.Load();
+            SourceBox.Text = Directory.Exists(_preferences.LastSourceFolder)
+                ? _preferences.LastSourceFolder
+                : Directory.Exists(mainPrefs.LastSourceFolder)
+                    ? mainPrefs.LastSourceFolder
+                    : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            _includeSubfolders = _preferences.IncludeSubfolders;
+            IncludeSubfoldersCheck.IsChecked = _includeSubfolders;
+            FollowActiveCheck.IsChecked = _preferences.FollowActive;
+            AutoScrollCheck.IsChecked = _preferences.AutoScroll;
+            foreach (ComboBoxItem item in ParallelCombo.Items)
+            {
+                if (int.TryParse(item.Tag?.ToString(), out var selected) &&
+                    selected == _preferences.ValidatedParallel)
+                {
+                    ParallelCombo.SelectedItem = item;
+                    break;
+                }
+            }
+            if (_preferences.WindowWidth >= MinWidth &&
+                _preferences.WindowWidth <= SystemParameters.WorkArea.Width)
+                Width = _preferences.WindowWidth;
+            if (_preferences.WindowHeight >= MinHeight &&
+                _preferences.WindowHeight <= SystemParameters.WorkArea.Height)
+                Height = _preferences.WindowHeight;
             var localChdman = Path.Combine(AppContext.BaseDirectory, "chdman.exe");
             var importedChdman = ImportedChdmanPath;
             ChdmanBox.Text = File.Exists(localChdman) ? localChdman
@@ -68,6 +111,39 @@ namespace PSXPackagerGUI
         }
 
         private int Mode => ModeBox.SelectedIndex < 0 ? 0 : ModeBox.SelectedIndex;
+        private int ParallelSetting => int.TryParse(
+            (ParallelCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString(), out var count)
+                ? count : 4;
+        private int ParallelCount => ParallelSetting == 0
+            ? Math.Clamp(Environment.ProcessorCount / 2, 1, 4)
+            : ParallelSetting;
+
+        private static readonly string[] ExcludedSuiteFolders =
+            { "PBP", "CHD", "BIN_CUE", "ISO", "LOGS", "_TEMP", ".tools" };
+
+        private void SavePreferences()
+        {
+            try
+            {
+                LnrSuitePreferences.Save(new LnrSuitePreferences
+                {
+                    Mode = Mode,
+                    LastSourceFolder = SourceBox.Text.Trim().Trim('"'),
+                    IncludeSubfolders = _includeSubfolders,
+                    ParallelConversions = ParallelSetting,
+                    FollowActive = FollowActiveCheck.IsChecked == true,
+                    AutoScroll = AutoScrollCheck.IsChecked == true,
+                    WindowWidth = ActualWidth,
+                    WindowHeight = ActualHeight,
+                    LogPanelHeight = LogBox.ActualHeight
+                });
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or ArgumentException)
+            {
+                Log("AVISO: no se pudieron guardar las preferencias de la Suite: " + ex.Message);
+            }
+        }
         private string SourceExtension => Mode <= 2 ? ".pbp" : ".chd";
         private bool NeedsChdman => Mode == 0 || Mode >= 3;
         private string OutputSubdirectory => Mode switch
