@@ -1090,46 +1090,50 @@ namespace PSXPackagerGUI
             var exe = Path.Combine(AppContext.BaseDirectory, "psxpackager.exe");
             if (!File.Exists(exe))
                 throw new FileNotFoundException("Falta psxpackager.exe junto a la GUI.", exe);
+            var names = LnrSuiteDiscNaming.ChdNames(job.Source, job.DiscCount);
+            // A multidisc PBP is ONE job: if even one expected output exists,
+            // don't create a partly overlapping collection.
+            if (names.Any(name => File.Exists(Path.Combine(dest, name))))
+            {
+                Log("SALTADO: ya existe al menos un CHD del grupo " + job.DisplayName);
+                return 0;
+            }
 
             var stage = NewStageFolder(dest);
-            var converted = 0;
             try
             {
-                Log("Extrayendo PBP: " + job.Name);
+                Log("Extrayendo PBP " + job.DisplayName + " (" + job.DiscCount + " disco/s).");
                 await ExecuteAsync(exe, new[] { "-i", job.Source, "-o", stage,
-                                                 "-s", "-f", "%FILENAME%" }, token);
-                var cues = Directory.EnumerateFiles(stage, "*.cue", SearchOption.TopDirectoryOnly)
-                                    .OrderBy(file => Path.GetFileName(file), StringComparer.CurrentCultureIgnoreCase).ToList();
-                if (cues.Count == 0)
-                    throw new InvalidDataException("El PBP no proporcionó ningún archivo CUE. " +
-                                                   "Comprueba que contiene discos PS1 compatibles.");
-                foreach (var cue in cues)
+                                                 "-s", "-f", "%FILENAME%" }, token,
+                                   job, "Extrayendo discos");
+                var cues = LnrSuiteDiscNaming.ExtractedCues(stage, job.DiscCount);
+                for (var i = 0; i < cues.Count; i++)
                 {
                     token.ThrowIfCancellationRequested();
-                    var name = Path.GetFileNameWithoutExtension(cue);
-                    var output = Path.Combine(dest, name + ".chd");
-                    if (File.Exists(output))
-                    {
-                        Log("SALTADO: " + Path.GetFileName(output) + " ya existe.");
-                        continue;
-                    }
-
-                    var tempChd = Path.Combine(stage, name + ".chd");
-                    Log("Generando CHD desde " + Path.GetFileName(cue));
-                    await ExecuteAsync(chdman, new[] { "createcd", "-i", cue, "-o", tempChd }, token);
-                    VerifyChdHeader(tempChd);
-                    await ExecuteAsync(chdman, new[] { "verify", "-i", tempChd }, token);
-                    if (File.Exists(output))
-                    {
-                        Log("SALTADO: destino apareció durante la conversión: " + Path.GetFileName(output));
-                        continue;
-                    }
-                    File.Move(tempChd, output);
-                    VerifyChdHeader(output);
-                    converted++;
-                    Log("OK: " + Path.GetFileName(output));
+                    var outputName = names[i];
+                    var provisional = Path.Combine(stage, outputName);
+                    Log("Generando " + outputName + " (" + (i + 1) + "/" + cues.Count + ").");
+                    await ExecuteAsync(chdman,
+                        new[] { "createcd", "-i", cues[i], "-o", provisional },
+                        token, job, "Creando CHD " + (i + 1) + "/" + cues.Count);
+                    VerifyChdHeader(provisional);
+                    await ExecuteAsync(chdman, new[] { "verify", "-i", provisional },
+                                       token, job, "Verificando CHD " + (i + 1) + "/" + cues.Count);
+                    VerifyChdHeader(provisional);
                 }
-                return converted;
+
+                // Every CHD must be validated before publishing ANY file.
+                token.ThrowIfCancellationRequested();
+                if (!LnrSuiteDiscNaming.PublishChdGroup(stage, dest, names))
+                {
+                    Log("SALTADO: apareció un CHD del grupo durante la conversión. " +
+                        "No se publicó ningún disco nuevo.");
+                    return 0;
+                }
+                foreach (var name in names)
+                    VerifyChdHeader(Path.Combine(dest, name));
+                Log("OK: " + names.Count + " CHD publicado(s) con numeración Disc N.");
+                return names.Count;
             }
             finally
             {
