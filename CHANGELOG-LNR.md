@@ -1,5 +1,29 @@
 # Historial de versiones de PSXPackagerLNR
 
+## v0.1.0-beta.32 — EN DESARROLLO (Suite de discos)
+
+### Concurrencia y controles del motor de la Suite
+
+- **Selector 1, 2, 3, 4, 6, 8 y Auto** para todos los cinco modos; los trabajos son archivos origen independientes y cada PBP multidisco sigue constituyendo una sola tarea. No se modifica el compresor interno de PSXPackager/CHDMAN.
+- **Pausar → Pausando → Reanudar**: se dejan terminar, verificar y publicar con seguridad todos los trabajos activos, incluidos los discos de un mismo PBP. No se lanzan nuevos trabajos mientras se pausa. **Cancelar** detiene todos los procesos en marcha y limpia únicamente temporales de conversiones interrumpidas.
+- **Progreso real por fase y archivo** leído de CLI y CHDMAN cuando informan de porcentajes; si no informan se muestra una barra indeterminada. **Exportación ISO de datos** actualizada con porcentaje por sectores leídos, sin alterar las comprobaciones técnicas de los sectores.
+- **Estadísticas** por archivo: origen, salida, variación, duración y número de archivos; ETA global orientativa basada en tamaños y velocidades observadas, considerando conversiones simultáneas. En PBP→ISO no se anuncia una reducción de tamaño como mejora de compresión.
+- **Seguir archivo activo** solo al comenzar cada trabajo, sin saltar por cada actualización del porcentaje. Columnas redimensionables conservan los tamaños elegidos manualmente y registro por sesión con copia, limpieza y guardado.
+
+### Carpetas, nombres multidisco y seguridad
+
+- **Explorador compartido** CHD/PBP con Atrás, Entrar, ↑/↓, Enter, Retroceso y selección recuperada al volver atrás. **También subcarpetas** opcional, apagada por defecto, omite PBP/CHD/BIN_CUE/ISO, herramientas, staging y enlaces; refleja la ruta relativa en el directorio de salida elegido.
+- **PBP multidisco → CHD:** detecta el número e índice auténticos de discos desde la tabla interna del PBP. Publica `Juego (Disc 1).chd`, `Juego (Disc 2).chd`… y mantiene nombre original para PBP de un solo disco. Cada CHD se crea y valida en staging, incluyendo `chdman verify`, antes de publicar el grupo. Si hay archivos existentes o nombres en conflicto, no se sobreescribe nada. Si falla una publicación intermedia, se revierten únicamente los nuevos archivos de ese trabajo.
+- **PBP multidisco → BIN/CUE:** el grupo completo se publica como una carpeta única; los pares se renombran a `(Disc N)`, se actualizan todas las líneas FILE pertinentes en los CUE y se verifica que cada BIN referenciado exista, preservando pistas de audio.
+- **CHD → BIN/CUE / ISO:** un CHD representa un disco; sus nombres no se renombran a una numeración artificial.
+- **Preferencias separadas** `suite-preferencias.json` para modo, carpeta, simultaneidad, análisis recursivo, seguimiento, desplazamiento y tamaño. El apagado opcional nunca se restaura de preferencias.
+- Se conservan CHD/PBP/M3U/SBI de origen y los archivos ya existentes. **No se añade borrado destructivo a la Suite**, ni compresión PBP 1/3/5/9 a modos que no crean PBP. Se conserva la protección de apagado normal con cuenta atrás.
+
+### Validación
+
+- Compilación Windows x64 autocontenida .NET 8 y pruebas CI de nombres multicd, reescritura CUE/BIN, conflictos, recuperación ante publicación fallida, recorridos recursivos, protección del acceso directo y del motor CLI.
+- **Pendiente de validación práctica con juegos reales en el equipo del autor antes de publicar**. No modificar la beta.31 pública, sus binarios/etiqueta, la beta.30 ni `master`.
+
 ## v0.1.0-beta.31 — 17 noviembre 2026 (Toolkit concurrente, pausa y navegador de carpetas)
 
 ### Pausa/cancelación del Toolkit y mejora del navegador CHD
