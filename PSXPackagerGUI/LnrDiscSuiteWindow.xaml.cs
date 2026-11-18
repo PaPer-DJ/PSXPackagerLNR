@@ -758,7 +758,18 @@ namespace PSXPackagerGUI
 
         private async void Convert_OnClick(object sender, RoutedEventArgs e)
         {
-            if (_running) return;
+            if (_running)
+            {
+                TogglePause();
+                return;
+            }
+            if (_shutdownPending)
+            {
+                MessageBox.Show(this,
+                    "Hay un apagado pendiente. Cancélalo antes de iniciar otra conversión.",
+                    "Apagado programado", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
             Scan();
             if (_jobs.Count == 0) return;
 
@@ -768,32 +779,33 @@ namespace PSXPackagerGUI
                     StringComparison.OrdinalIgnoreCase)))
             {
                 MessageBox.Show(this,
-                    "Este módulo necesita chdman.exe de la distribución oficial de MAME.\n\n" +
-                    "Usa «Importar ZIP...», colócalo junto a la GUI o pulsa «Localizar...».\n" +
-                    "Puedes obtener MAME y consultar la herramienta en https://www.mamedev.org/release.html\n\n" +
-                    "El conversor directo CHD → PBP continúa funcionando SIN CHDMAN.",
+                    "Este modo requiere chdman.exe de MAME. Usa «Importar ZIP...» " +
+                    "o «Localizar...».\n\nCHD → PBP directo sigue funcionando sin CHDMAN.",
                     "Falta CHDMAN", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            var folder = Path.GetFullPath(SourceBox.Text.Trim().Trim('"'));
-            var destination = Path.Combine(folder, OutputSubdirectory);
-            var message = $"Modo: {ModeBox.Text}\n" +
-                          $"Archivos de origen: {_jobs.Count}\n" +
-                          $"Destino: {destination}\n\n" +
-                          "No se eliminará ningún original.\n" +
-                          "Los resultados existentes se respetarán.\n\n" +
-                          (Mode == 0
-                              ? "PBP → CHD utiliza BIN/CUE intermedios temporales para comprimir cada disco."
-                              : Mode == 1
-                              ? "PBP → BIN/CUE conserva las pistas de CD disponibles en el PBP, incluso multidisco."
-                              : Mode == 2
-                              ? "AVISO: ISO solo admite un CD de datos sin audio, sin XA Form 2 ni multidisco.\n" +
-                                "Un ISO NO sirve para reconstruir o grabar un CD completo de PS1.\n" +
-                                "Los juegos no compatibles darán error sin generar ISO: usa BIN/CUE."
-                              : "Elige el tipo correcto de disco: CD (BIN/CUE) o DVD (ISO).") +
-                          "\n\n¿Iniciar el lote?";
-            if (MessageBox.Show(this, message, "Confirmar lote de la suite",
+            var root = Path.GetFullPath(SourceBox.Text.Trim().Trim('"'));
+            var dest = Path.Combine(root, OutputSubdirectory);
+            var confirmation = $"Modo: {ModeBox.Text}\n" +
+                $"Archivos de origen: {_jobs.Count}\n" +
+                $"Conversiones simultáneas: {ParallelCount}\n" +
+                $"También subcarpetas: {(_includeSubfolders ? "Sí (se conserva la estructura)" : "No")}\n" +
+                $"Destino: {dest}\n\n" +
+                "Los originales se conservarán siempre.\n" +
+                "No se sobrescribirán archivos ni carpetas existentes.\n" +
+                "La pausa espera a que se complete íntegramente el trabajo activo.\n\n" +
+                (Mode == 0
+                    ? "PBP → CHD utiliza BIN/CUE temporales y CHDMAN; cada PBP multidisco " +
+                      "se publica como un grupo indivisible de CHD (Disc 1), (Disc 2), etc."
+                    : Mode == 1
+                    ? "PBP → BIN/CUE renombra todos los discos y actualiza sus referencias CUE."
+                    : Mode == 2
+                    ? "ISO solo admite un PBP con un CD de datos compatible y SIN múltiples discos. " +
+                      "Para preservar CD-Audio o pistas XA utiliza BIN/CUE."
+                    : "Comprueba que has escogido el tipo de soporte correcto (CD o DVD).") +
+                "\n\n¿Iniciar el lote?";
+            if (MessageBox.Show(this, confirmation, "Confirmar lote de la suite",
                                 MessageBoxButton.YesNo, MessageBoxImage.Question)
                 != MessageBoxResult.Yes)
                 return;
@@ -803,12 +815,10 @@ namespace PSXPackagerGUI
             {
                 var response = MessageBox.Show(this,
                     "APAGAR EL EQUIPO DESPUÉS DEL LOTE\n\n" +
-                    "Se solicitará únicamente si se convierte al menos un archivo, " +
-                    "sin errores ni cancelaciones.\n\n" +
-                    "Al acabar tendrás una cuenta atrás de 60 segundos para cancelar " +
-                    "desde esta ventana. Si la cierras antes, el apagado se cancela.\n\n" +
-                    "Windows intentará un apagado normal, sin forzar el cierre de otras " +
-                    "aplicaciones. Guarda cualquier documento importante.\n\n" +
+                    "Solo si se convierten archivos nuevos y el lote termina sin errores " +
+                    "ni cancelaciones. No se apaga mientras está en pausa.\n\n" +
+                    "Al acabar tendrás 60 segundos para cancelar desde esta ventana. " +
+                    "Windows intentará un apagado normal SIN forzar otras aplicaciones.\n\n" +
                     "¿Confirmas el apagado automático opcional?",
                     "Confirmar apagado automático",
                     MessageBoxButton.YesNo, MessageBoxImage.Warning);
@@ -820,80 +830,61 @@ namespace PSXPackagerGUI
             }
 
             _cancelRequested = false;
+            _pauseRequested = _pauseComplete = false;
+            _resumeGate = null;
+            _inFlightJobs = 0;
             _cancel = new CancellationTokenSource();
+            _activeProcesses.Clear();
+            _activeClocks.Clear();
+            _success = _skipped = _errors = 0;
+            _calibratedBytes = 0;
+            _calibratedSeconds = 0;
+            _completedNormally = false;
+            _batchCanceled = false;
+            _workers = Math.Min(ParallelCount, _jobs.Count);
+            _batchClock = Stopwatch.StartNew();
             SetRunning(true);
-            int success = 0, skipped = 0, errors = 0, processed = 0;
-            bool completedNormally = false;
+            _progressTimer.Start();
+            Log("Procesamiento concurrente de la Suite: " + _workers + " trabajo(s) simultáneos.");
             try
             {
-                Directory.CreateDirectory(destination);
-                foreach (var job in _jobs)
-                {
-                    _cancel.Token.ThrowIfCancellationRequested();
-                    try
-                    {
-                        job.Status = "Procesando";
-                        var made = Mode switch
-                        {
-                            0 => await PbpToChdAsync(job, destination, chdman, _cancel.Token),
-                            1 => await PbpToCueAsync(job, destination, _cancel.Token),
-                            2 => await PbpToIsoAsync(job, destination, _cancel.Token),
-                            3 => await ChdToCueAsync(job, destination, chdman, _cancel.Token),
-                            _ => await ChdToIsoAsync(job, destination, chdman, _cancel.Token)
-                        };
-                        job.OutputCount = made.ToString(CultureInfo.InvariantCulture);
-                        if (made == 0)
-                        {
-                            skipped++;
-                            job.Status = "Saltado / Ya existe";
-                        }
-                        else
-                        {
-                            success++;
-                            job.Status = "Completado";
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        job.Status = "Cancelado";
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        errors++;
-                        job.Status = "ERROR";
-                        Log("ERROR " + job.Name + ": " + ex.Message);
-                    }
-                    finally
-                    {
-                        processed++;
-                        BatchProgress.Value = 100.0 * processed / _jobs.Count;
-                        ProgressLabel.Text = $"{processed}/{_jobs.Count} · Correctos: {success} · " +
-                                             $"Saltados: {skipped} · Errores: {errors}";
-                        ResizeSuiteColumns();
-                    }
-                }
-                completedNormally = !_cancelRequested;
-                Log($"FIN. Correctos: {success}; saltados: {skipped}; errores: {errors}.");
+                Directory.CreateDirectory(dest);
+                await ProcessAllAsync(root, chdman, _cancel.Token);
+                _completedNormally = !_cancel.IsCancellationRequested;
+                Log($"FIN. Correctos: {_success}; saltados: {_skipped}; errores: {_errors}.");
             }
             catch (OperationCanceledException)
             {
-                Log("Lote cancelado. Originales conservados; salidas anteriores al cancelado se mantienen.");
+                _batchCanceled = true;
+                Log("Lote cancelado. Los originales se conservan y los resultados " +
+                    "que ya terminaron correctamente permanecen disponibles.");
             }
             catch (Exception ex)
             {
+                _errors++;
                 Log("ERROR GENERAL: " + ex.Message);
             }
             finally
             {
+                _progressTimer.Stop();
+                _batchClock?.Stop();
+                _activeClocks.Clear();
+                _pauseRequested = _pauseComplete = false;
+                _resumeGate?.TrySetResult(true);
+                _resumeGate = null;
+                _inFlightJobs = 0;
                 SetRunning(false);
+                _activeProcesses.Clear();
                 _cancel?.Dispose();
                 _cancel = null;
-                ShutdownCheck.IsChecked = false; // System control never persists.
+                UpdateSuiteProgress();
+                ShutdownCheck.IsChecked = false; // Never persist system controls.
+                SavePreferences();
                 SaveLog();
                 if (shutdownRequested)
                 {
-                    if (completedNormally && !_cancelRequested && errors == 0 && success > 0)
+                    if (_completedNormally && !_cancelRequested && !_batchCanceled &&
+                        _errors == 0 && _success > 0)
                         BeginShutdownCountdown();
                     else
                     {
@@ -902,6 +893,195 @@ namespace PSXPackagerGUI
                     }
                 }
             }
+        }
+
+        private async Task ProcessAllAsync(string root, string chdman, CancellationToken token)
+        {
+            var nextIndex = -1;
+            var total = _jobs.Count;
+            async Task WorkerAsync()
+            {
+                while (true)
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (nextIndex >= total - 1) return;
+                    await WaitIfPausedAsync(token);
+                    token.ThrowIfCancellationRequested();
+                    var index = Interlocked.Increment(ref nextIndex);
+                    if (index >= total) return;
+                    _inFlightJobs++;
+                    var job = _jobs[index];
+                    var timer = Stopwatch.StartNew();
+                    _activeClocks[job] = timer;
+                    try
+                    {
+                        await ProcessOneAsync(job, root, chdman, token);
+                    }
+                    finally
+                    {
+                        timer.Stop();
+                        job.Elapsed = timer.Elapsed;
+                        _activeClocks.Remove(job);
+                        _inFlightJobs--;
+                        MarkPausedIfSafe();
+                        UpdateSuiteProgress();
+                        ResizeSuiteColumns();
+                    }
+                }
+            }
+
+            var workers = Enumerable.Range(0, _workers).Select(_ => WorkerAsync()).ToArray();
+            await Task.WhenAll(workers);
+        }
+
+        private async Task ProcessOneAsync(DiscJob job, string root,
+                                            string chdman, CancellationToken token)
+        {
+            try
+            {
+                token.ThrowIfCancellationRequested();
+                if (job.PlanError != null)
+                    throw new InvalidDataException(job.PlanError);
+
+                if (job.PlannedOutputs.Any(path => File.Exists(path) || Directory.Exists(path)))
+                {
+                    _skipped++;
+                    job.Status = "Saltado / Ya existe";
+                    job.OutputBytes = MeasureOutputBytes(job);
+                    Log("SALTADO: " + job.DisplayName + " ya tiene uno o más destinos.");
+                    return;
+                }
+
+                job.Status = "Convirtiendo";
+                job.CurrentPhase = "Iniciando";
+                job.HasProgress = false;
+                FollowActive(job);
+                var dest = Path.Combine(root, OutputSubdirectory, job.RelativeFolder);
+                Directory.CreateDirectory(dest);
+
+                int made = Mode switch
+                {
+                    0 => await PbpToChdAsync(job, dest, chdman, token),
+                    1 => await PbpToCueAsync(job, dest, token),
+                    2 => await PbpToIsoAsync(job, dest, token),
+                    3 => await ChdToCueAsync(job, dest, chdman, token),
+                    _ => await ChdToIsoAsync(job, dest, chdman, token)
+                };
+
+                if (made == 0)
+                {
+                    _skipped++;
+                    job.Status = "Saltado / Ya existe";
+                    job.OutputBytes = MeasureOutputBytes(job);
+                }
+                else
+                {
+                    _success++;
+                    job.OutputCount = made.ToString(CultureInfo.InvariantCulture);
+                    job.OutputBytes = MeasureOutputBytes(job);
+                    job.ProgressPercent = 100;
+                    job.Status = "Completado";
+                    _calibratedBytes += job.SourceBytes;
+                    _calibratedSeconds += Math.Max(0.1,
+                        _activeClocks.TryGetValue(job, out var clock)
+                            ? clock.Elapsed.TotalSeconds : 0.1);
+                    Log("OK: " + job.DisplayName + " | Origen " + FormatSize(job.SourceBytes) +
+                        " → Salida " + job.OutputSizeText + " | variación " +
+                        job.VariationText + ".");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                job.Status = "Cancelado";
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _errors++;
+                job.Status = "ERROR";
+                Log("ERROR " + job.DisplayName + ": " + ex.Message);
+            }
+        }
+
+        private static string FormatSize(long size) =>
+            (size / 1048576.0).ToString("N2", CultureInfo.GetCultureInfo("es-ES")) + " MB";
+
+        private static long MeasureOutputBytes(DiscJob job)
+        {
+            long total = 0;
+            foreach (var target in job.PlannedOutputs)
+            {
+                if (File.Exists(target))
+                    total += new FileInfo(target).Length;
+                else if (Directory.Exists(target))
+                {
+                    // Each target directory is specific to this source job.
+                    foreach (var path in Directory.EnumerateFiles(
+                                 target, "*", SearchOption.AllDirectories))
+                        total += new FileInfo(path).Length;
+                }
+            }
+            return total;
+        }
+
+        private static string ReadableTime(TimeSpan value) =>
+            value.TotalHours >= 1 ? value.ToString(@"h\:mm\:ss") :
+            value.TotalSeconds < 1 ? "menos de 1 s" : value.ToString(@"mm\:ss");
+
+        private void UpdateSuiteProgress()
+        {
+            if (BatchProgress == null || ProgressLabel == null) return;
+            var completed = _success + _skipped + _errors;
+            var total = _jobs.Count;
+            BatchProgress.Value = total == 0 ? 0 : 100.0 * completed / total;
+            ProgressLabel.Text = $"{completed}/{total} · Correctos: {_success} · " +
+                                 $"Saltados: {_skipped} · Errores: {_errors}" +
+                                 (_pauseRequested ? (_pauseComplete ? " · EN PAUSA" : " · PAUSANDO") : "");
+            if (!_running)
+            {
+                EtaLabel.Text = _batchCanceled ? "Lote cancelado" :
+                    _completedNormally && total > 0
+                        ? (_errors == 0 ? "Lote finalizado" : "Lote finalizado con errores")
+                        : "Tiempo restante: sin calcular";
+                if (_batchClock != null)
+                    EtaLabel.Text += " · Tiempo del lote: " + ReadableTime(_batchClock.Elapsed);
+                return;
+            }
+            if (_pauseRequested)
+            {
+                EtaLabel.Text = _pauseComplete
+                    ? "EN PAUSA · Sin juegos activos · Pulsa Reanudar"
+                    : "PAUSANDO · Esperando " + _inFlightJobs + " archivo(s) activos";
+                return;
+            }
+            if (_calibratedBytes <= 0 || _calibratedSeconds <= 0)
+            {
+                EtaLabel.Text = "Tiempo restante: calculando tras el primer archivo…";
+                return;
+            }
+            var secondsPerByte = _calibratedSeconds / _calibratedBytes;
+            double remaining = 0;
+            foreach (var job in _jobs)
+            {
+                if (job.Status != "Pendiente" && job.Status != "Convirtiendo") continue;
+                var estimate = job.SourceBytes * secondsPerByte;
+                if (job.Status == "Convirtiendo" &&
+                    _activeClocks.TryGetValue(job, out var clock))
+                {
+                    estimate -= clock.Elapsed.TotalSeconds;
+                    if (estimate <= 0)
+                    {
+                        EtaLabel.Text = "Tiempo restante: recalculando…";
+                        return;
+                    }
+                }
+                remaining += estimate;
+            }
+            remaining /= Math.Max(1, _workers);
+            EtaLabel.Text = double.IsFinite(remaining)
+                ? "Tiempo restante estimado: ~" +
+                  ReadableTime(TimeSpan.FromSeconds(Math.Min(remaining, 8640000)))
+                : "Tiempo restante: calculando…";
         }
 
         private async Task<int> PbpToChdAsync(DiscJob job, string dest,
