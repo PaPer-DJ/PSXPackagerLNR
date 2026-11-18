@@ -1424,6 +1424,135 @@ namespace PSXPackagerGUI
             }
         }
 
+        /// <summary>
+        /// Reads CHDMAN's metadata listing to prove the CHD is a GD-ROM.
+        /// CHCD/CHT2 indicate conventional CDs: never label them Dreamcast
+        /// or use them as sources for a reconstructed GDI.
+        /// </summary>
+        private async Task<string> CheckDreamcastChdAsync(
+            DiscJob job, string chdman, string source, CancellationToken token)
+        {
+            VerifyChdHeader(source);
+            var info = await ExecuteAsync(chdman, new[] { "info", "-i", source },
+                                          token, job, "Leyendo metadatos GD-ROM");
+            if (!LnrDreamcastGdi.IsGdromMetadata(info))
+                throw new InvalidDataException(
+                    "Este CHD no contiene metadatos de GD-ROM de Dreamcast " +
+                    "(CHGD/CHGT). Puede ser CD-ROM, DVD u otro formato. " +
+                    "No se convertirá a GDI.");
+            return info;
+        }
+
+        private async Task<int> GdiToChdAsync(
+            DiscJob job, string dest, string chdman, CancellationToken token)
+        {
+            // Revalidate the GDI and EVERY source track immediately before
+            // conversion: a file may have changed after clicking Analizar.
+            var manifest = LnrDreamcastGdi.Validate(job.Source);
+            var targetName = Path.GetFileNameWithoutExtension(job.Source) + ".chd";
+            var final = Path.Combine(dest, targetName);
+            if (File.Exists(final) || Directory.Exists(final))
+            {
+                Log("SALTADO: CHD ya existente: " + targetName);
+                return 0;
+            }
+
+            var stage = NewStageFolder(dest);
+            try
+            {
+                var provisional = Path.Combine(stage, targetName);
+                Log("Dreamcast: comprimiendo GDI con " + manifest.Tracks.Count +
+                    " pistas: " + job.DisplayName);
+                await ExecuteAsync(chdman, new[] { "createcd", "-i", job.Source, "-o", provisional },
+                                   token, job, "Comprimiendo GDI a CHD");
+                VerifyChdHeader(provisional);
+                await CheckDreamcastChdAsync(job, chdman, provisional, token);
+                await ExecuteAsync(chdman, new[] { "verify", "-i", provisional },
+                                   token, job, "Verificando nuevo CHD GD-ROM");
+                token.ThrowIfCancellationRequested();
+                // The helper skips an already-existing target; if final
+                // verification fails after moving, only our new CHD is
+                // rolled back. Neither the GDI nor its tracks are touched.
+                if (!LnrSuiteDiscNaming.PublishChdGroup(stage, dest,
+                    new[] { targetName }, VerifyChdHeader))
+                {
+                    Log("SALTADO: apareció el destino antes de publicar " + targetName);
+                    return 0;
+                }
+                Log("OK: GDI Dreamcast → CHD verificado: " + targetName);
+                return 1;
+            }
+            finally { CleanStage(stage); }
+        }
+
+        private async Task<int> ChdToGdiAsync(
+            DiscJob job, string dest, string chdman, CancellationToken token)
+        {
+            var baseName = Path.GetFileNameWithoutExtension(job.Source);
+            var folder = Path.Combine(dest, baseName);
+            if (Directory.Exists(folder) || File.Exists(folder))
+            {
+                Log("SALTADO: ya existe la carpeta GDI " + baseName);
+                return 0;
+            }
+
+            // Inspect the existing CHD before expensive extraction. No
+            // fallback to CD-ROM/CUE, which cannot reconstruct the GD-ROM.
+            await CheckDreamcastChdAsync(job, chdman, job.Source, token);
+            var stage = NewStageFolder(dest);
+            try
+            {
+                var descriptor = Path.Combine(stage, baseName + ".gdi");
+                Log("Dreamcast: extrayendo GDI y sus pistas de " + job.DisplayName);
+                await ExecuteAsync(chdman, new[] { "extractcd", "-i", job.Source, "-o", descriptor },
+                                   token, job, "Extrayendo GDI y pistas");
+                var manifest = LnrDreamcastGdi.Validate(descriptor);
+                // Validate all files before committing. The directory move
+                // on the same volume publishes GDI+tracks in one operation.
+                var count = Directory.GetFiles(stage, "*", SearchOption.AllDirectories).Length;
+                if (count < manifest.Tracks.Count + 1 ||
+                    count == 0 || !File.Exists(descriptor))
+                    throw new InvalidDataException(
+                        "CHDMAN no ha generado todas las pistas del GDI.");
+                token.ThrowIfCancellationRequested();
+                if (Directory.Exists(folder) || File.Exists(folder))
+                {
+                    Log("SALTADO: la carpeta GDI apareció durante la extracción.");
+                    return 0;
+                }
+                Directory.Move(stage, folder);
+                Log("OK: Dreamcast CHD → GDI: " + manifest.Tracks.Count +
+                    " pistas recuperadas en " + folder);
+                return count;
+            }
+            finally { CleanStage(stage); }
+        }
+
+        /// <summary>
+        /// Read-only diagnostic. Never call chdman verify with -f (fix).
+        /// No staging or output files, no automatic Windows shutdown.
+        /// </summary>
+        private async Task<int> VerifyDreamcastChdAsync(
+            DiscJob job, string chdman, CancellationToken token)
+        {
+            var info = await CheckDreamcastChdAsync(job, chdman, job.Source, token);
+            var summary = info.Replace("\r\n", "\n").Split('\n')
+                .Select(line => line.Trim())
+                .Where(line => line.Contains("SHA1", StringComparison.OrdinalIgnoreCase) ||
+                               line.Contains("SHA-1", StringComparison.OrdinalIgnoreCase) ||
+                               line.Contains("compress", StringComparison.OrdinalIgnoreCase) ||
+                               line.Contains("size", StringComparison.OrdinalIgnoreCase) ||
+                               line.Contains("CHGD", StringComparison.OrdinalIgnoreCase) ||
+                               line.Contains("CHGT", StringComparison.OrdinalIgnoreCase))
+                .Take(12).ToArray();
+            foreach (var line in summary)
+                Log("GD-ROM INFO: " + line);
+            await ExecuteAsync(chdman, new[] { "verify", "-i", job.Source },
+                               token, job, "Verificando integridad del CHD");
+            Log("GD-ROM verificado, original intacto: " + job.DisplayName);
+            return 1;
+        }
+
         private static string NewStageFolder(string target)
         {
             var stage = Path.Combine(target, ".lnr_stage_" + Guid.NewGuid().ToString("N"));
