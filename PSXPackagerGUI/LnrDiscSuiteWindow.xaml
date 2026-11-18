@@ -55,7 +55,7 @@
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
         </Style>
         <DataTemplate x:Key="LnrSuiteNameCell">
-            <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}" TextTrimming="CharacterEllipsis"
+            <TextBlock Text="{Binding DisplayName}" ToolTip="{Binding DisplayName}" TextTrimming="CharacterEllipsis"
                        HorizontalAlignment="Left" TextAlignment="Left" VerticalAlignment="Center"/>
         </DataTemplate>
         <DataTemplate x:Key="LnrSuiteSizeCell">
