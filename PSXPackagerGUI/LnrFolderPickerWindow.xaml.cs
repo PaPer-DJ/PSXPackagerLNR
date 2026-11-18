@@ -20,13 +20,28 @@ namespace PSXPackagerGUI
         private string _currentFolder = "";
         private int _chdCount;
         private List<GamePreview> _directChds = new();
+        private readonly string _sourceExtension;
+        private readonly string[] _excludedFolders;
+        private string SourceKind => _sourceExtension.TrimStart('.').ToUpperInvariant();
 
         public string SelectedFolder { get; private set; } = "";
         public bool SelectedIncludeSubfolders { get; private set; }
 
-        public LnrFolderPickerWindow(string initialFolder, bool includeSubfolders = false)
+        public LnrFolderPickerWindow(string initialFolder, bool includeSubfolders = false,
+                                      string sourceExtension = ".chd",
+                                      string[] excludedFolders = null)
         {
+            if (sourceExtension != ".chd" && sourceExtension != ".pbp")
+                throw new ArgumentException("Solo se admiten carpetas CHD o PBP.", nameof(sourceExtension));
+            _sourceExtension = sourceExtension;
+            _excludedFolders = excludedFolders ?? Array.Empty<string>();
             InitializeComponent();
+            HeaderTitle.Text = "Selecciona la carpeta que contiene tus " + SourceKind;
+            HeaderDescription.Text = "Navega por carpetas y examina los archivos " + SourceKind +
+                " antes de confirmar. Puedes utilizar las flechas, Enter y Retroceso.";
+            Title = "Seleccionar carpeta de archivos " + SourceKind + " · PSXPackagerLNR";
+            if (GameList.View is GridView grid && grid.Columns.Count > 0)
+                grid.Columns[0].Header = "Archivo ." + SourceKind;
             IncludeSubfoldersCheck.IsChecked = includeSubfolders;
             var start = Directory.Exists(initialFolder)
                 ? initialFolder
@@ -57,7 +72,7 @@ namespace PSXPackagerGUI
                 var chds = new List<GamePreview>();
                 foreach (var file in Directory.EnumerateFiles(folder))
                 {
-                    if (!Path.GetExtension(file).Equals(".chd", StringComparison.OrdinalIgnoreCase))
+                    if (!Path.GetExtension(file).Equals(_sourceExtension, StringComparison.OrdinalIgnoreCase))
                         continue;
                     try
                     {
@@ -131,9 +146,13 @@ namespace PSXPackagerGUI
                     const int previewLimit = 1500;
                     var previews = new List<GamePreview>();
                     count = 0;
-                    foreach (var subfolder in LnrChdFolderScanner.EnumerateFolders(_currentFolder, true))
+                    foreach (var subfolder in LnrChdFolderScanner.EnumerateFolders(
+                                 _currentFolder, true, null, _excludedFolders))
                     {
-                        foreach (var path in LnrChdFolderScanner.FindChds(subfolder))
+                        var paths = _sourceExtension == ".chd"
+                            ? LnrChdFolderScanner.FindChds(subfolder)
+                            : LnrChdFolderScanner.FindFiles(subfolder, _sourceExtension);
+                        foreach (var path in paths)
                         {
                             count++;
                             if (previews.Count >= previewLimit)
@@ -164,20 +183,20 @@ namespace PSXPackagerGUI
                 return;
             }
             GamesHeading.Text = recursive
-                ? "Juegos CHD de esta carpeta y subcarpetas"
-                : "Juegos CHD de esta carpeta";
+                ? "Archivos " + SourceKind + " de esta carpeta y subcarpetas"
+                : "Archivos " + SourceKind + " de esta carpeta";
             SelectButton.IsEnabled = count > 0;
             ScopeDescription.Text = recursive
-                ? "Se analizarán los CHD de esta carpeta y sus subcarpetas."
-                : "Se analizarán todos los archivos CHD de esta carpeta, sin entrar en subcarpetas.";
+                ? "Se analizarán los " + SourceKind + " de esta carpeta y sus subcarpetas."
+                : "Se analizarán todos los archivos " + SourceKind + " de esta carpeta, sin subcarpetas.";
             StatusLabel.Text = count == 0
                 ? (recursive
-                   ? "No hay CHD en esta carpeta ni en sus subcarpetas accesibles."
-                   : "No hay CHD directamente aquí. Entra en otra carpeta o marca «También subcarpetas».")
+                   ? "No hay archivos " + SourceKind + " en esta carpeta ni en sus subcarpetas accesibles."
+                   : "No hay archivos " + SourceKind + " directamente aquí. Entra en otra carpeta o marca «También subcarpetas».")
                 : recursive
-                    ? $"{count} CHD en esta carpeta y subcarpetas (sin PBP ni enlaces). Pulsa «Usar esta carpeta»." +
+                    ? $"{count} archivos {SourceKind} en esta carpeta y subcarpetas (sin carpetas de salida ni enlaces)." +
                       (previewTruncated ? " La lista muestra solo los primeros 1.500." : "")
-                    : $"{count} juego(s) CHD disponibles en esta carpeta. Pulsa «Usar esta carpeta» para continuar.";
+                    : $"{count} archivo(s) {SourceKind} disponibles en esta carpeta. Pulsa «Usar esta carpeta» para continuar.";
         }
 
         private void IncludeSubfolders_OnChanged(object sender, RoutedEventArgs e)
@@ -273,7 +292,7 @@ namespace PSXPackagerGUI
         {
             var dialog = new OpenFolderDialog
             {
-                Title = "Busca una carpeta con juegos CHD (después podrás ver la lista)",
+                Title = "Busca una carpeta con archivos " + SourceKind + " (después podrás ver la lista)",
                 InitialDirectory = _currentFolder
             };
             if (dialog.ShowDialog(this) == true) Navigate(dialog.FolderName);
@@ -283,7 +302,7 @@ namespace PSXPackagerGUI
         {
             if (SelectButton.IsEnabled != true || !Directory.Exists(_currentFolder))
             {
-                StatusLabel.Text = "Selecciona primero una carpeta que contenga archivos CHD.";
+                StatusLabel.Text = "Selecciona primero una carpeta que contenga archivos " + SourceKind + ".";
                 return;
             }
             SelectedFolder = _currentFolder;
