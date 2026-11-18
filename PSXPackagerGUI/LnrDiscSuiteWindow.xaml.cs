@@ -526,7 +526,7 @@ namespace PSXPackagerGUI
 
         private void Help_OnClick(object sender, RoutedEventArgs e)
         {
-            new LnrHelpWindow { Owner = this }.ShowDialog();
+            new LnrSuiteHelpWindow { Owner = this }.ShowDialog();
         }
 
         private IReadOnlyList<string> OutputTargets(DiscJob job, string root)
