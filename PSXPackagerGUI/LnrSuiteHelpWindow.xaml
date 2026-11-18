@@ -20,11 +20,11 @@
             <StackPanel Margin="2,0,16,0">
                 <TextBlock Text="1. Elige un modo adecuado para el disco"
                            FontWeight="SemiBold" FontSize="16" Margin="0,0,0,7"/>
-                <TextBlock Text="PBP → CHD: reconstruye un CHD por disco PS1 con CHDMAN y verificación.&#10;PBP → BIN/CUE: extrae los discos y pistas disponibles, sin CHDMAN.&#10;PBP → ISO [ No Recomendado ]: SOLO un disco y una pista de datos MODE1. Analizar marca los PBP MODE2/audio/multidisco como ERROR y los omite; la extracción verifica todos los sectores. Para PS1 se recomienda BIN/CUE.&#10;CHD → BIN/CUE: para CDs PS1, Saturn y PS2 CD (requiere CHDMAN).&#10;CHD → ISO: para DVD PS2 (requiere CHDMAN)."
+                <TextBlock Text="PBP → CHD: reconstruye un CHD por disco PS1 con CHDMAN y verificación.&#10;PBP → BIN/CUE: extrae los discos y pistas disponibles, sin CHDMAN.&#10;PBP → ISO [ No Recomendado ]: SOLO un disco y una pista de datos MODE1. Analizar marca los PBP MODE2/audio/multidisco como ERROR y los omite; la extracción verifica todos los sectores. Para PS1 se recomienda BIN/CUE.&#10;CHD → BIN/CUE: para CDs PS1, Saturn y PS2 CD (requiere CHDMAN).&#10;CHD → ISO: para DVD PS2 (requiere CHDMAN).&#10;Dreamcast GDI → CHD: valida el GDI y todas sus pistas, comprime y verifica el CHD con CHDMAN.&#10;Dreamcast CHD → GDI: solo CHD con metadatos GD-ROM CHGD/CHGT; reconstruye GDI y todas las pistas en una carpeta.&#10;Dreamcast · Verificar CHD: info y verify de solo lectura, sin crear archivos ni modificar el original."
                            TextWrapping="Wrap" LineHeight="22"/>
                 <TextBlock Text="2. Selecciona la carpeta y revisa los archivos"
                            FontWeight="SemiBold" FontSize="16" Margin="0,17,0,7"/>
-                <TextBlock Text="«Ver carpetas…» abre el explorador para PBP o CHD. Navega con ↑/↓ y Enter, Atrás o Retroceso. Al volver, la carpeta anterior queda seleccionada. Marca «También subcarpetas» para buscar recursivamente. Se excluyen los directorios de salida y los enlaces de carpetas; las rutas originales se reproducen dentro de CHD, BIN_CUE o ISO."
+                <TextBlock Text="«Ver carpetas…» abre el explorador para PBP, CHD o GDI. Navega con ↑/↓ y Enter, Atrás o Retroceso. Al volver, la carpeta anterior queda seleccionada. Marca «También subcarpetas» para buscar recursivamente. Se excluyen los directorios de salida y los enlaces de carpetas; las rutas originales se reproducen dentro de CHD, BIN_CUE, ISO o GDI."
                            TextWrapping="Wrap" LineHeight="22"/>
                 <TextBlock Text="3. Conversiones simultáneas"
                            FontWeight="SemiBold" FontSize="16" Margin="0,17,0,7"/>
@@ -40,7 +40,7 @@
                            TextWrapping="Wrap" LineHeight="22"/>
                 <TextBlock Text="6. Resultados, tamaños y apagado"
                            FontWeight="SemiBold" FontSize="16" Margin="0,17,0,7"/>
-                <TextBlock Text="La tabla muestra tamaños, variación, duración, número de archivos, fase y progreso. La ETA es aproximada. En PBP → ISO la variación no representa un ahorro de compresión porque pueden faltar datos del CD. Los originales SIEMPRE se conservan; no hay borrado de origen en la Suite. El apagado es opcional, necesita confirmación y dispone de 60 segundos para cancelarlo."
+                <TextBlock Text="La tabla muestra tamaños, variación, duración, número de archivos, fase y progreso. La ETA es aproximada. En PBP → ISO la variación no representa un ahorro de compresión porque pueden faltar datos del CD. Los originales SIEMPRE se conservan; no hay borrado de origen en la Suite. El apagado es opcional, necesita confirmación y dispone de 60 segundos para cancelarlo (nunca se usa en «Verificar GD-ROM»)."
                            TextWrapping="Wrap" LineHeight="22"/>
                 <TextBlock Text="Recuerda: CHD → PBP directo no requiere CHDMAN; las operaciones de esta Suite que crean o extraen CHD sí pueden necesitar un CHDMAN legítimo de MAME. La importación desde ZIP no verifica por sí sola su autenticidad."
                            Margin="0,18,0,8" TextWrapping="Wrap" FontWeight="SemiBold"
