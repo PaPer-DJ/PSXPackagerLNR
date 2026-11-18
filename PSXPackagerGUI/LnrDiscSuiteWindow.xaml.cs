@@ -1127,14 +1127,13 @@ namespace PSXPackagerGUI
 
                 // Every CHD must be validated before publishing ANY file.
                 token.ThrowIfCancellationRequested();
-                if (!LnrSuiteDiscNaming.PublishChdGroup(stage, dest, names))
+                if (!LnrSuiteDiscNaming.PublishChdGroup(stage, dest, names,
+                                                          VerifyChdHeader))
                 {
                     Log("SALTADO: apareció un CHD del grupo durante la conversión. " +
                         "No se publicó ningún disco nuevo.");
                     return 0;
                 }
-                foreach (var name in names)
-                    VerifyChdHeader(Path.Combine(dest, name));
                 Log("OK: " + names.Count + " CHD publicado(s) con numeración Disc N.");
                 return names.Count;
             }
