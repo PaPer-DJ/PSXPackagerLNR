@@ -821,8 +821,10 @@ namespace PSXPackagerGUI
                     : Mode == 1
                     ? "PBP → BIN/CUE renombra todos los discos y actualiza sus referencias CUE."
                     : Mode == 2
-                    ? "ISO solo admite un PBP con un CD de datos compatible y SIN múltiples discos. " +
-                      "Para preservar CD-Audio o pistas XA utiliza BIN/CUE."
+                    ? "MODO [ NO RECOMENDADO ]. SOLO un disco y una pista CD de datos MODE1. " +
+                      "Los PBP MODE2, audio, multidisco o no compatibles se marcan como ERROR " +
+                      "en el análisis y no se convierten; el resto del lote continúa. " +
+                      "Se verifica cada sector al exportar. Para preservar un juego PS1 utiliza BIN/CUE."
                     : "Comprueba que has escogido el tipo de soporte correcto (CD o DVD).") +
                 "\n\n¿Iniciar el lote?";
             if (MessageBox.Show(this, confirmation, "Confirmar lote de la suite",
