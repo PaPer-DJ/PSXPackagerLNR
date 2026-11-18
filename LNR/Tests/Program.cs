@@ -10,7 +10,11 @@ Directory.CreateDirectory(root);
 try
 {
     await TestMode1Async();
-    await TestMode2Form1Async();
+    await TestMode2Form1RejectedAsync();
+    TestPreflightMode1();
+    TestPreflightRejectsMode2();
+    TestPreflightRejectsMixedSectors();
+    TestPreflightRejectsMultiTrack();
     await ExpectRejectionAsync("AUDIO", 1, 0);
     await ExpectRejectionAsync("MODE2/2352", 2, 0x20);
     await TestMultipleTracksRejectedAsync();
@@ -25,7 +29,7 @@ try
         LnrShutdownPolicy.MayShutdown(true, true, false, 0, 1, 3) ||
         LnrShutdownPolicy.MayShutdown(true, true, false, 0, 0, 0))
         throw new Exception("Unsafe automatic shutdown gate detected.");
-    Console.WriteLine("LNR ISO smoke tests: 5 checks passed.");
+    Console.WriteLine("LNR ISO smoke tests: MODE1-only export, MODE2/audio/multitrack rejection, and MODE1 preflight passed.");
     Console.WriteLine("LNR shutdown policy: 7 safety conditions passed.");
 }
 finally
@@ -44,15 +48,57 @@ async Task TestMode1Async()
         throw new Exception("Mode1 ISO payload mismatch");
 }
 
-async Task TestMode2Form1Async()
+async Task TestMode2Form1RejectedAsync()
 {
-    var files = MakeDisc("mode2", "MODE2/2352", 2, 0);
-    var iso = Path.Combine(root, "mode2.iso");
-    var sectors = await LnrDataTrackIsoExporter.ExportAsync(files.cue, iso, CancellationToken.None);
-    if (sectors != 20 || new FileInfo(iso).Length != 20L * 2048) throw new Exception("Mode2 ISO size invalid");
-    var bytes = File.ReadAllBytes(iso);
-    if (bytes[0] != 0 || bytes[2048] != 1 || bytes[19 * 2048] != 19)
-        throw new Exception("Mode2 ISO payload mismatch");
+    // MODE2/Form1 was technically exportable in older experimental Suite
+    // versions. Beta.32 deliberately rejects it under the strict MODE1-only
+    // user-facing policy so it cannot be silently converted by mistake.
+    await ExpectRejectionAsync("MODE2/2352", 2, 0);
+}
+
+void TestPreflightMode1()
+{
+    var data = File.ReadAllBytes(MakeDisc("preflight1", "MODE1/2352", 1, 0).bin);
+    using var raw = new MemoryStream(data);
+    LnrDataTrackIsoExporter.CheckPbpMode1Preflight(raw, true);
+}
+
+void TestPreflightRejectsMode2()
+{
+    var data = File.ReadAllBytes(MakeDisc("preflight2", "MODE2/2352", 2, 0).bin);
+    using var raw = new MemoryStream(data);
+    ExpectPreflightRejection(raw, true, "MODE2");
+}
+
+void TestPreflightRejectsMixedSectors()
+{
+    var data = File.ReadAllBytes(MakeDisc("mixed", "MODE1/2352", 1, 0).bin);
+    // A late incompatible sector must reject the disc at Analyze when
+    // sampled. Every sector is still checked during the actual export.
+    data[15 * 2352 + 15] = 2;
+    using var raw = new MemoryStream(data);
+    ExpectPreflightRejection(raw, true, "MODE2");
+}
+
+void TestPreflightRejectsMultiTrack()
+{
+    var data = File.ReadAllBytes(MakeDisc("multi", "MODE1/2352", 1, 0).bin);
+    using var raw = new MemoryStream(data);
+    ExpectPreflightRejection(raw, false, "pista");
+}
+
+void ExpectPreflightRejection(Stream stream, bool singleDataTrack, string expected)
+{
+    try
+    {
+        LnrDataTrackIsoExporter.CheckPbpMode1Preflight(stream, singleDataTrack);
+    }
+    catch (InvalidDataException ex) when (ex.Message.Contains(expected,
+            StringComparison.OrdinalIgnoreCase))
+    {
+        return;
+    }
+    throw new Exception("MODE1-only preflight did not reject " + expected);
 }
 
 async Task ExpectRejectionAsync(string cueMode, byte rawMode, byte submode)
