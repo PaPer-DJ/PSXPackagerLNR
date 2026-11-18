@@ -37,13 +37,13 @@ de los autores originales.
   irreversible y con doble confirmación**, solo después de validar
   básicamente los PBP nuevos. Por defecto todos los originales se conservan.
 - Ofrecer herramientas de conversión por lotes para **otros soportes**:
-  CD de **Sega Saturn**, CD de **PS2** y DVD de **PS2**, además de PS1
+  CD de **Sega Saturn**, CD de **PS2**, DVD de **PS2** y **GD-ROM de Dreamcast**, además de PS1
   (detalladas abajo). La Suite depende de CHDMAN en los modos indicados;
   no se debe confundir con crear PBP para Saturn o PS2.
 
-**[Descargar PSXPackagerLNR v0.1.0-beta.31](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.31)** — beta pública para Windows x64, portátil sin instalación.
+**[Descargar PSXPackagerLNR v1.0.0](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v1.0.0)** — primera versión estable del fork para Windows x64, portátil y autocontenida.
 
-Versiones anteriores: [beta.30](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.30) · [beta.29](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.29).
+Versiones anteriores: [beta.31](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.31) · [beta.30](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.30) · [beta.29](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.29).
 
 ## PSXPackagerLNR en funcionamiento: procesamiento real por lotes
 
@@ -63,9 +63,9 @@ Los selectores de **Multidisco**, **Compresión** y **Conversiones simultáneas*
 
 **Estado:** beta.30 validada por el autor en Windows con build 513 antes de la publicación pública. Se mantiene .NET 8 autocontenido, el acceso directo aprobado y el nivel de compresión 3. La beta.29 publicada permanece sin cambios.
 
-## Beta.32 en desarrollo — Suite de discos ampliada
+## v1.0.0 — Suite de Discos ampliada, CLI LNR y Dreamcast
 
-La **Suite de discos** incorpora en la rama de desarrollo las mejoras del
+La **Suite de discos** incorpora las mejoras del
 conversor CHD → PBP principal: **1, 2, 3, 4, 6, 8 o Auto conversiones
 simultáneas**, **pausa segura entre archivos**, **reanudación**, cancelación
 de todos los procesos activos, progreso por archivo/fase, tamaños de entrada
@@ -94,9 +94,32 @@ PBP MODE2/audio/multidisco como incompatibles; la extracción vuelve
 a verificar todos los sectores.
 La Suite **nunca borra originales** y no redistribuye CHDMAN.
 
-**Estado: beta.32 de desarrollo.** Estas funciones requieren las pruebas de
-Windows y la validación del autor antes de publicación. La última descarga
-pública sigue siendo la **[beta.31](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.31)**.
+**Dreamcast (GD-ROM):** la Suite ofrece dos conversiones adicionales
+**GDI → CHD** y **CHD → GDI**. El primer modo revisa el descriptor GDI y
+sus pistas, comprime con CHDMAN y verifica el CHD generado. El segundo
+exige metadatos de GD-ROM (CHGD/CHGT), reconstruye el GDI y sus pistas
+en una carpeta independiente y valida sus referencias antes de publicar.
+Dispone además de un modo **Verificar CHD GD-ROM**, de solo lectura,
+que muestra información del CHD y ejecuta `chdman verify` sin modificarlo.
+No convierte CDI ni garantiza reconstrucción bit a bit de un volcado
+GD-ROM preexistente. Los modos Dreamcast requieren CHDMAN aportado por
+el usuario y **deben validarse con juegos reales** antes de confiar en
+ellos para tareas de preservación.
+
+**Toolkit:** modo multidisco `1 - SEPARADOS` marcado **[RECOMENDADO]**;
+la opción Unir (M3U) sigue disponible.
+
+**CLI LNR:** el ZIP incluye `LEEME-CLI-LNR.txt`, con las diferencias del
+fork respecto al CLI original: compresión predeterminada 3, progreso
+con salida redirigida y empaquetado Windows autocontenido. El
+paralelismo y la pausa son funciones de la GUI/Toolkit, no del ejecutable
+CLI internamente.
+
+**v1.0.0 es una release normal, no una beta**, basada en las funcionalidades
+estables de PSXPackagerLNR. El soporte Dreamcast se ofrece como
+ampliación que requiere pruebas con imágenes reales; no se garantiza
+fidelidad de datos ausentes en el origen. Todas las versiones anteriores
+siguen disponibles.
 
 ## Beta.31 — Toolkit paralelo y explorador de carpetas mejorado
 
@@ -120,9 +143,9 @@ No se instala nada ni se utiliza un ejecutable lanzador adicional. **Conserva ju
 
 ## Versionado y descargas identificables
 
-La última versión pública es **v0.1.0-beta.31** (pre-release); las betas **.30** y **.29** siguen disponibles. Su número se define en [LNR/VERSION](LNR/VERSION) y sus novedades se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
+La última versión pública es **v1.0.0** (estable del fork); las betas **.31**, **.30** y **.29** siguen disponibles. Su número se define en [LNR/VERSION](LNR/VERSION) y sus novedades se documentan en [CHANGELOG-LNR.md](CHANGELOG-LNR.md).
 
-Cada compilación de GitHub Actions añade un número de ejecución único, por ejemplo `PSXPackagerLNR-v0.1.0-beta.31-bNN-GUI-win-x64.zip`. También se generan los paquetes de CLI y Toolkit.
+Cada compilación de GitHub Actions añade un número de ejecución único, por ejemplo `PSXPackagerLNR-v1.0.0-bNN-GUI-win-x64.zip`. También se generan los paquetes de CLI y Toolkit.
 
 - [Descargas de pruebas (Actions)](https://github.com/PaPer-DJ/PSXPackagerLNR/actions).
 - Las compilaciones de Actions son temporales y pueden caducar a los 30 días; conserva las que necesites.
@@ -325,7 +348,7 @@ conserva una copia de los CHD por separado.
 
 [Manual completo en castellano y explicación de todas las opciones](LNR/GUI-AYUDA.md).
 
-### Suite de discos (beta experimental)
+### Suite de discos — PS1, Saturn, PS2 y Dreamcast
 
 Desde el menú **Suite de discos · PBP/CHD/CD/DVD** también puedes
 realizar conversiones por lotes:
@@ -347,6 +370,12 @@ realizar conversiones por lotes:
   Dirigido a PS1, Saturn y PS2 publicado en CD.
 - **CHD → ISO (DVD)**: para juegos PS2 publicados en DVD; no se deben
   convertir indiscriminadamente discos DVD a un BIN/CUE de CD.
+- **GDI → CHD (Dreamcast)**: lee el descriptor y sus pistas, valida
+  archivos y rutas, crea el CHD y lo verifica mediante CHDMAN.
+- **CHD → GDI (Dreamcast)**: solo si hay metadatos GD-ROM; recupera
+  descriptor y pistas en su propia carpeta, validando antes de publicar.
+- **Verificar GD-ROM (Dreamcast)**: análisis e integridad CHD sin
+  conversiones ni modificaciones del archivo original.
 
 **Importante:** los modos **PBP→CHD, CHD→BIN/CUE y CHD→ISO**
 requieren `chdman.exe` de MAME. **PBP→BIN/CUE y PBP→ISO limitado
@@ -367,7 +396,7 @@ cualquier resultado correcto producido antes de un error.
 PBP multidisco a CHD y CHD de DVD PS2 a ISO. No asegura recuperación
 de información de subcanales perdida en un PBP preexistente.
 
-## Estado de desarrollo
+## Contexto técnico del proyecto
 
 Estamos validando la conversion directa **CHD a PBP sin CHDMAN**, incluida
 la gestion de pistas de audio CD y archivos multidisco. La version de pruebas
