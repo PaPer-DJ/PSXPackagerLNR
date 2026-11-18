@@ -29,7 +29,8 @@ namespace PSXPackagerGUI
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         public static async Task<long> ExportAsync(
-            string cuePath, string destinationIso, CancellationToken cancellationToken)
+            string cuePath, string destinationIso, CancellationToken cancellationToken,
+            IProgress<double> progress = null)
         {
             var fileName = "";
             var mode = "";
@@ -109,9 +110,12 @@ namespace PSXPackagerGUI
                                                      FileShare.None, 128 * 1024, useAsync: true);
             var sector = new byte[sectorSize];
             long sectors = input.Length / sectorSize;
+            var reportEvery = Math.Max(1L, sectors / 100);
             for (long i = 0; i < sectors; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                if (i % reportEvery == 0)
+                    progress?.Report(100.0 * i / sectors);
                 await input.ReadExactlyAsync(sector.AsMemory(), cancellationToken);
                 var offset = 0;
                 if (raw)
@@ -146,6 +150,7 @@ namespace PSXPackagerGUI
                 await output.WriteAsync(sector.AsMemory(offset, UserDataSize), cancellationToken);
             }
             await output.FlushAsync(cancellationToken);
+            progress?.Report(100.0);
             return sectors;
         }
     }
