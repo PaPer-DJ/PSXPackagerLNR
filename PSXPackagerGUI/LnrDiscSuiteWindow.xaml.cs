@@ -592,10 +592,11 @@ namespace PSXPackagerGUI
                                     if (Mode == 2 && discs != 1)
                                         job.PlanError = "ISO no admite PBP multidisco: usa BIN/CUE.";
                                 }
-                                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
-                                                           or InvalidDataException or ArgumentException
-                                                           or InvalidOperationException or Exception)
+                                catch (Exception ex)
                                 {
+                                    // A corrupt or unsupported PBP is rejected as
+                                    // one failed job, never as a failure of the
+                                    // entire folder scan or another valid game.
                                     job.PlanError = "No se pudieron leer los discos del PBP: " + ex.Message;
                                 }
                             }
