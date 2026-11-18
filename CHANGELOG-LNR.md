@@ -2,6 +2,8 @@
 
 ## v0.1.0-beta.32 — EN DESARROLLO (Suite de discos)
 
+- **PBP → ISO [ No Recomendado ]**: aviso explícito en el selector, en la confirmación y en la ayuda. **Analizar** inspecciona la tabla interna de pistas del PBP y muestras de sectores descomprimidos; si detecta multidisco, audio, MODE2 o sectores no MODE1, marca **ERROR por juego** y lo omite sin impedir otras conversiones. El exportador ISO ahora exige **MODE1** en todos los sectores, no acepta MODE2 Form1 y descarta resultados provisionales no compatibles. Las pruebas sintéticas cubren el rechazo temprano y la verificación exhaustiva.
+
 - **Interfaz refinada:** eliminada la casilla duplicada «También subcarpetas» de la ventana principal de la Suite; se elige exclusivamente desde «Ver carpetas…». Se conserva la selección, su persistencia y el análisis recursivo; la ruta de origen gana espacio horizontal.
 
 ### Concurrencia y controles del motor de la Suite
