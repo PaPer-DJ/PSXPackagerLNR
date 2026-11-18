@@ -143,7 +143,8 @@
                       SelectionChanged="Mode_OnChanged">
                 <ComboBoxItem Content="PBP → CHD (PS1, un CHD por disco)" Tag="PBP2CHD"/>
                 <ComboBoxItem Content="PBP → BIN/CUE (PS1, conserva pistas)" Tag="PBP2CUE"/>
-                <ComboBoxItem Content="PBP → ISO (PS1, SOLO CD de datos MODE1)" Tag="PBP2ISO"/>
+                <ComboBoxItem Content="PBP → ISO (PS1, SOLO CD de datos MODE1) [ No Recomendado ]" Tag="PBP2ISO"
+                              ToolTip="Solo un disco y una pista de datos MODE1. El análisis marca incompatibles y los omite. ISO no conserva el CD original completo; para PS1 se recomienda BIN/CUE."/>
                 <ComboBoxItem Content="CHD → BIN/CUE (CD: PS1, Saturn y PS2 CD)" Tag="CHD2CUE"/>
                 <ComboBoxItem Content="CHD → ISO (DVD: PS2 DVD)" Tag="CHD2ISO"/>
             </ComboBox>
