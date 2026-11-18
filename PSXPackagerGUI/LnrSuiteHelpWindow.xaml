@@ -1,0 +1,54 @@
+<Window x:Class="PSXPackagerGUI.LnrSuiteHelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ayuda · Suite de discos · PSXPackagerLNR"
+        Width="830" Height="720" MinWidth="700" MinHeight="520"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="#FFF8FAFC">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel Margin="0,0,0,14">
+            <TextBlock Text="Suite de discos · Guía de uso" FontSize="22" FontWeight="SemiBold"/>
+            <TextBlock Text="Conversión por lotes PBP / CHD / BIN+CUE / ISO"
+                       Margin="0,6,0,0" Foreground="#FF536479" FontSize="13"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="2,0,16,0">
+                <TextBlock Text="1. Elige un modo adecuado para el disco"
+                           FontWeight="SemiBold" FontSize="16" Margin="0,0,0,7"/>
+                <TextBlock Text="PBP → CHD: reconstruye un CHD por disco PS1 con CHDMAN y verificación.&#10;PBP → BIN/CUE: extrae los discos y pistas disponibles, sin CHDMAN.&#10;PBP → ISO: SOLO CD de datos, un disco y una pista compatible; no preserva audio/XA Form 2.&#10;CHD → BIN/CUE: para CDs PS1, Saturn y PS2 CD (requiere CHDMAN).&#10;CHD → ISO: para DVD PS2 (requiere CHDMAN)."
+                           TextWrapping="Wrap" LineHeight="22"/>
+                <TextBlock Text="2. Selecciona la carpeta y revisa los archivos"
+                           FontWeight="SemiBold" FontSize="16" Margin="0,17,0,7"/>
+                <TextBlock Text="«Ver carpetas…» abre el explorador para PBP o CHD. Navega con ↑/↓ y Enter, Atrás o Retroceso. Al volver, la carpeta anterior queda seleccionada. Marca «También subcarpetas» para buscar recursivamente. Se excluyen los directorios de salida y los enlaces de carpetas; las rutas originales se reproducen dentro de CHD, BIN_CUE o ISO."
+                           TextWrapping="Wrap" LineHeight="22"/>
+                <TextBlock Text="3. Conversiones simultáneas"
+                           FontWeight="SemiBold" FontSize="16" Margin="0,17,0,7"/>
+                <TextBlock Text="Elige 1, 2, 3, 4, 6, 8 o Auto. Se convierten varios archivos de origen al mismo tiempo, cada uno con su propio proceso y carpeta temporal. Un PBP multidisco es una sola tarea. 4/8 para HDD/SSD son orientaciones, no velocidades garantizadas. Los modos que usan CHDMAN pueden requerir más espacio y recursos."
+                           TextWrapping="Wrap" LineHeight="22"/>
+                <TextBlock Text="4. Pausa segura y cancelación"
+                           FontWeight="SemiBold" FontSize="16" Margin="0,17,0,7"/>
+                <TextBlock Text="El botón Convertir se convierte en Pausar, luego en Pausando… hasta terminar TODOS los archivos y discos activos. Solo entonces muestra Reanudar. Cancelar es diferente: detiene los procesos en curso y limpia sus temporales; conserva los originales y los trabajos completos. La barra por archivo muestra porcentajes reales cuando el motor los ofrece, o actividad sin porcentaje si no dispone de ellos."
+                           TextWrapping="Wrap" LineHeight="22"/>
+                <TextBlock Text="5. Nombres de discos y seguridad"
+                           FontWeight="SemiBold" FontSize="16" Margin="0,17,0,7"/>
+                <TextBlock Text="Si un PBP contiene varios discos, PBP → CHD genera Juego (Disc 1).chd, Juego (Disc 2).chd… con numeración auténtica. PBP → BIN/CUE aplica los mismos sufijos y reescribe las referencias CUE. Los grupos completos se verifican antes de publicarlos. Un PBP de un disco conserva su nombre original. Los archivos de destino existentes nunca se sobrescriben."
+                           TextWrapping="Wrap" LineHeight="22"/>
+                <TextBlock Text="6. Resultados, tamaños y apagado"
+                           FontWeight="SemiBold" FontSize="16" Margin="0,17,0,7"/>
+                <TextBlock Text="La tabla muestra tamaños, variación, duración, número de archivos, fase y progreso. La ETA es aproximada. En PBP → ISO la variación no representa un ahorro de compresión porque pueden faltar datos del CD. Los originales SIEMPRE se conservan; no hay borrado de origen en la Suite. El apagado es opcional, necesita confirmación y dispone de 60 segundos para cancelarlo."
+                           TextWrapping="Wrap" LineHeight="22"/>
+                <TextBlock Text="Recuerda: CHD → PBP directo no requiere CHDMAN; las operaciones de esta Suite que crean o extraen CHD sí pueden necesitar un CHDMAN legítimo de MAME. La importación desde ZIP no verifica por sí sola su autenticidad."
+                           Margin="0,18,0,8" TextWrapping="Wrap" FontWeight="SemiBold"
+                           Foreground="#FF526278"/>
+            </StackPanel>
+        </ScrollViewer>
+        <Button Grid.Row="2" Content="Cerrar" HorizontalAlignment="Right"
+                Width="110" Padding="9,6" Margin="0,12,0,0"
+                Click="Close_OnClick" IsDefault="True"/>
+    </Grid>
+</Window>
