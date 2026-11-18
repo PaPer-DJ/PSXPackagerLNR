@@ -471,6 +471,8 @@ jobs:
               -not $suite.Contains('if (job.PlanError != null)') -or
               -not $suite.Contains('NO SE PROCESARÁ:') -or
               -not $suite.Contains('ISO no compatible:') -or
+              -not $suite.Contains('StatusBrush => Status == "ERROR"') -or
+              -not $xaml.Contains('Foreground="{Binding StatusBrush}"') -or
               -not $iso.Contains('CheckPbpMode1Preflight(') -or
               -not $iso.Contains('mode != "MODE1/2352" && mode != "MODE1/2048"') -or
               $iso.Contains('mode == "MODE2/2352"')) {
