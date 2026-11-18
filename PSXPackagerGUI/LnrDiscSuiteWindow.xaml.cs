@@ -120,7 +120,7 @@ namespace PSXPackagerGUI
             : ParallelSetting;
 
         private static readonly string[] ExcludedSuiteFolders =
-            { "PBP", "CHD", "BIN_CUE", "ISO", "LOGS", "_TEMP", ".tools" };
+            { "PBP", "CHD", "BIN_CUE", "ISO", "GDI", "CHD_RECOMPRIMIDO", "LOGS", "_TEMP", ".tools" };
 
         private void SavePreferences()
         {
@@ -145,15 +145,21 @@ namespace PSXPackagerGUI
                 Log("AVISO: no se pudieron guardar las preferencias de la Suite: " + ex.Message);
             }
         }
-        private string SourceExtension => Mode <= 2 ? ".pbp" : ".chd";
+        private string SourceExtension => Mode <= 2 ? ".pbp" :
+                                              Mode == 5 ? ".gdi" : ".chd";
         private bool NeedsChdman => Mode == 0 || Mode >= 3;
+        private bool IsDreamcastVerify => Mode == 7;
         private string OutputSubdirectory => Mode switch
         {
             0 => "CHD",
             1 => "BIN_CUE",
             2 => "ISO",
             3 => "BIN_CUE",
-            _ => "ISO"
+            4 => "ISO",
+            5 => "CHD",
+            6 => "GDI",
+            7 => "",
+            _ => throw new InvalidOperationException("Modo de Suite no válido.")
         };
 
         private void Log(string message)
@@ -532,7 +538,11 @@ namespace PSXPackagerGUI
                 1 => new[] { Path.Combine(dest, baseName) },
                 2 => new[] { Path.Combine(dest, baseName + ".iso") },
                 3 => new[] { Path.Combine(dest, baseName) },
-                _ => new[] { Path.Combine(dest, baseName + ".iso") }
+                4 => new[] { Path.Combine(dest, baseName + ".iso") },
+                5 => new[] { Path.Combine(dest, baseName + ".chd") },
+                6 => new[] { Path.Combine(dest, baseName) },
+                7 => Array.Empty<string>(),
+                _ => throw new InvalidOperationException("Modo de Suite no válido.")
             };
         }
 
