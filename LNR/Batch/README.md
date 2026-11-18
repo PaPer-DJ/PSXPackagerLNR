@@ -7,7 +7,7 @@ no se atribuye la creacion de PSXPackager.
 
 ## Instalacion portable
 
-Descarga el ZIP **Toolkit-win-x64** de la [beta.31 pública](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v0.1.0-beta.31) y extráelo directamente en una carpeta que contenga tus archivos CHD. No requiere instalación ni CHDMAN para CHD → PBP.
+Descarga el ZIP **Toolkit-win-x64** de la [v1.0.0 estable](https://github.com/PaPer-DJ/PSXPackagerLNR/releases/tag/v1.0.0) y extráelo directamente en una carpeta que contenga tus archivos CHD. No requiere instalación ni CHDMAN para CHD → PBP.
 
     C:\roms\psx\
       LNR_CHD_A_PBP.bat          <- Lanzar aqui
@@ -36,7 +36,7 @@ Descarga el ZIP **Toolkit-win-x64** de la [beta.31 pública](https://github.com/
 
 ## Opciones del menu
 
-- 1 - Discos separados: cada CHD -> un PBP con identico nombre base.
+- 1 - **Discos separados [RECOMENDADO]**: cada CHD -> un PBP con identico nombre base.
   Por ejemplo: Juego - CD2.chd -> Juego - CD2.pbp.
 - 2 - Discos unidos: prioridad a M3U existentes, respetando su orden.
   Si no existen, intenta agrupar nombres terminados en CD1, CD2,
@@ -48,7 +48,7 @@ Descarga el ZIP **Toolkit-win-x64** de la [beta.31 pública](https://github.com/
   La GUI clásica, la GUI por lotes, el BAT/PowerShell y la CLI LNR
   usan 3 por defecto en instalaciones nuevas; se respetan preferencias
   previamente guardadas en las interfaces gráficas.
-- **Conversiones simultaneas (beta.31):** 1 (secuencial), 2, 3, **4 (recomendado HDD y predeterminado)**, 6, **8 (recomendado SSD)** y **0/Auto** (entre 1 y 4 según CPU). La elección se pide después de la compresión y antes de confirmar el lote. En PowerShell puede utilizarse `-Parallel 4`, `-Parallel 8` o `-Parallel 0`. Un juego multidisco se ejecuta como una sola tarea, aunque haya varios procesos activos.
+- **Conversiones simultaneas (v1.0.0):** 1 (secuencial), 2, 3, **4 (recomendado HDD y predeterminado)**, 6, **8 (recomendado SSD)** y **0/Auto** (entre 1 y 4 según CPU). La elección se pide después de la compresión y antes de confirmar el lote. En PowerShell puede utilizarse `-Parallel 4`, `-Parallel 8` o `-Parallel 0`. Un juego multidisco se ejecuta como una sola tarea, aunque haya varios procesos activos.
 - Estas recomendaciones HDD/SSD proceden de pruebas con la GUI LNR: con 4 procesos se observó una aceleración próxima a 4 veces en una colección concreta. El escalado con 8 procesos no se ha medido universalmente; no se garantiza ningún factor fijo.
 - En pruebas propias sobre una PSP original, los PBP creados con
   niveles 1–3 cargaron más rápido que 4 o 5 en determinados momentos
