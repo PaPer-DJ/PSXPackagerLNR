@@ -22,7 +22,7 @@ namespace PSXPackagerGUI
 
         public int ValidatedParallel => ParallelConversions is 0 or 1 or 2 or 3 or 4 or 6 or 8
             ? ParallelConversions : 4;
-        public int ValidatedMode => Mode >= 0 && Mode <= 4 ? Mode : 0;
+        public int ValidatedMode => Mode >= 0 && Mode <= 7 ? Mode : 0;
 
         private static string PreferenceFile => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
