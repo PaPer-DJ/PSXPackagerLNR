@@ -1595,34 +1595,148 @@ namespace PSXPackagerGUI
         {
             private string _status = "Pendiente";
             private string _outputCount = "—";
+            private string _phase = "Iniciando";
+            private int _progressPercent;
+            private bool _hasProgress;
+            private long? _outputBytes;
+            private TimeSpan? _elapsed;
+
             public event PropertyChangedEventHandler PropertyChanged;
-            public DiscJob(string source, string sizeText)
+
+            public DiscJob(string source, string relativeFolder, long sourceBytes, int mode)
             {
                 Source = source;
-                SizeText = sizeText;
+                RelativeFolder = relativeFolder ?? "";
+                SourceBytes = sourceBytes;
+                Mode = mode;
                 Name = Path.GetFileName(source);
             }
+
             public string Source { get; }
+            public string RelativeFolder { get; }
             public string Name { get; }
-            public string SizeText { get; }
+            public string DisplayName => Path.Combine(RelativeFolder, Name);
+            public long SourceBytes { get; }
+            public int Mode { get; }
+            public int DiscCount { get; set; } = 1;
+            public string PlanError { get; set; }
+            public string[] PlannedOutputs { get; set; } = Array.Empty<string>();
+            public string SizeText => FormatSize(SourceBytes);
+
             public string Status
             {
                 get => _status;
                 set
                 {
+                    if (_status == value) return;
                     _status = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Status)));
+                    Notify(nameof(Status));
+                    Notify(nameof(DisplayStatus));
                 }
             }
+            public string CurrentPhase
+            {
+                get => _phase;
+                set
+                {
+                    if (_phase == value) return;
+                    _phase = value;
+                    Notify(nameof(DisplayStatus));
+                }
+            }
+            public bool HasProgress
+            {
+                get => _hasProgress;
+                set
+                {
+                    if (_hasProgress == value) return;
+                    _hasProgress = value;
+                    Notify(nameof(IsProgressIndeterminate));
+                    Notify(nameof(DisplayStatus));
+                }
+            }
+            public int ProgressPercent
+            {
+                get => _progressPercent;
+                set
+                {
+                    if (_progressPercent == value) return;
+                    _progressPercent = value;
+                    Notify(nameof(ProgressPercent));
+                    Notify(nameof(DisplayStatus));
+                }
+            }
+            public bool IsProgressIndeterminate => !HasProgress;
+            public string DisplayStatus => Status == "Convirtiendo"
+                ? CurrentPhase + (HasProgress ? " " + ProgressPercent + "%" : "")
+                : Status;
+
+            public long? OutputBytes
+            {
+                get => _outputBytes;
+                set
+                {
+                    if (_outputBytes == value) return;
+                    _outputBytes = value;
+                    Notify(nameof(OutputSizeText));
+                    Notify(nameof(VariationText));
+                    Notify(nameof(VariationTooltip));
+                    Notify(nameof(VariationBrush));
+                }
+            }
+            public string OutputSizeText => OutputBytes.HasValue
+                ? FormatSize(OutputBytes.Value) : "—";
+            public long? Difference => OutputBytes.HasValue
+                ? OutputBytes.Value - SourceBytes : null;
+            public string VariationText
+            {
+                get
+                {
+                    // An ISO omits CD-specific information, so never present
+                    // its smaller size as a compression benefit.
+                    if (Mode == 2) return "No comparable";
+                    if (!Difference.HasValue) return "—";
+                    var value = Difference.Value;
+                    return (value > 0 ? "+" : "") + FormatSize(value);
+                }
+            }
+            public string VariationTooltip => Mode == 2
+                ? "ISO extrae solo datos compatibles; no es un formato completo de preservación del CD."
+                : "Tamaño de salida menos tamaño de origen. No implica mayor calidad ni compatibilidad.";
+            public System.Windows.Media.Brush VariationBrush => Mode == 2
+                ? System.Windows.Media.Brushes.DimGray
+                : Difference > 0 ? System.Windows.Media.Brushes.Firebrick
+                : Difference < 0 ? System.Windows.Media.Brushes.ForestGreen
+                : System.Windows.Media.Brushes.DimGray;
+
+            public TimeSpan? Elapsed
+            {
+                get => _elapsed;
+                set
+                {
+                    if (_elapsed == value) return;
+                    _elapsed = value;
+                    Notify(nameof(ElapsedText));
+                }
+            }
+            public string ElapsedText => Elapsed.HasValue
+                ? (Elapsed.Value.TotalHours >= 1
+                    ? Elapsed.Value.ToString(@"h\:mm\:ss")
+                    : Elapsed.Value.ToString(@"mm\:ss"))
+                : "—";
+
             public string OutputCount
             {
                 get => _outputCount;
                 set
                 {
+                    if (_outputCount == value) return;
                     _outputCount = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(OutputCount)));
+                    Notify(nameof(OutputCount));
                 }
             }
+            private void Notify(string property) =>
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
         }
     }
 }
