@@ -1593,6 +1593,7 @@ namespace PSXPackagerGUI
             {
                 if (_shutdownPending)
                     CancelShutdownCountdown("Apagado automático cancelado al cerrar la Suite de discos.");
+                SavePreferences();
                 return;
             }
             e.Cancel = true;
