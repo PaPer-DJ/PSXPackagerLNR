@@ -81,7 +81,6 @@ namespace PSXPackagerGUI
                     ? mainPrefs.LastSourceFolder
                     : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             _includeSubfolders = _preferences.IncludeSubfolders;
-            IncludeSubfoldersCheck.IsChecked = _includeSubfolders;
             FollowActiveCheck.IsChecked = _preferences.FollowActive;
             AutoScrollCheck.IsChecked = _preferences.AutoScroll;
             foreach (ComboBoxItem item in ParallelCombo.Items)
@@ -341,14 +340,6 @@ namespace PSXPackagerGUI
             }
         }
 
-        private void IncludeSubfolders_OnChanged(object sender, RoutedEventArgs e)
-        {
-            if (!IsLoaded || _running) return;
-            _includeSubfolders = IncludeSubfoldersCheck.IsChecked == true;
-            Scan();
-            SavePreferences();
-        }
-
         private void FollowActive_OnChanged(object sender, RoutedEventArgs e)
         {
             if (!IsLoaded || !_running || FollowActiveCheck.IsChecked != true)
@@ -404,8 +395,9 @@ namespace PSXPackagerGUI
             };
             if (picker.ShowDialog() != true) return;
             SourceBox.Text = picker.SelectedFolder;
+            // The folder picker is the single place to set recursive scanning.
+            // Keep the value in Suite-only preferences for subsequent runs.
             _includeSubfolders = picker.SelectedIncludeSubfolders;
-            IncludeSubfoldersCheck.IsChecked = _includeSubfolders;
             Scan();
             SavePreferences();
         }
@@ -680,7 +672,6 @@ namespace PSXPackagerGUI
             AnalyzeButton.IsEnabled = !running;
             ModeBox.IsEnabled = !running;
             ParallelCombo.IsEnabled = !running;
-            IncludeSubfoldersCheck.IsEnabled = !running;
             SourceBox.IsEnabled = !running;
             ChdmanBox.IsEnabled = !running && NeedsChdman;
             CancelButton.IsEnabled = running && !_cancelRequested;
