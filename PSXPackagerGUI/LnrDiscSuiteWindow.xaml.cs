@@ -1217,7 +1217,7 @@ namespace PSXPackagerGUI
                 await ExecuteAsync(cli, new[]
                 {
                     "-i", job.Source, "-o", stage, "-s", "-f", "%FILENAME%"
-                }, token);
+                }, token, job, "Extrayendo PBP");
 
                 var cues = Directory.EnumerateFiles(stage, "*.cue", SearchOption.TopDirectoryOnly).ToArray();
                 if (cues.Length != 1)
@@ -1226,8 +1226,16 @@ namespace PSXPackagerGUI
                         "ISO no conserva multidisco: utiliza PBP → BIN/CUE.");
 
                 var provisional = Path.Combine(stage, name + ".iso");
+                job.CurrentPhase = "Creando ISO de datos";
+                job.HasProgress = true;
+                job.ProgressPercent = 0;
+                var progress = new Progress<double>(percent =>
+                {
+                    if (job.Status == "Convirtiendo")
+                        job.ProgressPercent = (int)Math.Clamp(Math.Round(percent), 0, 100);
+                });
                 var sectors = await LnrDataTrackIsoExporter.ExportAsync(
-                    cues[0], provisional, token);
+                    cues[0], provisional, token, progress);
                 if (new FileInfo(provisional).Length != sectors * 2048L)
                     throw new InvalidDataException("El tamaño del ISO no coincide con los datos leídos.");
 
@@ -1267,14 +1275,15 @@ namespace PSXPackagerGUI
                 var bin = Path.Combine(stage, name + ".bin");
                 Log("Extrayendo CD a BIN/CUE: " + job.Name);
                 await ExecuteAsync(chdman, new[] { "extractcd", "-i", job.Source,
-                                                    "-o", cue, "-ob", bin }, token);
+                                                    "-o", cue, "-ob", bin }, token,
+                                   job, "Extrayendo CD");
                 if (!File.Exists(cue) || new FileInfo(cue).Length < 24 ||
                     !File.Exists(bin) || new FileInfo(bin).Length < 4096)
                     throw new InvalidDataException("La extracción no generó BIN y CUE válidos.");
                 if (!File.ReadAllText(cue).Contains(Path.GetFileName(bin),
                         StringComparison.OrdinalIgnoreCase))
                     throw new InvalidDataException("El CUE no referencia al BIN esperado.");
-                if (Directory.Exists(final))
+                if (Directory.Exists(final) || File.Exists(final))
                     throw new IOException("La carpeta de destino apareció durante la extracción.");
                 Directory.Move(stage, final);
                 Log("OK: " + Path.Combine(name, name + ".cue"));
@@ -1303,7 +1312,8 @@ namespace PSXPackagerGUI
                 var iso = Path.Combine(stage, name + ".iso");
                 Log("Extrayendo DVD a ISO: " + job.Name);
                 await ExecuteAsync(chdman, new[] { "extractdvd", "-i", job.Source,
-                                                    "-o", iso }, token);
+                                                    "-o", iso }, token,
+                                   job, "Extrayendo DVD");
                 var size = File.Exists(iso) ? new FileInfo(iso).Length : 0;
                 if (size < 4096 || size % 2048 != 0)
                     throw new InvalidDataException("El ISO extraído está vacío o no tiene sectores de 2048 bytes.");
