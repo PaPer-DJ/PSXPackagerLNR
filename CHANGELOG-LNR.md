@@ -2,6 +2,8 @@
 
 ## v0.1.0-beta.32 — EN DESARROLLO (Suite de discos)
 
+- **Interfaz refinada:** eliminada la casilla duplicada «También subcarpetas» de la ventana principal de la Suite; se elige exclusivamente desde «Ver carpetas…». Se conserva la selección, su persistencia y el análisis recursivo; la ruta de origen gana espacio horizontal.
+
 ### Concurrencia y controles del motor de la Suite
 
 - **Selector 1, 2, 3, 4, 6, 8 y Auto** para todos los cinco modos; los trabajos son archivos origen independientes y cada PBP multidisco sigue constituyendo una sola tarea. No se modifica el compresor interno de PSXPackager/CHDMAN.
