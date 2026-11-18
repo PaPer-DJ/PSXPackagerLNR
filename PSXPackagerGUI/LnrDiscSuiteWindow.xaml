@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PSXPackagerLNR · Suite de discos"
-        Width="1020" Height="770" MinWidth="800" MinHeight="610"
+        Width="1310" Height="810" MinWidth="1180" MinHeight="660"
         WindowStartupLocation="CenterOwner" Closing="Window_OnClosing">
     <Window.Resources>
         <DataTemplate x:Key="LnrAnalyzeButtonTemplate">
@@ -22,6 +22,19 @@
                 <Path Data="M 2,1 L 2,15 L 14,8 Z" Width="15" Height="16"
                       Fill="#FF168944" Stretch="Uniform" Margin="0,0,6,0"/>
                 <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrPauseButtonTemplate">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <TextBlock Text="Ⅱ" Foreground="#FFAF7417" FontWeight="Bold" FontSize="15"
+                           Margin="0,0,7,0"/>
+                <TextBlock Text="{Binding}"/>
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrPausingButtonTemplate">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <TextBlock Text="◷" Foreground="#FFAF7417" FontSize="16" Margin="0,0,7,0"/>
+                <TextBlock Text="{Binding}"/>
             </StackPanel>
         </DataTemplate>
         <DataTemplate x:Key="LnrHelpButtonTemplate">
@@ -52,11 +65,44 @@
             </Grid>
         </DataTemplate>
         <DataTemplate x:Key="LnrSuiteStatusCell">
-            <Grid HorizontalAlignment="Stretch">
-                <TextBlock Text="{Binding Status}" HorizontalAlignment="Stretch"
-                           TextAlignment="Center" VerticalAlignment="Center"
-                           ToolTip="{Binding Status}"/>
+            <Grid HorizontalAlignment="Stretch" Margin="2,1,2,1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="{Binding DisplayStatus}"
+                           HorizontalAlignment="Stretch" TextAlignment="Center"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding DisplayStatus}"/>
+                <ProgressBar Grid.Row="1" Minimum="0" Maximum="100" Height="8"
+                             Value="{Binding ProgressPercent}"
+                             IsIndeterminate="{Binding IsProgressIndeterminate}"
+                             Foreground="#FF168944" Margin="7,3,7,0">
+                    <ProgressBar.Style>
+                        <Style TargetType="ProgressBar">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Status}" Value="Convirtiendo">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ProgressBar.Style>
+                </ProgressBar>
             </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrSuiteOutputSizeCell">
+            <TextBlock Text="{Binding OutputSizeText}" TextAlignment="Center"
+                       HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrSuiteVariationCell">
+            <TextBlock Text="{Binding VariationText}" Foreground="{Binding VariationBrush}"
+                       HorizontalAlignment="Stretch" TextAlignment="Center"
+                       ToolTip="{Binding VariationTooltip}" VerticalAlignment="Center"/>
+        </DataTemplate>
+        <DataTemplate x:Key="LnrSuiteElapsedCell">
+            <TextBlock Text="{Binding ElapsedText}" HorizontalAlignment="Stretch"
+                       TextAlignment="Center" VerticalAlignment="Center"/>
         </DataTemplate>
         <DataTemplate x:Key="LnrSuiteOutputCell">
             <Grid HorizontalAlignment="Stretch">
@@ -86,9 +132,11 @@
 
         <Grid Grid.Row="1" Margin="0,0,0,11">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="130"/>
+                <ColumnDefinition Width="105"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="102"/>
+                <ColumnDefinition Width="212"/>
+                <ColumnDefinition Width="90"/>
             </Grid.ColumnDefinitions>
             <TextBlock Text="Conversión" VerticalAlignment="Center"/>
             <ComboBox Grid.Column="1" x:Name="ModeBox" MinHeight="31"
@@ -99,28 +147,47 @@
                 <ComboBoxItem Content="CHD → BIN/CUE (CD: PS1, Saturn y PS2 CD)" Tag="CHD2CUE"/>
                 <ComboBoxItem Content="CHD → ISO (DVD: PS2 DVD)" Tag="CHD2ISO"/>
             </ComboBox>
-            <Button Grid.Column="2" x:Name="InfoButton" Content="Ayuda"
+            <TextBlock Grid.Column="2" Text="Simultáneas" Margin="12,0,0,0"
+                       VerticalAlignment="Center"/>
+            <ComboBox Grid.Column="3" x:Name="ParallelCombo" MinHeight="31" SelectedIndex="3"
+                      ToolTip="Procesos independientes por archivo. 4 recomendado HDD; 8 sugerido SSD. Auto usa hasta 4. PBP multidisco es una sola tarea.">
+                <ComboBoxItem Content="1 - Secuencial" Tag="1"/>
+                <ComboBoxItem Content="2" Tag="2"/>
+                <ComboBoxItem Content="3" Tag="3"/>
+                <ComboBoxItem Content="4 - Recomendado (HDD)" Tag="4"/>
+                <ComboBoxItem Content="6" Tag="6"/>
+                <ComboBoxItem Content="8 - Recomendado (SSD)" Tag="8"/>
+                <ComboBoxItem Content="Auto (máx. 4)" Tag="0"/>
+            </ComboBox>
+            <Button Grid.Column="4" x:Name="InfoButton" Content="Ayuda"
                     ContentTemplate="{StaticResource LnrHelpButtonTemplate}"
                     Margin="9,0,0,0" Click="Help_OnClick"/>
         </Grid>
 
         <Grid Grid.Row="2" Margin="0,0,0,11">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="130"/>
+                <ColumnDefinition Width="105"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="185"/>
             </Grid.ColumnDefinitions>
             <TextBlock Text="Carpeta origen" VerticalAlignment="Center"/>
             <TextBox Grid.Column="1" x:Name="SourceBox" MinHeight="31"
                      VerticalContentAlignment="Center" KeyDown="Source_OnKeyDown"
                      ToolTip="Carpeta que contiene los archivos PBP o CHD"/>
-            <Button Grid.Column="2" x:Name="BrowseButton" Content="Seleccionar..."
+            <Button Grid.Column="2" x:Name="BrowseButton" Content="Ver carpetas..."
                     Margin="9,0,0,0" Click="Browse_OnClick"/>
+            <CheckBox Grid.Column="3" x:Name="IncludeSubfoldersCheck"
+                      Content="También subcarpetas" IsChecked="False"
+                      Checked="IncludeSubfolders_OnChanged"
+                      Unchecked="IncludeSubfolders_OnChanged"
+                      Margin="12,0,0,0" VerticalAlignment="Center"
+                      ToolTip="Analiza PBP o CHD también en subcarpetas. Omite las carpetas de salida CHD/BIN_CUE/ISO y enlaces. La estructura se conserva en el destino."/>
         </Grid>
 
         <Grid Grid.Row="3" Margin="0,0,0,13">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="130"/>
+                <ColumnDefinition Width="105"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="124"/>
                 <ColumnDefinition Width="112"/>
@@ -154,6 +221,10 @@
                 <Button x:Name="AnalyzeButton" Content="Analizar"
                         ContentTemplate="{StaticResource LnrAnalyzeButtonTemplate}"
                         Click="Analyze_OnClick" DockPanel.Dock="Right" Padding="12,6"/>
+                <CheckBox x:Name="FollowActiveCheck" Content="Seguir archivo activo"
+                          IsChecked="True" DockPanel.Dock="Right" VerticalAlignment="Center"
+                          Margin="0,0,16,0" Checked="FollowActive_OnChanged"
+                          ToolTip="Salta al nuevo archivo que comienza a procesarse, nunca en cada actualización de porcentaje."/>
             </DockPanel>
             <ListView Grid.Row="1" x:Name="JobsList"
                       SnapsToDevicePixels="True" HorizontalContentAlignment="Stretch"
@@ -167,13 +238,19 @@
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="Archivo origen" CellTemplate="{StaticResource LnrSuiteNameCell}"
-                                        HeaderContainerStyle="{StaticResource LnrSuiteLeftHeader}" Width="395"/>
-                        <GridViewColumn Header="Tamaño" CellTemplate="{StaticResource LnrSuiteSizeCell}"
+                                        HeaderContainerStyle="{StaticResource LnrSuiteLeftHeader}" Width="355"/>
+                        <GridViewColumn Header="Origen" CellTemplate="{StaticResource LnrSuiteSizeCell}"
+                                        HeaderContainerStyle="{StaticResource LnrSuiteCenteredHeader}" Width="95"/>
+                        <GridViewColumn Header="Salida" CellTemplate="{StaticResource LnrSuiteOutputSizeCell}"
+                                        HeaderContainerStyle="{StaticResource LnrSuiteCenteredHeader}" Width="95"/>
+                        <GridViewColumn Header="Variación" CellTemplate="{StaticResource LnrSuiteVariationCell}"
                                         HeaderContainerStyle="{StaticResource LnrSuiteCenteredHeader}" Width="110"/>
-                        <GridViewColumn Header="Estado" CellTemplate="{StaticResource LnrSuiteStatusCell}"
-                                        HeaderContainerStyle="{StaticResource LnrSuiteCenteredHeader}" Width="185"/>
-                        <GridViewColumn Header="Archivos producidos" CellTemplate="{StaticResource LnrSuiteOutputCell}"
-                                        HeaderContainerStyle="{StaticResource LnrSuiteCenteredHeader}" Width="130"/>
+                        <GridViewColumn Header="Tiempo" CellTemplate="{StaticResource LnrSuiteElapsedCell}"
+                                        HeaderContainerStyle="{StaticResource LnrSuiteCenteredHeader}" Width="85"/>
+                        <GridViewColumn Header="Archivos" CellTemplate="{StaticResource LnrSuiteOutputCell}"
+                                        HeaderContainerStyle="{StaticResource LnrSuiteCenteredHeader}" Width="85"/>
+                        <GridViewColumn Header="Estado / Progreso" CellTemplate="{StaticResource LnrSuiteStatusCell}"
+                                        HeaderContainerStyle="{StaticResource LnrSuiteCenteredHeader}" Width="205"/>
                     </GridView>
                 </ListView.View>
             </ListView>
@@ -234,6 +311,8 @@
                 <ProgressBar x:Name="BatchProgress" Height="12" Maximum="100"
                              Foreground="#FF168944"/>
                 <TextBlock x:Name="ProgressLabel" Text="0/0 · sin iniciar" Margin="0,6,0,0"/>
+                <TextBlock x:Name="EtaLabel" Text="Tiempo restante: sin calcular"
+                           Margin="0,3,0,0" FontSize="11" Foreground="#FF48647C"/>
                 <TextBlock x:Name="OutputLabel"
                            Text="Se conservarán todos los PBP y CHD originales."
                            Foreground="#FF64748B" FontSize="11" Margin="0,3,0,0"/>
