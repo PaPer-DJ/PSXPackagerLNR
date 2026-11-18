@@ -414,6 +414,98 @@ convertir sin espacio libre inicial**. Tampoco garantiza que la
 ocupación final sea menor que la inicial: dependerá de si tus PBP
 son más pequeños o grandes que sus CHD correspondientes.
 
+## 6.1. Novedades de la Suite de discos en beta.32 (en desarrollo)
+
+La Suite reutiliza las ideas validadas en el conversor principal, pero
+con las protecciones que corresponden a **sus cinco rutas**.
+
+### Convertir varios archivos a la vez y pausar sin interrumpir discos
+
+- **Simultáneas:** elige **1, 2, 3, 4, 6, 8 o Auto**. Auto utiliza entre
+  1 y 4 según la CPU. El rendimiento depende del modo y del soporte:
+  PBP→CHD con CHDMAN utiliza más recursos y temporales que CHD→PBP
+  directo. Las recomendaciones HDD/SSD son orientativas, no garantías.
+- **Convertir lote → Pausar → Pausando… → Reanudar** usa un solo botón
+  contextual. Una pausa solicitada no congela ni mata procesos, **no
+  inicia nuevos archivos** y espera hasta terminar y comprobar todos
+  los discos y operaciones de cada PBP/CHD actualmente asignado.
+  Solo entonces anuncia **EN PAUSA**.
+- **Cancelar** es distinto: finaliza los procesos CLI/CHDMAN activos,
+  evita iniciar nuevas tareas y limpia sus carpetas temporales.
+  No elimina los originales ni los resultados completos de trabajos
+  anteriores.
+- El apagado automático opcional se conserva, **nunca actúa durante
+  una pausa** y solo se solicita tras finalizar normalmente sin errores,
+  con conversiones nuevas y una cuenta atrás local cancelable de 60 s.
+
+### Explorador y carpetas de salida
+
+La Suite dispone del mismo explorador de la GUI principal, ahora para
+archivos **PBP o CHD** según la ruta escogida. Admite **Atrás, Entrar,
+doble clic, ↑/↓, Enter y Retroceso**, y al volver atrás mantiene
+seleccionada y enfocada la carpeta que acabas de abandonar.
+
+- **También subcarpetas**, desactivada por defecto, recorre las carpetas
+  seleccionadas omitiendo enlaces y directorios generados
+  (`PBP`, `CHD`, `BIN_CUE`, `ISO`, `.tools`, temporales).
+- La ruta de salida **reproduce el árbol relativo de entrada**. Por
+  ejemplo, `Colección/RPG/Juego.pbp` → `Colección/CHD/RPG/Juego.chd`
+  para un disco; o `Colección/CHD/RPG/Juego (Disc 2).chd` para el
+  segundo disco de un PBP multidisco.
+- Los juegos con nombres idénticos en subcarpetas diferentes se
+  mantienen separados. Se detectan previamente colisiones de destino,
+  incluso entre varios PBP que compartan nombres de discos.
+
+### Regla transparente de numeración multidisco
+
+El número e índice de cada disco se leen de la estructura del PBP:
+
+| Entrada | Resultado |
+|---|---|
+| `Juego.pbp` (un solo disco) | `Juego.chd` |
+| `Juego.pbp` (tres discos) | `Juego (Disc 1).chd`, `Juego (Disc 2).chd`, `Juego (Disc 3).chd` |
+| `Juego.pbp` (varios discos, BIN/CUE) | `BIN_CUE/Juego/` con los pares `Juego (Disc N).bin/.cue` |
+
+**PBP→CHD** crea y comprueba todos los CHD, incluido `chdman verify`,
+antes de publicarlos. Si uno de los nombres ya existe, se omite el
+**PBP completo**, sin sobrescribirlo ni generar un grupo incompleto.
+Si se produce un fallo durante su publicación se revierten únicamente
+los nuevos archivos que acababan de crearse.
+
+**PBP→BIN/CUE** renombra los BIN y CUE dentro de una carpeta provisional,
+actualiza las referencias FILE de los CUE, comprueba que los BIN sigan
+presentes y publica la **carpeta completa de una sola vez**. Los índices
+`Disc N` describen discos, no pistas de audio; las pistas de cada disco
+se conservan dentro de su CUE.
+
+Un **CHD óptico contiene un solo disco**, aunque pueda tener muchas
+pistas; por eso CHD→BIN/CUE e ISO no inventan numeraciones. **PBP→ISO**
+sigue restringido a un único disco y pista de datos compatible, y no
+debe utilizarse como imagen íntegra de preservación de CD.
+
+### Progreso, estadísticas y preferencias
+
+- La lista presenta **Origen, Salida, Variación, Tiempo, Archivos y
+  Estado / Progreso**. Los porcentajes se leen de CLI/CHDMAN cuando los
+  motores los proporcionan; cuando no existen porcentajes fiables,
+  se muestra un indicador de actividad sin inventar cifras.
+- El exportador ISO puede informar del avance real según sectores
+  procesados. La barra inferior solo cuenta **trabajos completados**,
+  y la ETA por tamaño/concurrencia es orientativa.
+- En **PBP→ISO** se indica que los tamaños **no son comparables**
+  como ganancia de compresión, porque ISO omite información del CD.
+- El seguimiento automático del archivo activo se realiza **cuando
+  empieza un trabajo**, no cada vez que cambia el porcentaje.
+- Las preferencias no destructivas de esta ventana se guardan en
+  `%LOCALAPPDATA%\\PSXPackagerLNR\\suite-preferencias.json`,
+  separadas de las del conversor principal. Apagado y eliminación
+  de originales **nunca** se activan por restaurar preferencias.
+
+**Estado:** beta.32 de desarrollo. Las pruebas automatizadas no
+sustituyen la validación práctica de todas las conversiones en Windows.
+
+---
+
 ## 7. Conversión inversa y formatos de disco: alcance de la suite
 
 La suite se amplía en beta.8 y aparece mediante **Suite CD / CHD / ISO**
