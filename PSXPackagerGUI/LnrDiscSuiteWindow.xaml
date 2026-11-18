@@ -125,7 +125,7 @@
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Margin="0,0,0,14">
             <TextBlock Text="Suite de discos · Conversiones adicionales" FontSize="21" FontWeight="SemiBold"/>
-            <TextBlock Text="PS1: PBP → CHD / BIN+CUE / ISO limitado  ·  CHD → BIN+CUE (CD) / ISO (DVD)"
+            <TextBlock Text="PS1: PBP / CHD / BIN+CUE / ISO limitado · PS2 / Saturn · Dreamcast: GDI ↔ CHD"
                        Foreground="#FF526278" Margin="0,4,0,0"/>
             <TextBlock Text="Los originales se conservan. Solo las conversiones que crean o extraen CHD necesitan CHDMAN (MAME)."
                        Foreground="#FF526278" FontSize="11" Margin="0,4,0,0"/>
@@ -148,6 +148,13 @@
                               ToolTip="Solo un disco y una pista de datos MODE1. El análisis marca incompatibles y los omite. ISO no conserva el CD original completo; para PS1 se recomienda BIN/CUE."/>
                 <ComboBoxItem Content="CHD → BIN/CUE (CD: PS1, Saturn y PS2 CD)" Tag="CHD2CUE"/>
                 <ComboBoxItem Content="CHD → ISO (DVD: PS2 DVD)" Tag="CHD2ISO"/>
+                <Separator/>
+                <ComboBoxItem Content="Dreamcast · GDI → CHD (GD-ROM)" Tag="GDI2CHD"
+                              ToolTip="Comprime un conjunto GDI con todas sus pistas mediante CHDMAN; verifica el CHD nuevo."/>
+                <ComboBoxItem Content="Dreamcast · CHD → GDI (GD-ROM)" Tag="CHD2GDI"
+                              ToolTip="Extrae el GDI y sus pistas en una carpeta por juego. Solo CHD con metadatos GD-ROM de Dreamcast."/>
+                <ComboBoxItem Content="Dreamcast · Verificar CHD GD-ROM (sin convertir)" Tag="VERIFY_GDROM"
+                              ToolTip="Consulta metadatos CHGD/CHGT y ejecuta CHDMAN verify. No crea resultados ni modifica el original."/>
             </ComboBox>
             <TextBlock Grid.Column="2" Text="Simultáneas" Margin="12,0,0,0"
                        VerticalAlignment="Center"/>
