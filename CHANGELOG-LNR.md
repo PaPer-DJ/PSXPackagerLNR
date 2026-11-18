@@ -1,14 +1,24 @@
 # Historial de versiones de PSXPackagerLNR
 
-## v0.1.0-beta.32 — EN DESARROLLO (Suite de discos)
+## v1.0.0 — 18 noviembre 2026 (primera release estable del fork LaNaveRETRO)
 
 - **PBP → ISO [ No Recomendado ]**: aviso explícito en el selector, en la confirmación y en la ayuda. **Analizar** inspecciona la tabla interna de pistas del PBP y muestras de sectores descomprimidos; si detecta multidisco, audio, MODE2 o sectores no MODE1, marca **ERROR por juego** y lo omite sin impedir otras conversiones. El exportador ISO ahora exige **MODE1** en todos los sectores, no acepta MODE2 Form1 y descarta resultados provisionales no compatibles. Las pruebas sintéticas cubren el rechazo temprano y la verificación exhaustiva.
 
 - **Interfaz refinada:** eliminada la casilla duplicada «También subcarpetas» de la ventana principal de la Suite; se elige exclusivamente desde «Ver carpetas…». Se conserva la selección, su persistencia y el análisis recursivo; la ruta de origen gana espacio horizontal.
 
+### Primer lanzamiento estable del fork
+
+- La versión **v1.0.0** se publica como **release normal de PaPer-DJ/PSXPackagerLNR**, no como prerelease, y **no modifica el repositorio original de RupertAvery**. Se conserva la licencia MIT, la atribución y todas las etiquetas/releases previas del fork.
+- **Toolkit:** la opción multidisco **1 - SEPARADOS** se identifica como **[RECOMENDADO]**; Unidos sigue disponible para M3U y juegos multidisco.
+- **CLI:** se incluye **`LEEME-CLI-LNR.txt` en el ZIP** (y junto al motor integrado en la GUI y el Toolkit) con las diferencias del fork frente al motor original: compresión por defecto 3 en lugar de 5, progreso legible con stdout redirigido, protección frente a errores de cursor en GUI sin consola, distribución .NET 8 autocontenida, créditos y ejemplos. Se indica expresamente que la pausa/concurrencia pertenecen a GUI y Toolkit, no al motor CLI.
+- **Dreamcast · GDI → CHD:** valida descriptor y archivos de pista (incluidos nombres con espacios, sectores, rangos y rutas seguras), crea el CHD con CHDMAN, comprueba metadatos GD-ROM, ejecuta `chdman verify` y publica el resultado sin sobrescribir ni borrar originales.
+- **Dreamcast · CHD → GDI:** exige metadatos **CHGD/CHGT**, extrae GDI y todas sus pistas dentro de una carpeta temporal, valida el descriptor y las pistas y publica la carpeta de forma conjunta. No convierte un CHD de PS1 o PS2 en GDI por accidente.
+- **Dreamcast · Verificar CHD GD-ROM:** operación de solo lectura con `chdman info` y `chdman verify`, sin activar `-f` (fix), sin archivos de salida y sin apagado automático. No sustituye comparar el resultado con una imagen de referencia.
+- **Limitaciones:** no convierte CDI ni reconstruye datos perdidos por imágenes de origen reducidas. Las conversiones Dreamcast se incorporan con pruebas automáticas sintéticas y controles de seguridad; se recomienda validarlas con imágenes reales antes de usarlas como herramienta de preservación.
+
 ### Concurrencia y controles del motor de la Suite
 
-- **Selector 1, 2, 3, 4, 6, 8 y Auto** para todos los cinco modos; los trabajos son archivos origen independientes y cada PBP multidisco sigue constituyendo una sola tarea. No se modifica el compresor interno de PSXPackager/CHDMAN.
+- **Selector 1, 2, 3, 4, 6, 8 y Auto** para los modos de conversión de la Suite; los trabajos son archivos origen independientes y cada PBP multidisco sigue constituyendo una sola tarea. No se modifica el compresor interno de PSXPackager/CHDMAN.
 - **Pausar → Pausando → Reanudar**: se dejan terminar, verificar y publicar con seguridad todos los trabajos activos, incluidos los discos de un mismo PBP. No se lanzan nuevos trabajos mientras se pausa. **Cancelar** detiene todos los procesos en marcha y limpia únicamente temporales de conversiones interrumpidas.
 - **Progreso real por fase y archivo** leído de CLI y CHDMAN cuando informan de porcentajes; si no informan se muestra una barra indeterminada. **Exportación ISO de datos** actualizada con porcentaje por sectores leídos, sin alterar las comprobaciones técnicas de los sectores.
 - **Estadísticas** por archivo: origen, salida, variación, duración y número de archivos; ETA global orientativa basada en tamaños y velocidades observadas, considerando conversiones simultáneas. En PBP→ISO no se anuncia una reducción de tamaño como mejora de compresión.
@@ -26,7 +36,7 @@
 ### Validación
 
 - Compilación Windows x64 autocontenida .NET 8 y pruebas CI de nombres multicd, reescritura CUE/BIN, conflictos, recuperación ante publicación fallida, recorridos recursivos, protección del acceso directo y del motor CLI.
-- **Pendiente de validación práctica con juegos reales en el equipo del autor antes de publicar**. No modificar la beta.31 pública, sus binarios/etiqueta, la beta.30 ni `master`.
+- **Validación para v1.0.0:** pruebas de Windows, builds y ZIP, seguridad de conversiones anteriores, nombres de PBP multidisco y validación sintética de GDI/GD-ROM. **Las nuevas rutas Dreamcast todavía requieren pruebas reales**: no se anuncia una recuperación exacta garantizada de volcados originales. Las betas anteriores y el repositorio padre no se alteran.
 
 ## v0.1.0-beta.31 — 17 noviembre 2026 (Toolkit concurrente, pausa y navegador de carpetas)
 
